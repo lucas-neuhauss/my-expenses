@@ -1,16 +1,24 @@
 <script lang="ts">
-	import Sidebar from '$lib/components/sidebar/sidebar.svelte';
+	import * as Sidebar from '$lib/components/ui/sidebar';
+	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import '../app.css';
+	import { ModeWatcher } from 'mode-watcher';
+	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+
 	let { children, data } = $props();
 </script>
 
+<ModeWatcher />
+
 {#if data.user}
-	<div class="flex min-h-svh w-full">
-		<Sidebar />
-		<main class="flex flex-col min-h-svh flex-1">
+	<Sidebar.Provider>
+		<AppSidebar />
+		<main>
+			<Sidebar.Trigger />
+			<ThemeToggle />
 			{@render children()}
 		</main>
-	</div>
+	</Sidebar.Provider>
 {:else}
 	{@render children()}
 {/if}

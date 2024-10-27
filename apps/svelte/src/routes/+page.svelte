@@ -2,34 +2,38 @@
 	import { enhance } from '$app/forms';
 	import { DateFormatter } from '@internationalized/date';
 	import { formatCurrency } from '$lib/currency';
+	import * as Table from '$lib/components/ui/table';
+	import { Button } from '$lib/components/ui/button';
 
 	let { data } = $props();
 </script>
 
 {#if data.transactions.length > 0}
-	<table>
-		<thead>
-			<tr>
-				<th>Date</th>
-				<th>Description</th>
-				<th>Category</th>
-				<th>Wallet</th>
-				<th>Value</th>
-			</tr>
-		</thead>
-
-		<tbody>
+	<Table.Root>
+		<Table.Caption>A list transactions.</Table.Caption>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head class="w-[100px]">Date</Table.Head>
+				<Table.Head>Description</Table.Head>
+				<Table.Head>Category</Table.Head>
+				<Table.Head>Wallet</Table.Head>
+				<Table.Head class="text-right">Amount</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
 			{#each data.transactions as t}
-				<tr>
-					<td>{new DateFormatter('en-US').format(t.timestamp)}</td>
-					<td>{t.description}</td>
-					<td>{t.category.title}</td>
-					<td>{t.wallet.name}</td>
-					<td>{formatCurrency(t.cents)}</td>
-				</tr>
+				<Table.Row>
+					<Table.Cell class="font-medium"
+						>{new DateFormatter('en-US').format(t.timestamp)}
+					</Table.Cell>
+					<Table.Cell>{t.description}</Table.Cell>
+					<Table.Cell>{t.category.title}</Table.Cell>
+					<Table.Cell>{t.wallet.name}</Table.Cell>
+					<Table.Cell class="text-right">{formatCurrency(t.cents)}</Table.Cell>
+				</Table.Row>
 			{/each}
-		</tbody>
-	</table>
+		</Table.Body>
+	</Table.Root>
 {/if}
 
 <form class="mt-4 p-4" action="?/upsert-transaction" method="post" use:enhance>
@@ -58,26 +62,11 @@
 	</fieldset>
 
 	<div class="mt-6 flex justify-end gap-4">
-		<button
-			class="inline-flex h-8 items-center justify-center rounded-sm
-                    bg-zinc-100 px-4 font-medium leading-none text-zinc-600"
-			type="button"
-		>
-			Cancel
-		</button>
-		<button
-			class="inline-flex h-8 items-center justify-center rounded-sm
-                    bg-magnum-100 px-4 font-medium leading-none text-magnum-900"
-			type="submit"
-		>
-			Save changes
-		</button>
+		<Button type="button" variant="outline">Cancel</Button>
+		<Button type="submit">Save changes</Button>
 	</div>
 </form>
 
 <form method="post" action="/logout?/logout" use:enhance>
-	<button
-		class="force-dark mt-4 rounded-xl bg-magnum-400 px-4 py-2 font-semibold text-magnum-900 transition hover:opacity-75 active:translate-y-0.5"
-		>Sign Out</button
-	>
+	<Button variant="ghost">Sign out</Button>
 </form>
