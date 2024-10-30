@@ -10,6 +10,7 @@ export default ts.config(
 	...svelte.configs['flat/recommended'],
 	prettier,
 	...svelte.configs['flat/prettier'],
+
 	{
 		languageOptions: {
 			globals: {
@@ -29,5 +30,10 @@ export default ts.config(
 	},
 	{
 		ignores: ['build/', '.svelte-kit/', 'dist/']
+	},
+	{
+		rules: {
+			'@typescript-eslint/no-explicit-any': 1
+		}
 	}
 );

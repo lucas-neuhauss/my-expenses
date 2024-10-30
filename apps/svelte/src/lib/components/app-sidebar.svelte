@@ -1,38 +1,39 @@
 <script lang="ts">
-	import * as Sidebar from '$lib/components/ui/sidebar';
-	import Calendar from 'lucide-svelte/icons/calendar';
-	import House from 'lucide-svelte/icons/house';
-	import Inbox from 'lucide-svelte/icons/inbox';
-	import Search from 'lucide-svelte/icons/search';
-	import Settings from 'lucide-svelte/icons/settings';
+	import * as Sidebar from "$lib/components/ui/sidebar";
+	import Calendar from "lucide-svelte/icons/calendar";
+	import House from "lucide-svelte/icons/house";
+	import Inbox from "lucide-svelte/icons/inbox";
+	import Search from "lucide-svelte/icons/search";
+	import Settings from "lucide-svelte/icons/settings";
+	import LogOut from "lucide-svelte/icons/log-out";
 
 	// Menu items.
 	const items = [
 		{
-			title: 'Home',
-			url: '/',
-			icon: House
+			title: "Home",
+			url: "/",
+			icon: House,
 		},
 		{
-			title: 'Categories',
-			url: '/categories',
-			icon: Inbox
+			title: "Categories",
+			url: "/categories",
+			icon: Inbox,
 		},
 		{
-			title: 'Calendar',
-			url: '#',
-			icon: Calendar
+			title: "Calendar",
+			url: "#",
+			icon: Calendar,
 		},
 		{
-			title: 'Search',
-			url: '#',
-			icon: Search
+			title: "Search",
+			url: "#",
+			icon: Search,
 		},
 		{
-			title: 'Settings',
-			url: '#',
-			icon: Settings
-		}
+			title: "Settings",
+			url: "#",
+			icon: Settings,
+		},
 	];
 </script>
 
@@ -60,5 +61,20 @@
 		</Sidebar.Group>
 		<Sidebar.Group />
 	</Sidebar.Content>
-	<Sidebar.Footer />
+	<Sidebar.Footer>
+		<Sidebar.Menu>
+			<Sidebar.MenuItem>
+				<Sidebar.MenuButton>
+					{#snippet child({ props })}
+						<form method="post" action="/logout?/logout">
+							<button {...props}>
+								<LogOut />
+								<span>Home</span>
+							</button>
+						</form>
+					{/snippet}</Sidebar.MenuButton
+				>
+			</Sidebar.MenuItem>
+		</Sidebar.Menu>
+	</Sidebar.Footer>
 </Sidebar.Root>

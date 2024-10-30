@@ -1,12 +1,12 @@
-import { eq } from 'drizzle-orm';
-import { sha256 } from '@oslojs/crypto/sha2';
-import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from '@oslojs/encoding';
-import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
+import { db } from "$lib/server/db";
+import * as table from "$lib/server/db/schema";
+import { sha256 } from "@oslojs/crypto/sha2";
+import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from "@oslojs/encoding";
+import { eq } from "drizzle-orm";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-export const sessionCookieName = 'auth-session';
+export const sessionCookieName = "auth-session";
 
 function generateSessionToken(): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(20));
@@ -20,7 +20,7 @@ export async function createSession(userId: number): Promise<table.Session> {
 	const session: table.Session = {
 		id: sessionId,
 		userId,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30)
+		expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
 	};
 	await db.insert(table.session).values(session);
 	return session;
@@ -35,7 +35,7 @@ export async function validateSession(sessionId: string) {
 		.select({
 			// Adjust user table here to tweak returned data
 			user: { id: table.user.id, email: table.user.email },
-			session: table.session
+			session: table.session,
 		})
 		.from(table.session)
 		.innerJoin(table.user, eq(table.session.userId, table.user.id))

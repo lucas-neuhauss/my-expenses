@@ -1,14 +1,16 @@
-import { z } from 'zod';
-import { redirect, fail } from '@sveltejs/kit';
-import { and, desc, eq, gte, lt, or } from 'drizzle-orm';
-import * as table from '$lib/server/db/schema';
-import { db } from '$lib/server/db';
-import { alias } from 'drizzle-orm/pg-core';
-import { upsertTransaction } from '$lib/server/data/transaction';
+import { getNestedCategories } from "$lib/server/data/category";
+import { upsertTransaction } from "$lib/server/data/transaction";
+import { db } from "$lib/server/db";
+import * as table from "$lib/server/db/schema";
+import { calculateDashboardData } from "$lib/utils/transaction";
+import { fail, redirect } from "@sveltejs/kit";
+import { and, desc, eq, gte, lt, or, sum } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { z } from "zod";
 
 export const load = async (event) => {
 	if (!event.locals.user) {
-		return redirect(302, '/login');
+		return redirect(302, "/login");
 	}
 
 	const userId = event.locals.user.id;
@@ -22,7 +24,7 @@ export const load = async (event) => {
 			category: z.coerce.number().int().catch(-1),
 			wallet: z.coerce.number().int().catch(-1),
 			month: z.coerce.number().int().gte(0).lte(11).catch(currentMonth),
-			year: z.coerce.number().int().gte(1900).catch(currentYear)
+			year: z.coerce.number().int().gte(1900).catch(currentYear),
 		})
 		.parse(searchParamsObj);
 
@@ -38,9 +40,9 @@ export const load = async (event) => {
 	dateMonthLater.setUTCDate(1);
 	dateMonthLater.setUTCHours(0, 0, 0, 0);
 
-	const tableCategoryParent = alias(table.category, 'parent');
-	const tableTransactionFrom = alias(table.transaction, 'from');
-	const tableTransactionTo = alias(table.transaction, 'to');
+	const tableCategoryParent = alias(table.category, "parent");
+	const tableTransactionFrom = alias(table.transaction, "from");
+	const tableTransactionTo = alias(table.transaction, "to");
 	const transactionsPromise = db
 		.select({
 			id: table.transaction.id,
@@ -51,35 +53,35 @@ export const load = async (event) => {
 			isTransference: table.transaction.isTransference,
 			wallet: {
 				id: table.wallet.id,
-				name: table.wallet.name
+				name: table.wallet.name,
 			},
 			category: {
 				id: table.category.id,
 				title: table.category.title,
-				iconName: table.category.iconName
+				iconName: table.category.iconName,
 			},
 			categoryParent: {
 				id: tableCategoryParent.id,
-				title: tableCategoryParent.title
+				title: tableCategoryParent.title,
 			},
 			transferenceFrom: {
 				id: tableTransactionFrom.id,
-				walletId: tableTransactionFrom.walletId
+				walletId: tableTransactionFrom.walletId,
 			},
 			transferenceTo: {
 				id: tableTransactionTo.id,
-				walletId: tableTransactionTo.walletId
-			}
+				walletId: tableTransactionTo.walletId,
+			},
 		})
 		.from(table.transaction)
 		.where(
 			and(
 				eq(table.transaction.userId, userId),
 				gte(table.transaction.timestamp, date),
-				lt(table.transaction.timestamp, dateMonthLater)
+				lt(table.transaction.timestamp, dateMonthLater),
 				// category === -1 ? undefined : inArray(table.transaction.categoryId, categoryIds),
 				// wallet === -1 ? undefined : eq(table.transaction.walletId, wallet)
-			)
+			),
 		)
 		.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
 		.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
@@ -88,24 +90,67 @@ export const load = async (event) => {
 			table.transference,
 			or(
 				eq(table.transaction.id, table.transference.transactionOutId),
-				eq(table.transaction.id, table.transference.transactionInId)
-			)
+				eq(table.transaction.id, table.transference.transactionInId),
+			),
 		)
 		.leftJoin(
 			tableTransactionFrom,
-			eq(table.transference.transactionOutId, tableTransactionFrom.id)
+			eq(table.transference.transactionOutId, tableTransactionFrom.id),
 		)
-		.leftJoin(tableTransactionTo, eq(table.transference.transactionInId, tableTransactionTo.id))
+		.leftJoin(
+			tableTransactionTo,
+			eq(table.transference.transactionInId, tableTransactionTo.id),
+		)
 		.orderBy(desc(table.transaction.timestamp), desc(table.transaction.id));
 
-	const [transactions] = await Promise.all([transactionsPromise]);
+	const categoriesPromise = getNestedCategories(userId);
+
+	const walletsPromise = db.query.wallet.findMany({
+		columns: { id: true, name: true, initialBalance: true },
+		where(fields, { eq }) {
+			return eq(fields.userId, userId);
+		},
+		orderBy(fields, operators) {
+			return [operators.asc(fields.name)];
+		},
+	});
+	const balanceResultPromise = db
+		.select({ balance: sum(table.transaction.cents) })
+		.from(table.transaction)
+		.groupBy(table.transaction.userId)
+		.where(
+			and(
+				eq(table.transaction.userId, userId),
+				lt(table.transaction.timestamp, dateMonthLater),
+			),
+		);
+
+	const [transactions, categories, wallets, balanceResult] = await Promise.all([
+		transactionsPromise,
+		categoriesPromise,
+		walletsPromise,
+		balanceResultPromise,
+	]);
+
+	const [{ balance }] = z
+		.array(z.object({ balance: z.coerce.number().int() }))
+		.length(1)
+		.catch([{ balance: 0 }])
+		.parse(balanceResult);
+
+	const { totalIncome, totalExpense } = calculateDashboardData(transactions);
+
 	return {
-		transactions
+		categories,
+		balance: balance + wallets.reduce((acc, w) => acc + w.initialBalance, 0),
+		transactions,
+		totalIncome,
+		totalExpense,
 	};
 };
 
 export const actions = {
-	'upsert-transaction': async (event) => {
+	"upsert-transaction": async (event) => {
 		const user = event.locals.user;
 		if (!user) {
 			return fail(401);
@@ -114,8 +159,8 @@ export const actions = {
 		const formData = await event.request.formData();
 		await upsertTransaction({
 			userId: user.id,
-			upsertId: 'new',
-			formData
+			upsertId: "new",
+			formData,
 		});
-	}
+	},
 };

@@ -4,7 +4,7 @@
 	"tailwind": {
 		"config": "tailwind.config.ts",
 		"css": "src/app.css",
-		"baseColor": "gray"
+		"baseColor": "zinc"
 	},
 	"aliases": {
 		"components": "$lib/components",
@@ -15,3 +15,4 @@
 	"typescript": true,
 	"registry": "https://next.shadcn-svelte.com/registry"
 }
+

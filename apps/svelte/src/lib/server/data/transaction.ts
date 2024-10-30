@@ -1,14 +1,14 @@
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
-import { and, eq, isNotNull, or } from 'drizzle-orm';
-import { z } from 'zod';
-import * as table from '$lib/server/db/schema';
-import { CATEGORY_SPECIAL } from '$lib/categories';
+import { CATEGORY_SPECIAL } from "$lib/categories";
+import { db } from "$lib/server/db";
+import * as table from "$lib/server/db/schema";
+import { json } from "@sveltejs/kit";
+import { and, eq, isNotNull, or } from "drizzle-orm";
+import { z } from "zod";
 
 export const upsertTransaction = async ({
 	userId,
 	upsertId,
-	formData
+	formData,
 }: {
 	userId: number;
 	upsertId: string;
@@ -16,56 +16,56 @@ export const upsertTransaction = async ({
 }) => {
 	const formObj = Object.fromEntries(formData.entries());
 	const baseSchema = z.object({
-		id: z.coerce.number().int().or(z.literal('new')),
+		id: z.coerce.number().int().or(z.literal("new")),
 		wallet: z.coerce.number().int(),
 		cents: z.coerce
 			.number()
 			.gt(0)
 			.transform((v) => Math.round(v * 100)),
 		timestamp: z.coerce.date(),
-		description: z.string().min(1).trim().nullable().catch(null)
+		description: z.string().min(1).trim().nullable().catch(null),
 	});
 	const formSchema = z
-		.discriminatedUnion('type', [
+		.discriminatedUnion("type", [
 			baseSchema.extend({
-				type: z.enum(['expense', 'income']),
-				category: z.coerce.number().int().positive()
+				type: z.enum(["expense", "income"]),
+				category: z.coerce.number().int().positive(),
 			}),
 			baseSchema.extend({
-				type: z.literal('transference'),
-				toWallet: z.coerce.number().int()
-			})
+				type: z.literal("transference"),
+				toWallet: z.coerce.number().int(),
+			}),
 		])
 		.superRefine((obj, ctx) => {
-			if (obj.type === 'transference' && obj.wallet === obj.toWallet) {
+			if (obj.type === "transference" && obj.wallet === obj.toWallet) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
-					message: 'Cannot transfer to the same wallet'
+					message: "Cannot transfer to the same wallet",
 				});
 			}
 		})
 		.transform((obj) => ({
 			...obj,
-			cents: obj.type === 'expense' ? -obj.cents : obj.cents
+			cents: obj.type === "expense" ? -obj.cents : obj.cents,
 		}));
 
 	const formValues = formSchema.parse({ ...formObj, id: upsertId });
 	const { id, wallet: walletId, cents, timestamp, description } = formValues;
 
-	if (id === 'new') {
-		if (formValues.type === 'transference') {
+	if (id === "new") {
+		if (formValues.type === "transference") {
 			const specialCategories = await db
 				.select({
 					id: table.category.id,
-					unique: table.category.unique
+					unique: table.category.unique,
 				})
 				.from(table.category)
 				.where(and(eq(table.category.userId, userId), isNotNull(table.category.unique)));
 			const categoryTransactionIn = specialCategories.find(
-				(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_IN
+				(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_IN,
 			)!.id;
 			const categoryTransactionOut = specialCategories.find(
-				(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_OUT
+				(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_OUT,
 			)!.id;
 
 			// Create in and out transactions
@@ -73,32 +73,32 @@ export const upsertTransaction = async ({
 				.insert(table.transaction)
 				.values([
 					{
-						type: 'expense',
+						type: "expense",
 						timestamp,
 						userId,
 						categoryId: categoryTransactionOut,
 						walletId: walletId,
 						isTransference: true,
 						cents: -cents,
-						description
+						description,
 					},
 					{
-						type: 'income',
+						type: "income",
 						timestamp,
 						userId,
 						categoryId: categoryTransactionIn,
 						walletId: formValues.toWallet,
 						isTransference: true,
 						cents,
-						description
-					}
+						description,
+					},
 				])
 				.returning({ id: table.transaction.id });
 
 			// Create transference
 			await db.insert(table.transference).values({
 				transactionOutId,
-				transactionInId
+				transactionInId,
 			});
 		} else {
 			// Create normal transaction
@@ -109,20 +109,20 @@ export const upsertTransaction = async ({
 				categoryId: formValues.category,
 				walletId,
 				cents,
-				description
+				description,
 			});
 		}
 	} else {
-		if (formValues.type === 'transference') {
+		if (formValues.type === "transference") {
 			const foundTransference = await db.query.transference.findFirst({
 				where: or(
 					eq(table.transference.transactionOutId, id),
-					eq(table.transference.transactionInId, id)
-				)
+					eq(table.transference.transactionInId, id),
+				),
 			});
 
 			if (!foundTransference) {
-				throw new Error('Transference not found');
+				throw new Error("Transference not found");
 			}
 
 			// Update expense transaction
@@ -132,7 +132,7 @@ export const upsertTransaction = async ({
 					timestamp,
 					walletId: walletId,
 					cents: -cents,
-					description
+					description,
 				})
 				.where(eq(table.transaction.id, foundTransference.transactionOutId));
 
@@ -143,7 +143,7 @@ export const upsertTransaction = async ({
 					timestamp,
 					walletId: formValues.toWallet,
 					cents,
-					description
+					description,
 				})
 				.where(eq(table.transaction.id, foundTransference.transactionInId));
 		} else {
@@ -155,7 +155,7 @@ export const upsertTransaction = async ({
 					categoryId: formValues.category,
 					walletId,
 					cents,
-					description
+					description,
 				})
 				.where(eq(table.transaction.id, id));
 		}
