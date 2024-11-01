@@ -1,5 +1,5 @@
 import { getNestedCategories } from "$lib/server/data/category";
-import { upsertTransaction } from "$lib/server/data/transaction";
+import { deleteTransaction, upsertTransaction } from "$lib/server/data/transaction";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { calculateDashboardData } from "$lib/utils/transaction";
@@ -12,7 +12,6 @@ export const load = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, "/login");
 	}
-
 	const userId = event.locals.user.id;
 
 	const url = new URL(event.request.url);
@@ -142,6 +141,7 @@ export const load = async (event) => {
 
 	return {
 		categories,
+		wallets,
 		balance: balance + wallets.reduce((acc, w) => acc + w.initialBalance, 0),
 		transactions,
 		totalIncome,
@@ -162,5 +162,14 @@ export const actions = {
 			upsertId: "new",
 			formData,
 		});
+	},
+	"delete-transaction": async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return fail(401);
+		}
+		const searchParams = event.url.searchParams;
+		const transactionId = z.coerce.number().int().min(1).parse(searchParams.get("id"));
+		return deleteTransaction({ userId: user.id, transactionId });
 	},
 };

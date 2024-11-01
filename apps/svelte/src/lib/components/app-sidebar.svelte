@@ -20,8 +20,8 @@
 			icon: Inbox,
 		},
 		{
-			title: "Calendar",
-			url: "#",
+			title: "Wallets",
+			url: "/wallets",
 			icon: Calendar,
 		},
 		{

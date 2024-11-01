@@ -1,8 +1,7 @@
 import { CATEGORY_SPECIAL } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import { json } from "@sveltejs/kit";
-import { and, eq, isNotNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { z } from "zod";
 
 export const upsertTransaction = async ({
@@ -161,5 +160,50 @@ export const upsertTransaction = async ({
 		}
 	}
 
-	return json({ ok: true });
+	return { ok: true };
+};
+
+export const deleteTransaction = async ({
+	userId,
+	transactionId,
+}: {
+	userId: number;
+	transactionId: number;
+}) => {
+	// Get the transaction to be deleted. Make sure to check if the `userId` matches
+	const [transaction] = await db
+		.select()
+		.from(table.transaction)
+		.where(
+			and(eq(table.transaction.id, transactionId), eq(table.transaction.userId, userId)),
+		);
+	if (!transaction) {
+		throw new Error("Transaction not found");
+	}
+
+	if (transaction.isTransference) {
+		const [transference] = await db
+			.select()
+			.from(table.transference)
+			.where(
+				or(
+					eq(table.transference.transactionOutId, transactionId),
+					eq(table.transference.transactionInId, transactionId),
+				),
+			);
+
+		await db.delete(table.transference).where(eq(table.transference.id, transference.id));
+		await db
+			.delete(table.transaction)
+			.where(
+				inArray(table.transaction.id, [
+					transference.transactionOutId,
+					transference.transactionInId,
+				]),
+			);
+	} else {
+		await db.delete(table.transaction).where(eq(table.transaction.id, transactionId));
+	}
+
+	return { ok: true };
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
 	import { DateFormatter } from "@internationalized/date";
 	import { formatCurrency } from "$lib/currency";
 	import * as Table from "$lib/components/ui/table";
@@ -30,7 +31,7 @@
 		{@render MoneyCard("Expense", data.totalExpense)}
 	</div>
 
-	<UpsertTransactionDialog />
+	<UpsertTransactionDialog wallets={data.wallets} categories={data.categories} />
 
 	{#if data.transactions.length > 0}
 		<Table.Root>
@@ -45,7 +46,7 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each data.transactions as t}
+				{#each data.transactions as t (t.id)}
 					<Table.Row>
 						<Table.Cell class="font-medium"
 							>{new DateFormatter("en-US").format(t.timestamp)}
@@ -72,7 +73,7 @@
 									aria-label="Edit transaction"
 									class={buttonVariants({
 										variant: "secondary",
-										class: "size-8 [&_svg]:size-3.5",
+										class: "size-8 p-0 [&_svg]:size-3.5",
 									})}
 								>
 									<Pencil />
@@ -82,20 +83,28 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									aria-label="Delete transaction"
-									class={buttonVariants({
-										variant: "ghost",
-										class: "size-8 [&_svg]:size-3.5",
-									})}
-								>
-									<Trash />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>Delete transaction</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
+							<form
+								use:enhance
+								action={`?/delete-transaction&id=${t.id}`}
+								method="post"
+								class="inline-flex"
+							>
+								<Tooltip.Root>
+									<Tooltip.Trigger
+										type="submit"
+										aria-label="Delete transaction"
+										class={buttonVariants({
+											variant: "ghost",
+											class: "size-8 p-0 [&_svg]:size-3.5",
+										})}
+									>
+										<Trash />
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>Delete transaction</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</form>
 						</Table.Cell>
 					</Table.Row>
 				{/each}
