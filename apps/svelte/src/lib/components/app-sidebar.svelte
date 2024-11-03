@@ -3,8 +3,6 @@
 	import Calendar from "lucide-svelte/icons/calendar";
 	import House from "lucide-svelte/icons/house";
 	import Inbox from "lucide-svelte/icons/inbox";
-	import Search from "lucide-svelte/icons/search";
-	import Settings from "lucide-svelte/icons/settings";
 	import LogOut from "lucide-svelte/icons/log-out";
 
 	// Menu items.
@@ -23,16 +21,6 @@
 			title: "Wallets",
 			url: "/wallets",
 			icon: Calendar,
-		},
-		{
-			title: "Search",
-			url: "#",
-			icon: Search,
-		},
-		{
-			title: "Settings",
-			url: "#",
-			icon: Settings,
 		},
 	];
 </script>
@@ -69,7 +57,7 @@
 						<form method="post" action="/logout?/logout">
 							<button {...props}>
 								<LogOut />
-								<span>Home</span>
+								<span>Logout</span>
 							</button>
 						</form>
 					{/snippet}</Sidebar.MenuButton

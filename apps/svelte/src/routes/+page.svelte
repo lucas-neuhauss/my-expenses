@@ -3,7 +3,7 @@
 	import { DateFormatter } from "@internationalized/date";
 	import { formatCurrency } from "$lib/currency";
 	import * as Table from "$lib/components/ui/table";
-	import UpsertTransactionDialog from "$lib/components/upsert-transaction-dialog.svelte";
+	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import * as Card from "$lib/components/ui/card";
 	import { buttonVariants } from "$lib/components/ui/button";
 	import Trash from "lucide-svelte/icons/trash";
@@ -31,7 +31,7 @@
 		{@render MoneyCard("Expense", data.totalExpense)}
 	</div>
 
-	<UpsertTransactionDialog wallets={data.wallets} categories={data.categories} />
+	<UpsertTransaction wallets={data.wallets} categories={data.categories} />
 
 	{#if data.transactions.length > 0}
 		<Table.Root>
