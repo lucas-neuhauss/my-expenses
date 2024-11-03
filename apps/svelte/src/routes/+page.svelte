@@ -11,9 +11,11 @@
 	import { DateFormatter } from "@internationalized/date";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
+	import { page } from "$app/stores";
 
 	let { data } = $props();
 	let month = $state(String(data.month));
+	let year = $state(String(data.year));
 
 	const monthOptions = [
 		"January",
@@ -29,6 +31,21 @@
 		"November",
 		"December",
 	].map((month, i) => ({ value: String(i + 1), label: month }));
+	const yearOptions = Array.from({ length: 100 }, (_, i) => ({
+		label: String(new Date().getFullYear() - i),
+		value: String(new Date().getFullYear() - i),
+	}));
+
+	const onMonthChanged = (m: string) => {
+		const url = new URL($page.url.href);
+		url.searchParams.set("month", m);
+		goto(url.href);
+	};
+	const onYearChanged = (y: string) => {
+		const url = new URL($page.url.href);
+		url.searchParams.set("year", y);
+		goto(url.href);
+	};
 </script>
 
 {#snippet MoneyCard(label: string, value: number)}
@@ -54,14 +71,29 @@
 
 		<Select.Root
 			type="single"
-			name="wallet"
+			name="month"
 			bind:value={month}
-			onValueChange={(v) => goto(`/?month=${v}`)}
+			onValueChange={onMonthChanged}
 		>
 			{@const selectedMonth = monthOptions.find((mo) => mo.value === month)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
 			<Select.Content>
 				{#each monthOptions as option}
+					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+
+		<Select.Root
+			type="single"
+			name="year"
+			bind:value={year}
+			onValueChange={onYearChanged}
+		>
+			{@const selectedYear = yearOptions.find((y) => y.value === year)!}
+			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
+			<Select.Content>
+				{#each yearOptions as option}
 					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
 				{/each}
 			</Select.Content>
