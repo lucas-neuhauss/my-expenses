@@ -1,8 +1,8 @@
-<script>
+<script lang="ts">
 	import "./page.css";
 	import Header from "./Header.svelte";
 
-	let user = $state(null);
+	let user = $state<{ name: string } | null>(null);
 </script>
 
 <article>

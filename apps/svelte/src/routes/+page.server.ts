@@ -1,11 +1,15 @@
 import { getNestedCategories } from "$lib/server/data/category";
-import { deleteTransaction, upsertTransaction } from "$lib/server/data/transaction";
+import {
+	deleteTransaction,
+	getDashboardTransactions,
+	upsertTransaction,
+} from "$lib/server/data/transaction";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { calculateDashboardData } from "$lib/utils/transaction";
+import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
-import { and, desc, eq, gte, lt, or, sum } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, eq, lt, sum } from "drizzle-orm";
 import { z } from "zod";
 
 export const load = async (event) => {
@@ -29,83 +33,15 @@ export const load = async (event) => {
 			year: event.url.searchParams.get("year"),
 		});
 
-	const date = new Date();
-	date.setUTCFullYear(year);
-	date.setUTCMonth(month - 1);
-	date.setUTCDate(1);
-	date.setUTCHours(0, 0, 0, 0);
+	const date = new CalendarDate(year, month, 1);
+	const dateMonthLater = new CalendarDate(year, month, 1).set({ day: 100 });
 
-	const dateMonthLater = new Date();
-	dateMonthLater.setUTCFullYear(month === 12 ? year + 1 : year);
-	dateMonthLater.setUTCMonth(month === 12 ? 1 : month + 1);
-	dateMonthLater.setUTCDate(1);
-	dateMonthLater.setUTCHours(0, 0, 0, 0);
-
-	const tableCategoryParent = alias(table.category, "parent");
-	const tableTransactionFrom = alias(table.transaction, "from");
-	const tableTransactionTo = alias(table.transaction, "to");
-	const transactionsPromise = db
-		.select({
-			id: table.transaction.id,
-			cents: table.transaction.cents,
-			type: table.transaction.type,
-			description: table.transaction.description,
-			timestamp: table.transaction.timestamp,
-			isTransference: table.transaction.isTransference,
-			wallet: {
-				id: table.wallet.id,
-				name: table.wallet.name,
-			},
-			category: {
-				id: table.category.id,
-				title: table.category.title,
-				iconName: table.category.iconName,
-			},
-			categoryParent: {
-				id: tableCategoryParent.id,
-				title: tableCategoryParent.title,
-			},
-			transferenceFrom: {
-				id: tableTransactionFrom.id,
-				walletId: tableTransactionFrom.walletId,
-			},
-			transferenceTo: {
-				id: tableTransactionTo.id,
-				walletId: tableTransactionTo.walletId,
-			},
-		})
-		.from(table.transaction)
-		.where(
-			and(
-				eq(table.transaction.userId, userId),
-				gte(table.transaction.timestamp, date),
-				lt(table.transaction.timestamp, dateMonthLater),
-				// category === -1 ? undefined : inArray(table.transaction.categoryId, categoryIds),
-				// wallet === -1 ? undefined : eq(table.transaction.walletId, wallet)
-			),
-		)
-		.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
-		.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
-		.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
-		.leftJoin(
-			table.transference,
-			or(
-				eq(table.transaction.id, table.transference.transactionOutId),
-				eq(table.transaction.id, table.transference.transactionInId),
-			),
-		)
-		.leftJoin(
-			tableTransactionFrom,
-			eq(table.transference.transactionOutId, tableTransactionFrom.id),
-		)
-		.leftJoin(
-			tableTransactionTo,
-			eq(table.transference.transactionInId, tableTransactionTo.id),
-		)
-		.orderBy(desc(table.transaction.timestamp), desc(table.transaction.id));
-
+	const transactionsPromise = getDashboardTransactions({
+		userId: userId,
+		start: date.toString(),
+		end: dateMonthLater.toString(),
+	});
 	const categoriesPromise = getNestedCategories(userId);
-
 	const walletsPromise = db.query.wallet.findMany({
 		columns: { id: true, name: true, initialBalance: true },
 		where(fields, { eq }) {
@@ -122,7 +58,7 @@ export const load = async (event) => {
 		.where(
 			and(
 				eq(table.transaction.userId, userId),
-				lt(table.transaction.timestamp, dateMonthLater),
+				lt(table.transaction.date, dateMonthLater.toString()),
 			),
 		);
 
@@ -163,7 +99,6 @@ export const actions = {
 		const formData = await event.request.formData();
 		await upsertTransaction({
 			userId: user.id,
-			upsertId: "new",
 			formData,
 		});
 	},

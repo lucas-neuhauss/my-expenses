@@ -12,8 +12,10 @@
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 	import { page } from "$app/stores";
+	import type { DashboardTransaction } from "$lib/server/data/transaction";
 
 	let { data } = $props();
+	let transaction = $state<DashboardTransaction | null>(null);
 	let month = $state(String(data.month));
 	let year = $state(String(data.year));
 
@@ -67,13 +69,19 @@
 	</div>
 
 	<div class="flex items-center gap-4">
-		<UpsertTransaction wallets={data.wallets} categories={data.categories} />
+		<UpsertTransaction
+			{transaction}
+			wallets={data.wallets}
+			categories={data.categories}
+			onClose={() => (transaction = null)}
+		/>
 
 		<Select.Root
 			type="single"
 			name="month"
 			bind:value={month}
 			onValueChange={onMonthChanged}
+			allowDeselect={false}
 		>
 			{@const selectedMonth = monthOptions.find((mo) => mo.value === month)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
@@ -89,6 +97,7 @@
 			name="year"
 			bind:value={year}
 			onValueChange={onYearChanged}
+			allowDeselect={false}
 		>
 			{@const selectedYear = yearOptions.find((y) => y.value === year)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
@@ -115,8 +124,10 @@
 			<Table.Body>
 				{#each data.transactions as t (t.id)}
 					<Table.Row>
-						<Table.Cell class="font-medium"
-							>{new DateFormatter("en-US").format(t.timestamp)}
+						<Table.Cell class="font-medium">
+							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
+								new Date(t.date),
+							)}
 						</Table.Cell>
 						<Table.Cell>{t.description}</Table.Cell>
 						<Table.Cell class="inline-flex items-center gap-x-2">
@@ -138,6 +149,7 @@
 							<Tooltip.Root>
 								<Tooltip.Trigger
 									aria-label="Edit transaction"
+									onclick={() => (transaction = t)}
 									class={buttonVariants({
 										variant: "secondary",
 										class: "size-8 p-0 [&_svg]:size-3.5",

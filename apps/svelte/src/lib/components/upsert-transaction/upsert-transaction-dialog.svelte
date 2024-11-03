@@ -4,19 +4,39 @@
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { NestedCategories } from "$lib/utils/category";
 	import UpsertTransactionForm from "./upsert-transaction-form.svelte";
+	import type { DashboardTransaction } from "$lib/server/data/transaction";
 
 	let {
 		wallets,
 		categories,
+		transaction = null,
+		onClose,
 	}: {
+		transaction: DashboardTransaction | null;
 		wallets: Array<{ id: number; name: string }>;
 		categories: NestedCategories;
+		onClose: () => void;
 	} = $props();
 
 	let tab = $state<"expense" | "income">("expense");
+	let open = $state(false);
+
+	$effect(() => {
+		if (transaction) {
+			open = true;
+		}
+	});
 </script>
 
-<Dialog.Root>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		if (!isOpen) {
+			onClose();
+		}
+		open = isOpen;
+	}}
+>
 	<Dialog.Trigger class={buttonVariants({ variant: "outline" })}
 		>Create Transaction</Dialog.Trigger
 	>
@@ -32,6 +52,7 @@
 			</Tabs.List>
 			<Tabs.Content value="expense">
 				<UpsertTransactionForm
+					{transaction}
 					categories={categories.filter((c) => c.type === "expense")}
 					{wallets}
 					{tab}
@@ -39,6 +60,7 @@
 			</Tabs.Content>
 			<Tabs.Content value="income">
 				<UpsertTransactionForm
+					{transaction}
 					categories={categories.filter((c) => c.type === "income")}
 					{wallets}
 					{tab}

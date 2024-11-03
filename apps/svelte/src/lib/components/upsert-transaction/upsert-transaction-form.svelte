@@ -10,18 +10,23 @@
 	import * as Popover from "$lib/components/ui/popover";
 	import { Textarea } from "$lib/components/ui/textarea";
 	import {
+		CalendarDate,
 		DateFormatter,
-		type DateValue,
 		getLocalTimeZone,
+		today,
+		parseDate,
 	} from "@internationalized/date";
 	import CalendarIcon from "svelte-radix/Calendar.svelte";
 	import type { NestedCategories } from "$lib/utils/category";
+	import type { DashboardTransaction } from "$lib/server/data/transaction";
 
 	let {
+		transaction,
 		wallets,
 		categories,
 		tab,
 	}: {
+		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
 		categories: NestedCategories;
 		tab: "expense" | "income";
@@ -31,10 +36,15 @@
 		dateStyle: "long",
 	});
 
-	let date: DateValue | undefined = $state();
-	let wallet = $state(wallets[0]);
-	let category = $state(categories[0]);
+	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
+	let wallet = $state(transaction?.wallet ?? wallets[0]);
+	let category = $state(transaction?.category ?? categories[0]);
+	let description = $state(transaction?.description ?? "");
+	let date: CalendarDate | undefined = $state(
+		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
+	);
+	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
 
 	const onWalletChange = (id: string) => {
 		const selectedWallet = wallets.find((w) => String(w.id) === id);
@@ -54,8 +64,9 @@
 	<div
 		class="grid gap-4 py-4 [&>div]:grid [&>div]:grid-cols-4 [&>div]:items-center [&>div]:justify-items-end [&>div]:gap-4"
 	>
+		<input type="hidden" name="id" value={id} />
 		<input type="hidden" name="category" value={category.id} />
-		<input type="hidden" name="timestamp" value={date} />
+		<input type="hidden" name="date" value={date} />
 		<input type="hidden" name="type" value={tab} />
 
 		<div>
@@ -104,11 +115,16 @@
 
 		<div>
 			<Label for="description" class="text-right">Description</Label>
-			<Textarea id="description" class="col-span-3" name="description" />
+			<Textarea
+				id="description"
+				class="col-span-3"
+				name="description"
+				bind:value={description}
+			/>
 		</div>
 
 		<div>
-			<Label class="text-right">Timestamp</Label>
+			<Label class="text-right">Date</Label>
 			<Popover.Root bind:open={calendarOpen}>
 				<Popover.Trigger
 					class={cn(
@@ -140,6 +156,7 @@
 				name="cents"
 				placeholder="R$ 0.00"
 				class="col-span-3"
+				bind:value={cents}
 			/>
 		</div>
 	</div>

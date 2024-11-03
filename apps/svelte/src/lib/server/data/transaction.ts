@@ -1,16 +1,16 @@
 import { CATEGORY_SPECIAL } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import { and, eq, inArray, isNotNull, or } from "drizzle-orm";
+import { DateStringSchema } from "$lib/utils/date-time";
+import { and, desc, eq, gte, inArray, isNotNull, lte, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 export const upsertTransaction = async ({
 	userId,
-	upsertId,
 	formData,
 }: {
 	userId: number;
-	upsertId: string;
 	formData: FormData;
 }) => {
 	const formObj = Object.fromEntries(formData.entries());
@@ -21,7 +21,7 @@ export const upsertTransaction = async ({
 			.number()
 			.gt(0)
 			.transform((v) => Math.round(v * 100)),
-		timestamp: z.coerce.date(),
+		date: DateStringSchema, // TODO: Check if valid date string
 		description: z.string().min(1).trim().nullable().catch(null),
 	});
 	const formSchema = z
@@ -48,8 +48,8 @@ export const upsertTransaction = async ({
 			cents: obj.type === "expense" ? -obj.cents : obj.cents,
 		}));
 
-	const formValues = formSchema.parse({ ...formObj, id: upsertId });
-	const { id, wallet: walletId, cents, timestamp, description } = formValues;
+	const formValues = formSchema.parse(formObj);
+	const { id, wallet: walletId, cents, date, description } = formValues;
 
 	if (id === "new") {
 		if (formValues.type === "transference") {
@@ -73,7 +73,7 @@ export const upsertTransaction = async ({
 				.values([
 					{
 						type: "expense",
-						timestamp,
+						date,
 						userId,
 						categoryId: categoryTransactionOut,
 						walletId: walletId,
@@ -83,7 +83,7 @@ export const upsertTransaction = async ({
 					},
 					{
 						type: "income",
-						timestamp,
+						date,
 						userId,
 						categoryId: categoryTransactionIn,
 						walletId: formValues.toWallet,
@@ -103,7 +103,7 @@ export const upsertTransaction = async ({
 			// Create normal transaction
 			await db.insert(table.transaction).values({
 				type: formValues.type,
-				timestamp,
+				date,
 				userId,
 				categoryId: formValues.category,
 				walletId,
@@ -128,7 +128,7 @@ export const upsertTransaction = async ({
 			await db
 				.update(table.transaction)
 				.set({
-					timestamp,
+					date,
 					walletId: walletId,
 					cents: -cents,
 					description,
@@ -139,7 +139,7 @@ export const upsertTransaction = async ({
 			await db
 				.update(table.transaction)
 				.set({
-					timestamp,
+					date,
 					walletId: formValues.toWallet,
 					cents,
 					description,
@@ -150,7 +150,7 @@ export const upsertTransaction = async ({
 			await db
 				.update(table.transaction)
 				.set({
-					timestamp,
+					date,
 					categoryId: formValues.category,
 					walletId,
 					cents,
@@ -207,3 +207,81 @@ export const deleteTransaction = async ({
 
 	return { ok: true };
 };
+
+export const getDashboardTransactions = async ({
+	userId,
+	start,
+	end,
+}: {
+	userId: number;
+	start: string;
+	end: string;
+}) => {
+	const tableCategoryParent = alias(table.category, "parent");
+	const tableTransactionFrom = alias(table.transaction, "from");
+	const tableTransactionTo = alias(table.transaction, "to");
+
+	return db
+		.select({
+			id: table.transaction.id,
+			cents: table.transaction.cents,
+			type: table.transaction.type,
+			description: table.transaction.description,
+			date: table.transaction.date,
+			isTransference: table.transaction.isTransference,
+			wallet: {
+				id: table.wallet.id,
+				name: table.wallet.name,
+			},
+			category: {
+				id: table.category.id,
+				title: table.category.title,
+				iconName: table.category.iconName,
+			},
+			categoryParent: {
+				id: tableCategoryParent.id,
+				title: tableCategoryParent.title,
+			},
+			transferenceFrom: {
+				id: tableTransactionFrom.id,
+				walletId: tableTransactionFrom.walletId,
+			},
+			transferenceTo: {
+				id: tableTransactionTo.id,
+				walletId: tableTransactionTo.walletId,
+			},
+		})
+		.from(table.transaction)
+		.where(
+			and(
+				eq(table.transaction.userId, userId),
+				gte(table.transaction.date, start),
+				lte(table.transaction.date, end),
+				// category === -1 ? undefined : inArray(table.transaction.categoryId, categoryIds),
+				// wallet === -1 ? undefined : eq(table.transaction.walletId, wallet)
+			),
+		)
+		.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
+		.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
+		.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
+		.leftJoin(
+			table.transference,
+			or(
+				eq(table.transaction.id, table.transference.transactionOutId),
+				eq(table.transaction.id, table.transference.transactionInId),
+			),
+		)
+		.leftJoin(
+			tableTransactionFrom,
+			eq(table.transference.transactionOutId, tableTransactionFrom.id),
+		)
+		.leftJoin(
+			tableTransactionTo,
+			eq(table.transference.transactionInId, tableTransactionTo.id),
+		)
+		.orderBy(desc(table.transaction.date), desc(table.transaction.id));
+};
+
+export type DashboardTransaction = Awaited<
+	ReturnType<typeof getDashboardTransactions>
+>[number];

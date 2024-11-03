@@ -2,6 +2,7 @@ import { relations, sql, type SQL } from "drizzle-orm";
 import {
 	type AnyPgColumn,
 	boolean,
+	date,
 	foreignKey,
 	integer,
 	pgTable,
@@ -78,7 +79,7 @@ export const transaction = pgTable("transaction", {
 		.references(() => wallet.id)
 		.notNull(),
 	isTransference: boolean("is_transference").default(false).notNull(),
-	timestamp: timestamp("timestamp").notNull(),
+	date: date("date", { mode: "string" }).notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
