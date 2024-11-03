@@ -1,15 +1,14 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar";
 	import AppSidebar from "$lib/components/app-sidebar.svelte";
-	import "../app.css";
-	import { ModeWatcher } from "mode-watcher";
 	import ThemeToggle from "$lib/components/theme-toggle.svelte";
+	import * as Sidebar from "$lib/components/ui/sidebar";
 	import dayjs from "dayjs";
 	import localizedFormat from "dayjs/plugin/localizedFormat";
-
-	dayjs.extend(localizedFormat);
+	import { ModeWatcher } from "mode-watcher";
+	import "../app.css";
 
 	let { children, data } = $props();
+	dayjs.extend(localizedFormat);
 </script>
 
 <ModeWatcher />

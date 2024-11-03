@@ -1,16 +1,34 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
-	import { DateFormatter } from "@internationalized/date";
-	import { formatCurrency } from "$lib/currency";
-	import * as Table from "$lib/components/ui/table";
-	import { UpsertTransaction } from "$lib/components/upsert-transaction";
-	import * as Card from "$lib/components/ui/card";
+	import { goto } from "$app/navigation";
 	import { buttonVariants } from "$lib/components/ui/button";
-	import Trash from "lucide-svelte/icons/trash";
-	import Pencil from "lucide-svelte/icons/pencil";
+	import * as Card from "$lib/components/ui/card";
+	import * as Select from "$lib/components/ui/select";
+	import * as Table from "$lib/components/ui/table";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { UpsertTransaction } from "$lib/components/upsert-transaction";
+	import { formatCurrency } from "$lib/currency";
+	import { DateFormatter } from "@internationalized/date";
+	import Pencil from "lucide-svelte/icons/pencil";
+	import Trash from "lucide-svelte/icons/trash";
 
 	let { data } = $props();
+	let month = $state(String(data.month));
+
+	const monthOptions = [
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
+	].map((month, i) => ({ value: String(i + 1), label: month }));
 </script>
 
 {#snippet MoneyCard(label: string, value: number)}
@@ -31,7 +49,24 @@
 		{@render MoneyCard("Expense", data.totalExpense)}
 	</div>
 
-	<UpsertTransaction wallets={data.wallets} categories={data.categories} />
+	<div class="flex items-center gap-4">
+		<UpsertTransaction wallets={data.wallets} categories={data.categories} />
+
+		<Select.Root
+			type="single"
+			name="wallet"
+			bind:value={month}
+			onValueChange={(v) => goto(`/?month=${v}`)}
+		>
+			{@const selectedMonth = monthOptions.find((mo) => mo.value === month)!}
+			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
+			<Select.Content>
+				{#each monthOptions as option}
+					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	</div>
 
 	{#if data.transactions.length > 0}
 		<Table.Root>

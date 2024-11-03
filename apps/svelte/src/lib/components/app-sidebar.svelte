@@ -4,6 +4,7 @@
 	import House from "lucide-svelte/icons/house";
 	import Inbox from "lucide-svelte/icons/inbox";
 	import LogOut from "lucide-svelte/icons/log-out";
+	import { page } from "$app/stores";
 
 	// Menu items.
 	const items = [
@@ -34,7 +35,7 @@
 				<Sidebar.Menu>
 					{#each items as item (item.title)}
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton>
+							<Sidebar.MenuButton isActive={$page.route.id === item.url}>
 								{#snippet child({ props })}
 									<a href={item.url} {...props}>
 										<item.icon />

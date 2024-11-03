@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
-	import Trash from "lucide-svelte/icons/trash";
-	import Pencil from "lucide-svelte/icons/pencil";
 	import * as Card from "$lib/components/ui/card";
+	import Pencil from "lucide-svelte/icons/pencil";
+	import Trash from "lucide-svelte/icons/trash";
 
 	let { data } = $props();
 </script>

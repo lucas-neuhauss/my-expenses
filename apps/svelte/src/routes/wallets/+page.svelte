@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from "$lib/components/ui/card";
 	import { formatCurrency } from "$lib/currency";
+
 	let { data } = $props();
 </script>
 

@@ -15,13 +15,16 @@
 		getLocalTimeZone,
 	} from "@internationalized/date";
 	import CalendarIcon from "svelte-radix/Calendar.svelte";
+	import type { NestedCategories } from "$lib/utils/category";
 
 	let {
 		wallets,
 		categories,
+		tab,
 	}: {
 		wallets: { id: number; name: string }[];
-		categories: { id: number; title: string; iconName: string }[];
+		categories: NestedCategories;
+		tab: "expense" | "income";
 	} = $props();
 
 	const df = new DateFormatter("en-US", {
@@ -53,7 +56,7 @@
 	>
 		<input type="hidden" name="category" value={category.id} />
 		<input type="hidden" name="timestamp" value={date} />
-		<input type="hidden" name="type" value="expense" />
+		<input type="hidden" name="type" value={tab} />
 
 		<div>
 			<Label for="wallet" class="text-right">Wallet</Label>

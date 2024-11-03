@@ -12,6 +12,8 @@
 		wallets: Array<{ id: number; name: string }>;
 		categories: NestedCategories;
 	} = $props();
+
+	let tab = $state<"expense" | "income">("expense");
 </script>
 
 <Dialog.Root>
@@ -23,15 +25,25 @@
 			<Dialog.Title>Create Transaction</Dialog.Title>
 		</Dialog.Header>
 
-		<Tabs.Root value="expense">
+		<Tabs.Root bind:value={tab}>
 			<Tabs.List class="w-full [&_button]:w-full">
 				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
 				<Tabs.Trigger value="income">Income</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="expense">
-				<UpsertTransactionForm {categories} {wallets} />
+				<UpsertTransactionForm
+					categories={categories.filter((c) => c.type === "expense")}
+					{wallets}
+					{tab}
+				/>
 			</Tabs.Content>
-			<Tabs.Content value="income">TODO: Income</Tabs.Content>
+			<Tabs.Content value="income">
+				<UpsertTransactionForm
+					categories={categories.filter((c) => c.type === "income")}
+					{wallets}
+					{tab}
+				/>
+			</Tabs.Content>
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>

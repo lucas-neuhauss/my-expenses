@@ -14,28 +14,30 @@ export const load = async (event) => {
 	}
 	const userId = event.locals.user.id;
 
-	const url = new URL(event.request.url);
-	const searchParamsObj = Object.fromEntries(url.searchParams);
-	const currentMonth = new Date().getMonth();
+	const currentMonth = new Date().getMonth() + 1;
 	const currentYear = new Date().getFullYear();
+
 	const { month, year } = z
 		.object({
 			category: z.coerce.number().int().catch(-1),
 			wallet: z.coerce.number().int().catch(-1),
-			month: z.coerce.number().int().gte(0).lte(11).catch(currentMonth),
+			month: z.coerce.number().int().gte(1).lte(12).catch(currentMonth),
 			year: z.coerce.number().int().gte(1900).catch(currentYear),
 		})
-		.parse(searchParamsObj);
+		.parse({
+			month: event.url.searchParams.get("month"),
+			year: event.url.searchParams.get("year"),
+		});
 
 	const date = new Date();
 	date.setUTCFullYear(year);
-	date.setUTCMonth(month);
+	date.setUTCMonth(month - 1);
 	date.setUTCDate(1);
 	date.setUTCHours(0, 0, 0, 0);
 
 	const dateMonthLater = new Date();
-	dateMonthLater.setUTCFullYear(month === 11 ? year + 1 : year);
-	dateMonthLater.setUTCMonth(month === 11 ? 0 : month + 1);
+	dateMonthLater.setUTCFullYear(month === 12 ? year + 1 : year);
+	dateMonthLater.setUTCMonth(month === 12 ? 1 : month + 1);
 	dateMonthLater.setUTCDate(1);
 	dateMonthLater.setUTCHours(0, 0, 0, 0);
 
@@ -146,6 +148,7 @@ export const load = async (event) => {
 		transactions,
 		totalIncome,
 		totalExpense,
+		month,
 	};
 };
 

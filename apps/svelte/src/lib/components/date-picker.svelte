@@ -1,14 +1,14 @@
 <script lang="ts">
-	import CalendarIcon from "svelte-radix/Calendar.svelte";
+	import { buttonVariants } from "$lib/components/ui/button";
+	import { Calendar } from "$lib/components/ui/calendar";
+	import * as Popover from "$lib/components/ui/popover";
+	import { cn } from "$lib/utils.js";
 	import {
 		DateFormatter,
 		type DateValue,
 		getLocalTimeZone,
 	} from "@internationalized/date";
-	import { cn } from "$lib/utils.js";
-	import { buttonVariants } from "$lib/components/ui/button";
-	import { Calendar } from "$lib/components/ui/calendar";
-	import * as Popover from "$lib/components/ui/popover";
+	import CalendarIcon from "svelte-radix/Calendar.svelte";
 
 	const df = new DateFormatter("en-US", {
 		dateStyle: "long",
