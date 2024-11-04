@@ -10,7 +10,6 @@
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { cn } from "$lib/utils.js";
-	import type { NestedCategories } from "$lib/utils/category";
 	import {
 		CalendarDate,
 		DateFormatter,
@@ -23,13 +22,9 @@
 	let {
 		transaction,
 		wallets,
-		categories,
-		tab,
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
-		categories: NestedCategories;
-		tab: "expense" | "income";
 	} = $props();
 
 	const df = new DateFormatter("en-US", {
@@ -37,27 +32,25 @@
 	});
 
 	let id = $state(transaction ? String(transaction.id) : "new");
-	let calendarOpen = $state(false);
-	let wallet = $state(transaction?.wallet ?? wallets[0]);
-	let category = $state(transaction?.category ?? categories[0]);
-	let description = $state(transaction?.description ?? "");
+	let fromWalletId = $state(String(transaction?.wallet.id ?? wallets[0].id));
+	let toWalletId = $state(String(transaction?.transferenceTo?.walletId ?? wallets[1].id));
+	let description = $state("");
 	let date: CalendarDate | undefined = $state(
 		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
 	);
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
+	let calendarOpen = $state(false);
 
-	const onWalletChange = (id: string) => {
-		const selectedWallet = wallets.find((w) => String(w.id) === id);
-		if (selectedWallet) {
-			wallet = selectedWallet;
-		}
-	};
-	const onCategoryChange = (id: string) => {
-		const selectedCategory = categories.find((c) => String(c.id) === id);
-		if (selectedCategory) {
-			category = selectedCategory;
-		}
-	};
+	$effect(() => {
+		console.log({
+			fromWalletId,
+			toWalletId,
+			wallets,
+			transaction,
+		});
+	});
+	let fromWallet = $derived(wallets.find((w) => String(w.id) === fromWalletId)!);
+	let toWallet = $derived(wallets.find((w) => String(w.id) === toWalletId)!);
 </script>
 
 <form method="post" action="?/upsert-transaction" use:enhance>
@@ -65,53 +58,40 @@
 		class="flex flex-col gap-4 py-4 [&>div]:grid [&>div]:grid-cols-4 [&>div]:items-center [&>div]:justify-items-end [&>div]:gap-4"
 	>
 		<input type="hidden" name="id" value={id} />
-		<input type="hidden" name="category" value={category.id} />
+		<input type="hidden" name="type" value="transference" />
 		<input type="hidden" name="date" value={date} />
-		<input type="hidden" name="type" value={tab} />
 
 		<div>
-			<Label for="wallet" class="text-right">Wallet</Label>
+			<Label for="fromWallet" class="text-right">From Wallet</Label>
 			<Select.Root
 				type="single"
 				name="wallet"
-				value={String(wallet.id)}
-				onValueChange={onWalletChange}
+				bind:value={fromWalletId}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3">{wallet.name}</Select.Trigger>
+				<Select.Trigger class="col-span-3">{fromWallet?.name}</Select.Trigger>
 				<Select.Content>
 					{#each wallets as wallet}
-						<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
+						<Select.Item value={String(wallet.id)}>
+							{wallet.name}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
 		</div>
 
 		<div>
-			<Label class="text-rigth">Category</Label>
+			<Label for="toWallet" class="text-right">To Wallet</Label>
 			<Select.Root
 				type="single"
-				name="category"
-				value={String(category.id)}
-				onValueChange={onCategoryChange}
+				name="toWallet"
+				bind:value={toWalletId}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3">
-					<div class="flex items-center gap-x-2">
-						<img
-							src={`/images/category/${category.iconName}`}
-							alt="category icon"
-							width="16"
-							height="16"
-						/>
-						<span>{category.name}</span>
-					</div>
-				</Select.Trigger>
+				<Select.Trigger class="col-span-3">{toWallet?.name}</Select.Trigger>
 				<Select.Content>
-					{#each categories as category}
-						<Select.Item value={String(category.id)}>
-							{category.name}
-						</Select.Item>
+					{#each wallets as wallet}
+						<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

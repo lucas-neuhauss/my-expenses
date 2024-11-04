@@ -6,6 +6,7 @@
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import type { NestedCategories } from "$lib/utils/category";
 	import UpsertTransactionForm from "./upsert-transaction-form.svelte";
+	import UpsertTransactionTransference from "./upsert-transaction-transference.svelte";
 
 	let {
 		wallets,
@@ -57,6 +58,9 @@
 			<Tabs.List class="w-full [&_button]:w-full">
 				<Tabs.Trigger value="expense" disabled={tabsDisabled}>Expense</Tabs.Trigger>
 				<Tabs.Trigger value="income" disabled={tabsDisabled}>Income</Tabs.Trigger>
+				<Tabs.Trigger value="transference" disabled={tabsDisabled || wallets.length < 2}>
+					Transference
+				</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="expense">
 				<UpsertTransactionForm
@@ -73,6 +77,9 @@
 					{wallets}
 					{tab}
 				/>
+			</Tabs.Content>
+			<Tabs.Content value="transference">
+				<UpsertTransactionTransference {transaction} {wallets} />
 			</Tabs.Content>
 		</Tabs.Root>
 	</Dialog.Content>
