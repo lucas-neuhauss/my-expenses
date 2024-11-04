@@ -10,7 +10,7 @@ export async function getNestedCategories(
 	const categories = await db
 		.select({
 			id: table.category.id,
-			title: table.category.title,
+			name: table.category.name,
 			type: table.category.type,
 			parentId: table.category.parentId,
 			iconName: table.category.iconName,
@@ -23,7 +23,7 @@ export async function getNestedCategories(
 				type ? eq(table.category.type, type) : undefined,
 			),
 		)
-		.orderBy(desc(table.category.parentId), table.category.title);
+		.orderBy(desc(table.category.parentId), table.category.name);
 
 	const nestedCategories = categories.reduce<NestedCategories>((acc, category) => {
 		if (category.parentId === null) {

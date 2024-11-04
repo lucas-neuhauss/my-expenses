@@ -235,12 +235,12 @@ export const getDashboardTransactions = async ({
 			},
 			category: {
 				id: table.category.id,
-				title: table.category.title,
+				name: table.category.name,
 				iconName: table.category.iconName,
 			},
 			categoryParent: {
 				id: tableCategoryParent.id,
-				title: tableCategoryParent.title,
+				name: tableCategoryParent.name,
 			},
 			transferenceFrom: {
 				id: tableTransactionFrom.id,

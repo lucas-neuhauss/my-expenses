@@ -3,8 +3,8 @@ import type { Transaction } from "$lib/server/db/schema";
 export function calculateDashboardData(
 	transactions: Array<
 		Pick<Transaction, "id" | "type" | "cents" | "isTransference" | "date"> & {
-			category: { id: number; title: string };
-			categoryParent: { id: number; title: string } | null;
+			category: { id: number; name: string };
+			categoryParent: { id: number; name: string } | null;
 		}
 	>,
 ): {

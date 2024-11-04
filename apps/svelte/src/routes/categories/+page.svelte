@@ -19,7 +19,7 @@
 							width="20"
 							height="20"
 						/>
-						<p>{category.title}</p>
+						<p>{category.name}</p>
 					</div>
 				</div>
 				<div>

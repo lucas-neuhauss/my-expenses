@@ -1,18 +1,17 @@
 <script lang="ts">
-	import { enhance } from "$app/forms";
 	import { goto } from "$app/navigation";
-	import { buttonVariants } from "$lib/components/ui/button";
+	import { page } from "$app/stores";
+	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
+	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Select from "$lib/components/ui/select";
 	import * as Table from "$lib/components/ui/table";
-	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
+	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { DateFormatter } from "@internationalized/date";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
-	import { page } from "$app/stores";
-	import type { DashboardTransaction } from "$lib/server/data/transaction";
 
 	let { data } = $props();
 	let transaction = $state<DashboardTransaction | null>(null);
@@ -38,14 +37,29 @@
 		value: String(new Date().getFullYear() - i),
 	}));
 
+	const currentYear = String(new Date().getFullYear());
+	const currentMonth = String(new Date().getMonth() + 1);
 	const onMonthChanged = (m: string) => {
 		const url = new URL($page.url.href);
-		url.searchParams.set("month", m);
+		if (year === currentYear && month === currentMonth) {
+			url.searchParams.delete("month");
+			url.searchParams.delete("year");
+		} else {
+			url.searchParams.set("month", m);
+		}
 		goto(url.href);
 	};
 	const onYearChanged = (y: string) => {
 		const url = new URL($page.url.href);
-		url.searchParams.set("year", y);
+		if (year === currentYear) {
+			url.searchParams.delete("year");
+			if (month === currentMonth) {
+				url.searchParams.delete("month");
+			}
+		} else {
+			url.searchParams.set("month", month);
+			url.searchParams.set("year", y);
+		}
 		goto(url.href);
 	};
 </script>
@@ -139,51 +153,43 @@
 									height="15"
 								/>
 							</div>
-							{t.category.title}
+							{t.category.name}
 						</Table.Cell>
 						<Table.Cell>
 							{t.wallet.name}
 						</Table.Cell>
 						<Table.Cell>{formatCurrency(t.cents)}</Table.Cell>
-						<Table.Cell>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									aria-label="Edit transaction"
-									onclick={() => (transaction = t)}
-									class={buttonVariants({
-										variant: "secondary",
-										class: "size-8 p-0 [&_svg]:size-3.5",
-									})}
-								>
-									<Pencil />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>Edit transaction</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-
-							<form
-								use:enhance
-								action={`?/delete-transaction&id=${t.id}`}
-								method="post"
-								class="inline-flex"
+						<Table.Cell class="flex items-center gap-2">
+							<Button
+								title="Edit transaction"
+								aria-label="Edit transaction"
+								variant="ghost"
+								class="size-8 p-0 [&_svg]:size-3.5"
+								onclick={() => (transaction = t)}
 							>
-								<Tooltip.Root>
-									<Tooltip.Trigger
-										type="submit"
-										aria-label="Delete transaction"
-										class={buttonVariants({
-											variant: "ghost",
-											class: "size-8 p-0 [&_svg]:size-3.5",
-										})}
+								<Pencil />
+							</Button>
+
+							<ConfirmDialog
+								title="Are you sure?"
+								description="Are you sure you want to delete this transaction?"
+								formProps={{
+									action: `?/delete-transaction&id=${t.id}`,
+									method: "post",
+								}}
+							>
+								{#snippet triggerChild({ props })}
+									<Button
+										title="Delete transaction"
+										aria-label="delete transaction"
+										variant="ghost"
+										class="size-8 p-0 [&_svg]:size-3.5"
+										{...props}
 									>
 										<Trash />
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>Delete transaction</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</form>
+									</Button>
+								{/snippet}
+							</ConfirmDialog>
 						</Table.Cell>
 					</Table.Row>
 				{/each}

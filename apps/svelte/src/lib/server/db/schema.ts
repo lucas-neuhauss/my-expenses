@@ -52,7 +52,7 @@ export const wallet = pgTable("wallet", {
 	userId: integer("user_id")
 		.references(() => user.id)
 		.notNull(),
-	name: varchar("name", { length: 256 }).notNull(),
+	name: varchar("name", { length: 255 }).notNull(),
 	initialBalance: integer("initial_balance").default(0).notNull(),
 });
 
@@ -136,7 +136,7 @@ export const category = pgTable(
 	"category",
 	{
 		id: serial("id").primaryKey(),
-		title: varchar("title", { length: 256 }).notNull(),
+		name: varchar("name", { length: 255 }).notNull(),
 		type: text("type", { enum: ["income", "expense"] }).notNull(),
 		userId: integer("user_id").references(() => user.id),
 		parentId: integer("parent_id"),

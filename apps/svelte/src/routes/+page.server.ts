@@ -97,7 +97,7 @@ export const actions = {
 		}
 
 		const formData = await event.request.formData();
-		await upsertTransaction({
+		return upsertTransaction({
 			userId: user.id,
 			formData,
 		});

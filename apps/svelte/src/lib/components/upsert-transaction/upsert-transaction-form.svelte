@@ -1,24 +1,24 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
-	import { Calendar } from "$lib/components/ui/calendar";
-	import { cn } from "$lib/utils.js";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
+	import { Calendar } from "$lib/components/ui/calendar";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
-	import * as Select from "$lib/components/ui/select";
 	import * as Popover from "$lib/components/ui/popover";
+	import * as Select from "$lib/components/ui/select";
 	import { Textarea } from "$lib/components/ui/textarea";
+	import type { DashboardTransaction } from "$lib/server/data/transaction";
+	import { cn } from "$lib/utils.js";
+	import type { NestedCategories } from "$lib/utils/category";
 	import {
 		CalendarDate,
 		DateFormatter,
 		getLocalTimeZone,
-		today,
 		parseDate,
+		today,
 	} from "@internationalized/date";
 	import CalendarIcon from "svelte-radix/Calendar.svelte";
-	import type { NestedCategories } from "$lib/utils/category";
-	import type { DashboardTransaction } from "$lib/server/data/transaction";
 
 	let {
 		transaction,
@@ -102,12 +102,14 @@
 							width="16"
 							height="16"
 						/>
-						<span> {category.title}</span>
+						<span>{category.name}</span>
 					</div>
 				</Select.Trigger>
 				<Select.Content>
 					{#each categories as category}
-						<Select.Item value={String(category.id)}>{category.title}</Select.Item>
+						<Select.Item value={String(category.id)}>
+							{category.name}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
