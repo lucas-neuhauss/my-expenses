@@ -1,6 +1,7 @@
+import { upsertWallet } from "$lib/server/data/wallet";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import { redirect } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { eq, sql } from "drizzle-orm";
 
 export const load = async (event) => {
@@ -23,4 +24,19 @@ export const load = async (event) => {
 		.groupBy(table.transaction.userId, table.wallet.id);
 
 	return { wallets };
+};
+
+export const actions = {
+	"upsert-wallet": async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return fail(401);
+		}
+
+		const formData = await event.request.formData();
+		return upsertWallet({
+			userId: user.id,
+			formData,
+		});
+	},
 };

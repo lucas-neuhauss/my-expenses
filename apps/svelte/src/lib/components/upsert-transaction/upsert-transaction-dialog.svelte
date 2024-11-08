@@ -63,23 +63,35 @@
 				</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="expense">
-				<UpsertTransactionForm
-					{transaction}
-					categories={categories.filter((c) => c.type === "expense")}
-					{wallets}
-					{tab}
-				/>
+				{#snippet child({ props })}
+					<div {...props} tabindex="-1">
+						<UpsertTransactionForm
+							{transaction}
+							categories={categories.filter((c) => c.type === "expense")}
+							{wallets}
+							{tab}
+						/>
+					</div>
+				{/snippet}
 			</Tabs.Content>
 			<Tabs.Content value="income">
-				<UpsertTransactionForm
-					{transaction}
-					categories={categories.filter((c) => c.type === "income")}
-					{wallets}
-					{tab}
-				/>
+				{#snippet child({ props })}
+					<div {...props} tabindex="-1">
+						<UpsertTransactionForm
+							{transaction}
+							categories={categories.filter((c) => c.type === "income")}
+							{wallets}
+							{tab}
+						/>
+					</div>
+				{/snippet}
 			</Tabs.Content>
 			<Tabs.Content value="transference">
-				<UpsertTransactionTransference {transaction} {wallets} />
+				{#snippet child({ props })}
+					<div {...props} tabindex="-1">
+						<UpsertTransactionTransference {transaction} {wallets} />
+					</div>
+				{/snippet}
 			</Tabs.Content>
 		</Tabs.Root>
 	</Dialog.Content>

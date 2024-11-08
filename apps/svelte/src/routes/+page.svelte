@@ -64,6 +64,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Home - My Expenses</title>
+</svelte:head>
+
 {#snippet MoneyCard(label: string, value: number)}
 	<Card.Root class="w-[200px]">
 		<Card.Header class="p-5 pb-0">

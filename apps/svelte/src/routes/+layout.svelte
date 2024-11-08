@@ -11,6 +11,10 @@
 	dayjs.extend(localizedFormat);
 </script>
 
+<svelte:head>
+	<title>My Expenses</title>
+</svelte:head>
+
 <ModeWatcher />
 
 {#if data.user}

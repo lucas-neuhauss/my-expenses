@@ -62,7 +62,7 @@
 
 <form method="post" action="?/upsert-transaction" use:enhance>
 	<div
-		class="flex flex-col gap-4 py-4 [&>div]:grid [&>div]:grid-cols-4 [&>div]:items-center [&>div]:justify-items-end [&>div]:gap-4"
+		class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 	>
 		<input type="hidden" name="id" value={id} />
 		<input type="hidden" name="category" value={category.id} />
@@ -70,7 +70,7 @@
 		<input type="hidden" name="type" value={tab} />
 
 		<div>
-			<Label for="wallet" class="text-right">Wallet</Label>
+			<Label>Wallet</Label>
 			<Select.Root
 				type="single"
 				name="wallet"
@@ -88,7 +88,7 @@
 		</div>
 
 		<div>
-			<Label class="text-rigth">Category</Label>
+			<Label>Category</Label>
 			<Select.Root
 				type="single"
 				name="category"
@@ -118,7 +118,7 @@
 		</div>
 
 		<div>
-			<Label for="description" class="text-right">Description</Label>
+			<Label for="description">Description</Label>
 			<Textarea
 				id="description"
 				class="col-span-3"
@@ -128,7 +128,7 @@
 		</div>
 
 		<div>
-			<Label class="text-right">Date</Label>
+			<Label>Date</Label>
 			<Popover.Root bind:open={calendarOpen}>
 				<Popover.Trigger
 					class={cn(
@@ -153,7 +153,7 @@
 		</div>
 
 		<div>
-			<Label for="cents" class="text-right">Cents</Label>
+			<Label for="cents">Value</Label>
 			<Input
 				required
 				id="cents"

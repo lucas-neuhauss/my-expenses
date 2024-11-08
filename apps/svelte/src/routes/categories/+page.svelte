@@ -1,13 +1,22 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
+	import { UpsertCategory } from "$lib/components/upsert-category";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 
 	let { data } = $props();
 </script>
 
+<svelte:head>
+	<title>Categories - My Expenses</title>
+</svelte:head>
+
 <div class="container flex flex-col gap-y-4">
+	<div>
+		<UpsertCategory />
+	</div>
+
 	{#each data.nestedCategories as category}
 		<Card.Root class="w-full">
 			<Card.Content class="flex items-center justify-between p-5 pt-3">
