@@ -1,5 +1,6 @@
-import { getNestedCategories } from "$lib/server/data/category";
-import { redirect } from "@sveltejs/kit";
+import { deleteCategory, getNestedCategories } from "$lib/server/data/category";
+import { fail, redirect } from "@sveltejs/kit";
+import { z } from "zod";
 
 export const load = async (event) => {
 	const user = event.locals.user;
@@ -11,4 +12,20 @@ export const load = async (event) => {
 	return {
 		nestedCategories,
 	};
+};
+
+export const actions = {
+	"delete-category": async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return fail(401);
+		}
+
+		const searchParams = event.url.searchParams;
+		const categoryId = z.coerce.number().int().min(1).parse(searchParams.get("id"));
+		return deleteCategory({
+			userId: user.id,
+			categoryId,
+		});
+	},
 };

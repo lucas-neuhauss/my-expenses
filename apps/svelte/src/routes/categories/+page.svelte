@@ -1,11 +1,19 @@
 <script lang="ts">
+	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import { UpsertCategory } from "$lib/components/upsert-category";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
+	import { toast } from "svelte-sonner";
 
-	let { data } = $props();
+	let { data, form } = $props();
+
+	$effect(() => {
+		if (!!form && !form.ok) {
+			toast.error(form.message ?? "Something went wrong");
+		}
+	});
 </script>
 
 <svelte:head>
@@ -35,9 +43,26 @@
 					<Button size="icon" variant="ghost">
 						<Pencil />
 					</Button>
-					<Button size="icon" variant="ghost">
-						<Trash />
-					</Button>
+					<ConfirmDialog
+						title="Are you sure?"
+						description="Are you sure you want to delete this category?"
+						formProps={{
+							action: `?/delete-category&id=${category.id}`,
+							method: "post",
+						}}
+					>
+						{#snippet triggerChild({ props })}
+							<Button
+								title="Delete category"
+								aria-label="delete category"
+								variant="ghost"
+								class="size-8 p-0 [&_svg]:size-3.5"
+								{...props}
+							>
+								<Trash />
+							</Button>
+						{/snippet}
+					</ConfirmDialog>
 				</div>
 			</Card.Content>
 		</Card.Root>

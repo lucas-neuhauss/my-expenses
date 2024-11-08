@@ -23,9 +23,6 @@ importers:
       drizzle-orm:
         specifier: ^0.33.0
         version: 0.33.0(@types/react@18.3.12)(postgres@3.4.5)(react@18.3.1)
-      mode-watcher:
-        specifier: ^0.4.1
-        version: 0.4.1(svelte@5.1.2)
       postgres:
         specifier: ^3.4.4
         version: 3.4.5
@@ -123,6 +120,9 @@ importers:
       lucide-svelte:
         specifier: ^0.453.0
         version: 0.453.0(svelte@5.1.2)
+      mode-watcher:
+        specifier: ^0.4.1
+        version: 0.4.1(svelte@5.1.2)
       prettier:
         specifier: ^3.3.2
         version: 3.3.3
@@ -147,6 +147,9 @@ importers:
       svelte-radix:
         specifier: ^2.0.1
         version: 2.0.1(svelte@5.1.2)
+      svelte-sonner:
+        specifier: ^0.3.28
+        version: 0.3.28(svelte@5.1.2)
       tailwind-merge:
         specifier: ^2.5.4
         version: 2.5.4
@@ -4878,6 +4881,11 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=7.0.0'}
     peerDependencies:
       svelte: ^5.0.0
+
+  svelte-sonner@0.3.28:
+    resolution: {integrity: sha512-K3AmlySeFifF/cKgsYNv5uXqMVNln0NBAacOYgmkQStLa/UoU0LhfAACU6Gr+YYC8bOCHdVmFNoKuDbMEsppJg==}
+    peerDependencies:
+      svelte: ^3.0.0 || ^4.0.0 || ^5.0.0-next.1
 
   svelte-toolbelt@0.4.4:
     resolution: {integrity: sha512-sNSJ4zUUVpou/p7O2IagMGfSPKHwqsOCYvDceFEMoPmkRXlNDvRethDDAzYM8hO3ayYpdEAPG4H8wsD385hspw==}
@@ -10796,6 +10804,10 @@ snapshots:
       typescript: 5.6.3
 
   svelte-radix@2.0.1(svelte@5.1.2):
+    dependencies:
+      svelte: 5.1.2
+
+  svelte-sonner@0.3.28(svelte@5.1.2):
     dependencies:
       svelte: 5.1.2
 

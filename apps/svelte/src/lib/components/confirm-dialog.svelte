@@ -3,6 +3,7 @@
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import type { Snippet } from "svelte";
 	import type { HTMLFormAttributes } from "svelte/elements";
+	import { page } from "$app/stores";
 
 	let {
 		title,
@@ -15,9 +16,18 @@
 		triggerChild: Snippet<[any]>;
 		formProps?: HTMLFormAttributes;
 	} = $props();
+
+	let open = $state(false);
+
+	// Close the alert on any action
+	$effect(() => {
+		if ($page.form) {
+			open = false;
+		}
+	});
 </script>
 
-<AlertDialog.Root>
+<AlertDialog.Root bind:open>
 	<AlertDialog.Trigger>
 		{#snippet child({ props })}
 			{@render triggerChild({ props })}

@@ -5,6 +5,7 @@
 	import dayjs from "dayjs";
 	import localizedFormat from "dayjs/plugin/localizedFormat";
 	import { ModeWatcher } from "mode-watcher";
+	import { Toaster } from "$lib/components/ui/sonner";
 	import "../app.css";
 
 	let { children, data } = $props();
@@ -17,6 +18,7 @@
 
 <ModeWatcher />
 
+<Toaster />
 {#if data.user}
 	<Sidebar.Provider>
 		<AppSidebar />
