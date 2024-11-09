@@ -88,9 +88,11 @@
 			</Tabs.Content>
 			<Tabs.Content value="transference">
 				{#snippet child({ props })}
-					<div {...props} tabindex="-1">
-						<UpsertTransactionTransference {transaction} {wallets} />
-					</div>
+					{#if wallets.length >= 2}
+						<div {...props} tabindex="-1">
+							<UpsertTransactionTransference {transaction} {wallets} />
+						</div>
+					{/if}
 				{/snippet}
 			</Tabs.Content>
 		</Tabs.Root>

@@ -4,7 +4,7 @@ import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { hash, verify } from "@node-rs/argon2";
 import { fail, redirect } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -30,12 +30,12 @@ export const actions: Actions = {
 
 		const results = await db.select().from(table.user).where(eq(table.user.email, email));
 
-		const existingUser = results.at(0);
-		if (!existingUser) {
+		const user = results.at(0);
+		if (!user) {
 			return fail(400, { message: "Incorrect username or password" });
 		}
 
-		const validPassword = await verify(existingUser.passwordHash, password, {
+		const validPassword = await verify(user.passwordHash, password, {
 			memoryCost: 19456,
 			timeCost: 2,
 			outputLen: 32,
@@ -45,7 +45,7 @@ export const actions: Actions = {
 			return fail(400, { message: "Incorrect username or password" });
 		}
 
-		const session = await auth.createSession(existingUser.id);
+		const session = await auth.createSession(user.id);
 		event.cookies.set(auth.sessionCookieName, session.id, {
 			path: "/",
 			sameSite: "lax",
@@ -53,6 +53,62 @@ export const actions: Actions = {
 			expires: session.expiresAt,
 			secure: !dev,
 		});
+
+		// Create one wallet for the user if there are none
+		const walletCount = (
+			await db
+				.select({ count: count() })
+				.from(table.wallet)
+				.where(eq(table.wallet.userId, user.id))
+		)[0].count;
+		if (walletCount === 0) {
+			await db.insert(table.wallet).values({
+				userId: user.id,
+				name: "Bank",
+			});
+		}
+
+		// Create an income and an expense category for the user
+		const categoryCount = (
+			await db
+				.select({ count: count() })
+				.from(table.category)
+				.where(eq(table.category.userId, user.id))
+		)[0].count;
+		if (categoryCount < 4) {
+			await db.insert(table.category).values([
+				{
+					name: "House",
+					userId: user.id,
+					type: "expense",
+					iconName: "house.png",
+				},
+				{
+					name: "Salary",
+					userId: user.id,
+					type: "income",
+					iconName: "dollar-coin.png",
+				},
+			]);
+
+			// Create unique categories for user
+			await db.insert(table.category).values([
+				{
+					name: "_TRANSACTION-IN",
+					type: "income",
+					userId: user.id,
+					unique: "transaction_in",
+					iconName: "bill.png",
+				},
+				{
+					name: "_TRANSACTION-OUT",
+					type: "expense",
+					userId: user.id,
+					unique: "transaction_out",
+					iconName: "bill.png",
+				},
+			]);
+		}
 
 		return redirect(302, "/");
 	},
