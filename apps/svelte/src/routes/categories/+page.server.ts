@@ -1,5 +1,5 @@
 import { deleteCategory, getNestedCategories } from "$lib/server/data/category";
-import { fail, redirect } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { z } from "zod";
 
 export const load = async (event) => {
@@ -18,7 +18,7 @@ export const actions = {
 	"delete-category": async (event) => {
 		const user = event.locals.user;
 		if (!user) {
-			return fail(401);
+			return error(401);
 		}
 
 		const searchParams = event.url.searchParams;

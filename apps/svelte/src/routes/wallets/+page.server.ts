@@ -1,5 +1,6 @@
-import { loadWallets, upsertWallet } from "$lib/server/data/wallet";
-import { fail, redirect } from "@sveltejs/kit";
+import { deleteWallet, loadWallets, upsertWallet } from "$lib/server/data/wallet";
+import { error, redirect } from "@sveltejs/kit";
+import { z } from "zod";
 
 export const load = async (event) => {
 	if (!event.locals.user) {
@@ -15,7 +16,7 @@ export const actions = {
 	"upsert-wallet": async (event) => {
 		const user = event.locals.user;
 		if (!user) {
-			return fail(401);
+			return error(401);
 		}
 
 		const formData = await event.request.formData();
@@ -23,5 +24,15 @@ export const actions = {
 			userId: user.id,
 			formData,
 		});
+	},
+	"delete-wallet": async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return error(401);
+		}
+
+		const searchParams = event.url.searchParams;
+		const id = z.coerce.number().int().min(1).parse(searchParams.get("id"));
+		return deleteWallet({ userId: user.id, id });
 	},
 };
