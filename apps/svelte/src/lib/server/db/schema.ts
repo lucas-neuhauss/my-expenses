@@ -164,3 +164,4 @@ export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
 export type Transaction = typeof transaction.$inferSelect;
 export type Category = typeof category.$inferSelect;
+export type Wallet = typeof wallet.$inferSelect;
