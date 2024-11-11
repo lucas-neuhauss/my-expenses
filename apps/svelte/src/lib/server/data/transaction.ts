@@ -210,10 +210,12 @@ export const deleteTransaction = async ({
 
 export const getDashboardTransactions = async ({
 	userId,
+	wallet,
 	start,
 	end,
 }: {
 	userId: number;
+	wallet: number;
 	start: string;
 	end: string;
 }) => {
@@ -258,7 +260,7 @@ export const getDashboardTransactions = async ({
 				gte(table.transaction.date, start),
 				lte(table.transaction.date, end),
 				// category === -1 ? undefined : inArray(table.transaction.categoryId, categoryIds),
-				// wallet === -1 ? undefined : eq(table.transaction.walletId, wallet)
+				wallet === -1 ? undefined : eq(table.transaction.walletId, wallet),
 			),
 		)
 		.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))

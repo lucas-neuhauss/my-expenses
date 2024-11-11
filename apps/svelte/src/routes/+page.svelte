@@ -15,6 +15,7 @@
 
 	let { data } = $props();
 	let transaction = $state<DashboardTransaction | null>(null);
+	let wallet = $state(String(data.wallet));
 	let month = $state(String(data.month));
 	let year = $state(String(data.year));
 
@@ -36,9 +37,19 @@
 		label: String(new Date().getFullYear() - i),
 		value: String(new Date().getFullYear() - i),
 	}));
-
 	const currentYear = String(new Date().getFullYear());
 	const currentMonth = String(new Date().getMonth() + 1);
+
+	const onWalletChange = (id: string) => {
+		const url = new URL($page.url.href);
+
+		if (id === "-1") {
+			url.searchParams.delete("wallet");
+		} else {
+			url.searchParams.set("wallet", id);
+		}
+		goto(url.href);
+	};
 	const onMonthChanged = (m: string) => {
 		const url = new URL($page.url.href);
 		if (year === currentYear && month === currentMonth) {
@@ -93,6 +104,23 @@
 			categories={data.categories}
 			onClose={() => (transaction = null)}
 		/>
+
+		<Select.Root
+			type="single"
+			name="wallet"
+			bind:value={wallet}
+			onValueChange={onWalletChange}
+			allowDeselect={false}
+		>
+			{@const walletOptions = [{ id: -1, name: "All options" }, ...data.wallets]}
+			{@const selectedWallet = walletOptions.find((w) => String(w.id) === wallet)!}
+			<Select.Trigger class="col-span-3 w-[115px]">{selectedWallet.name}</Select.Trigger>
+			<Select.Content>
+				{#each walletOptions as w}
+					<Select.Item value={String(w.id)}>{w.name}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 
 		<Select.Root
 			type="single"

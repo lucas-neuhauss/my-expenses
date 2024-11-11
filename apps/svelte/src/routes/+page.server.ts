@@ -12,6 +12,8 @@ import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
 import { z } from "zod";
 
+const IntSearchParamSchema = z.string().pipe(z.coerce.number().int());
+
 export const load = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, "/login");
@@ -21,14 +23,15 @@ export const load = async (event) => {
 	const currentMonth = new Date().getMonth() + 1;
 	const currentYear = new Date().getFullYear();
 
-	const { month, year } = z
+	const { wallet, month, year } = z
 		.object({
-			category: z.coerce.number().int().catch(-1),
-			wallet: z.coerce.number().int().catch(-1),
+			category: IntSearchParamSchema.catch(-1),
+			wallet: IntSearchParamSchema.catch(-1),
 			month: z.coerce.number().int().gte(1).lte(12).catch(currentMonth),
 			year: z.coerce.number().int().gte(1900).catch(currentYear),
 		})
 		.parse({
+			wallet: event.url.searchParams.get("wallet"),
 			month: event.url.searchParams.get("month"),
 			year: event.url.searchParams.get("year"),
 		});
@@ -37,7 +40,8 @@ export const load = async (event) => {
 	const dateMonthLater = new CalendarDate(year, month, 1).set({ day: 100 });
 
 	const transactionsPromise = getDashboardTransactions({
-		userId: userId,
+		userId,
+		wallet,
 		start: date.toString(),
 		end: dateMonthLater.toString(),
 	});
@@ -79,6 +83,7 @@ export const load = async (event) => {
 
 	return {
 		categories,
+		wallet,
 		wallets,
 		balance: balance + wallets.reduce((acc, w) => acc + w.initialBalance, 0),
 		transactions,
