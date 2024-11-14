@@ -41,14 +41,6 @@
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
 	let calendarOpen = $state(false);
 
-	$effect(() => {
-		console.log({
-			fromWalletId,
-			toWalletId,
-			wallets,
-			transaction,
-		});
-	});
 	let fromWallet = $derived(wallets.find((w) => String(w.id) === fromWalletId)!);
 	let toWallet = $derived(wallets.find((w) => String(w.id) === toWalletId)!);
 </script>
