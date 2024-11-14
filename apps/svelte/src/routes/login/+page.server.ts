@@ -81,13 +81,13 @@ export const actions: Actions = {
 					name: "House",
 					userId: user.id,
 					type: "expense",
-					iconName: "house.png",
+					icon: "house.png",
 				},
 				{
 					name: "Salary",
 					userId: user.id,
 					type: "income",
-					iconName: "dollar-coin.png",
+					icon: "dollar-coin.png",
 				},
 			]);
 
@@ -98,14 +98,14 @@ export const actions: Actions = {
 					type: "income",
 					userId: user.id,
 					unique: "transaction_in",
-					iconName: "bill.png",
+					icon: "bill.png",
 				},
 				{
 					name: "_TRANSACTION-OUT",
 					type: "expense",
 					userId: user.id,
 					unique: "transaction_out",
-					iconName: "bill.png",
+					icon: "bill.png",
 				},
 			]);
 		}

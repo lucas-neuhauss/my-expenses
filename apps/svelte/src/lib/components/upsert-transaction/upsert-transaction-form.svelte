@@ -99,7 +99,7 @@
 				<Select.Trigger class="col-span-3">
 					<div class="flex items-center gap-x-2">
 						<img
-							src={`/images/category/${category.iconName}`}
+							src={`/images/category/${category.icon}`}
 							alt="category icon"
 							width="16"
 							height="16"

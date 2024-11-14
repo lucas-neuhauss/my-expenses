@@ -28,16 +28,32 @@
 	{#each data.nestedCategories as category}
 		<Card.Root class="w-full">
 			<Card.Content class="flex items-center justify-between p-5 pt-3">
-				<div class="flex flex-col items-center justify-between">
-					<div class="flex items-center gap-x-3">
-						<img
-							alt="category icon"
-							src={`/images/category/${category.iconName}`}
-							width="20"
-							height="20"
-						/>
+				<div class="flex flex-col items-start justify-between gap-3">
+					<div class="mt-0.5 flex items-center justify-start gap-x-3">
+						<div class="flex size-9 items-center justify-center rounded-full bg-gray-800">
+							<img
+								alt="category icon"
+								src={`/images/category/${category.icon}`}
+								class="size-5"
+							/>
+						</div>
 						<p>{category.name}</p>
 					</div>
+
+					{#if category.children.length > 0}
+						<div class="flex gap-2">
+							{#each category.children as subcategory}
+								<div class="flex items-center gap-1.5 rounded border px-2 py-1">
+									<img
+										alt="subcategory icon"
+										src={`/images/category/${subcategory.icon}`}
+										class="size-3"
+									/>
+									<span class="text-sm">{subcategory.name}</span>
+								</div>
+							{/each}
+						</div>
+					{/if}
 				</div>
 				<div>
 					<Button size="icon" variant="ghost">

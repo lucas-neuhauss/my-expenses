@@ -238,7 +238,7 @@ export const getDashboardTransactions = async ({
 			category: {
 				id: table.category.id,
 				name: table.category.name,
-				iconName: table.category.iconName,
+				icon: table.category.icon,
 			},
 			categoryParent: {
 				id: tableCategoryParent.id,

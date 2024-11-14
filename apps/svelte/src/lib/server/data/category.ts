@@ -1,9 +1,11 @@
+import { CATEGORY_ICON_LIST } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { NestedCategories } from "$lib/utils/category";
 import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { z } from "zod";
 
 export async function getNestedCategories(
 	userId: number,
@@ -15,7 +17,7 @@ export async function getNestedCategories(
 			name: table.category.name,
 			type: table.category.type,
 			parentId: table.category.parentId,
-			iconName: table.category.iconName,
+			icon: table.category.icon,
 		})
 		.from(table.category)
 		.where(
@@ -115,5 +117,159 @@ export async function deleteCategory({
 	}
 
 	await db.delete(table.category).where(eq(table.category.id, id));
+	return { ok: true };
+}
+
+export async function upsertCategory({
+	userId,
+	formData,
+}: {
+	userId: number;
+	formData: FormData;
+}) {
+	const formObj = Object.fromEntries(formData.entries());
+	const formSchema = z
+		.object({
+			"category.id": z.coerce.number().int().or(z.literal("new")),
+			"category.type": z.enum(["income", "expense"]),
+			"category.name": z.string().min(1).max(255),
+			"category.icon": z.enum(CATEGORY_ICON_LIST),
+		})
+		.passthrough()
+		.transform((values) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const childrenObj: Record<string, any> = {};
+
+			for (const [key, value] of Object.entries(values)) {
+				if (key.startsWith("category.")) continue;
+				const firstDotIndex = key.indexOf(".");
+				const secondDotIndex = key.indexOf(".", firstDotIndex + 1);
+				const number = key.substring(firstDotIndex + 1, secondDotIndex);
+				childrenObj[number] = {
+					...(childrenObj[number] ? childrenObj[number] : {}),
+					[key.substring(secondDotIndex + 1)]: value,
+				};
+			}
+
+			return {
+				id: values["category.id"],
+				type: values["category.type"],
+				name: values["category.name"],
+				icon: values["category.icon"],
+				children: Object.values(childrenObj),
+			};
+		})
+		.pipe(
+			z.object({
+				id: z.coerce.number().int().or(z.literal("new")),
+				type: z.enum(["income", "expense"]),
+				name: z.string().min(1).max(255),
+				icon: z.enum(CATEGORY_ICON_LIST),
+				children: z.array(
+					z.object({
+						id: z.coerce.number().int().or(z.literal("new")),
+						name: z.string().min(1).max(255),
+						icon: z.enum(CATEGORY_ICON_LIST),
+					}),
+				),
+			}),
+		);
+	const { id, name, type, icon, children } = formSchema.parse(formObj);
+
+	if (id === "new") {
+		// Create parent category
+		const [parent] = await db
+			.insert(table.category)
+			.values({
+				name,
+				userId,
+				icon,
+				type,
+				parentId: null,
+			})
+			.returning({ id: table.category.id });
+
+		// Create all subcategories
+		if (children.length > 0) {
+			await db.insert(table.category).values(
+				children.map((c) => ({
+					name: c.name,
+					userId,
+					icon: c.icon,
+					type,
+					parentId: parent.id,
+				})),
+			);
+		}
+	} else {
+		const results = await db
+			.select()
+			.from(table.category)
+			.where(or(eq(table.category.id, id), eq(table.category.parentId, id)));
+
+		if (results.findIndex((res) => res.userId !== userId) !== -1) {
+			return fail(403, { ok: false, message: "Forbidden" });
+		}
+
+		const idsToDelete: number[] = [];
+		// Update or delete existing categories
+		for (const res of results) {
+			if (res.id === id) {
+				// Update parent category
+				await db
+					.update(table.category)
+					.set({ name, icon })
+					.where(eq(table.category.id, id));
+			} else {
+				const child = children.find((c) => c.id === res.id);
+
+				if (child) {
+					// Update a category
+					await db
+						.update(table.category)
+						.set({
+							name: child.name,
+							icon: child.icon,
+						})
+						.where(eq(table.category.id, res.id));
+				} else {
+					// Delete the category
+					idsToDelete.push(res.id);
+				}
+			}
+		}
+
+		if (idsToDelete.length > 0) {
+			// Make sure we are not deleting a subcategory with one or more transactions
+			const [transaction] = await db
+				.select({ id: table.transaction.id })
+				.from(table.transaction)
+				.where(inArray(table.transaction.categoryId, idsToDelete))
+				.limit(1);
+			if (transaction) {
+				return fail(400, {
+					ok: false,
+					message: `One of the deleted subcategories has one or more transactions, error updating`,
+				});
+			} else {
+				// Delete the subcategories
+				await db.delete(table.category).where(inArray(table.category.id, idsToDelete));
+			}
+		}
+
+		// Create new subcategories
+		for (const c of children) {
+			if (c.id === "new") {
+				await db.insert(table.category).values({
+					name: c.name,
+					icon: c.icon,
+					userId,
+					type,
+					parentId: id,
+				});
+			}
+		}
+	}
+
 	return { ok: true };
 }

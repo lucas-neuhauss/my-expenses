@@ -180,7 +180,7 @@
 							<div class="flex items-center justify-center rounded-full bg-card p-2">
 								<img
 									alt="category icon"
-									src={`/images/category/${t.category.iconName}`}
+									src={`/images/category/${t.category.icon}`}
 									width="15"
 									height="15"
 								/>

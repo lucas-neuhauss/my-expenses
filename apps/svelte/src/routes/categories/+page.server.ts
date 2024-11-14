@@ -1,4 +1,8 @@
-import { deleteCategory, getNestedCategories } from "$lib/server/data/category";
+import {
+	deleteCategory,
+	getNestedCategories,
+	upsertCategory,
+} from "$lib/server/data/category";
 import { error, redirect } from "@sveltejs/kit";
 import { z } from "zod";
 
@@ -15,6 +19,15 @@ export const load = async (event) => {
 };
 
 export const actions = {
+	"upsert-category": async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return error(401);
+		}
+
+		const formData = await event.request.formData();
+		return upsertCategory({ userId: user.id, formData });
+	},
 	"delete-category": async (event) => {
 		const user = event.locals.user;
 		if (!user) {

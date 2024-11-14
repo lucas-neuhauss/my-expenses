@@ -3,6 +3,7 @@
 	import { buttonVariants } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Tabs from "$lib/components/ui/tabs";
+	import UpsertCategoryForm from "./upsert-category-form.svelte";
 
 	let tab = $state<"expense" | "income">("expense");
 	let open = $state(false);
@@ -27,8 +28,20 @@
 				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
 				<Tabs.Trigger value="income">Income</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="expense"></Tabs.Content>
-			<Tabs.Content value="income"></Tabs.Content>
+			<Tabs.Content value="expense">
+				{#snippet child({ props })}
+					<div {...props} tabindex="-1">
+						<UpsertCategoryForm type="expense" />
+					</div>
+				{/snippet}
+			</Tabs.Content>
+			<Tabs.Content value="income">
+				{#snippet child({ props })}
+					<div {...props} tabindex="-1">
+						<UpsertCategoryForm type="income" />
+					</div>
+				{/snippet}
+			</Tabs.Content>
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>

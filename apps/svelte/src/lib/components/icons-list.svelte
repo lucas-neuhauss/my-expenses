@@ -4,13 +4,23 @@
 	import * as Popover from "$lib/components/ui/popover";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { cn } from "$lib/utils.js";
+
+	let {
+		icon,
+		onSelect,
+	}: {
+		icon: string;
+		onSelect: (icon: string) => void;
+	} = $props();
+
+	let open = $state(false);
 </script>
 
-<Popover.Root>
+<Popover.Root bind:open>
 	<Popover.Trigger
-		class="col-span-3 flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+		class="flex size-9 items-center justify-center rounded-full bg-sky-800 hover:bg-sky-700"
 	>
-		Category title
+		<img src={`/images/category/${icon}`} alt="category icon" class="size-5" />
 	</Popover.Trigger>
 	<Popover.Content side="right">
 		{#snippet child({ props })}
@@ -22,6 +32,10 @@
 								variant: "secondary",
 								class: "h-auto w-auto self-center justify-self-center rounded-full p-2",
 							})}
+							onclick={() => {
+								onSelect(icon);
+								open = false;
+							}}
 						>
 							<img
 								src={`/images/category/${icon}`}
