@@ -51,7 +51,7 @@ export async function deleteCategory({
 	userId: number;
 	categoryId: number;
 }) {
-	const childCategories = alias(table.category, "childCategories");
+	const tableChild = alias(table.category, "tableChild");
 
 	// Get the category to be deleted. Make sure to check if the `userId` matches
 	const [category] = await db
@@ -59,19 +59,17 @@ export async function deleteCategory({
 			id: table.category.id,
 			name: table.category.name,
 			type: table.category.type,
-			childCategoryIds: sql<Array<number | null>>`array_agg(${childCategories.id})`,
+			childCategoryIds: sql<Array<number | null>>`array_agg(${tableChild.id})`,
 		})
 		.from(table.category)
-		.leftJoin(childCategories, eq(childCategories.parentId, table.category.id))
+		.leftJoin(tableChild, eq(tableChild.parentId, table.category.id))
 		.where(and(eq(table.category.id, id), eq(table.category.userId, userId)))
 		.groupBy(table.category.id);
 	if (!category) {
 		return fail(400, { ok: false, message: "Category not found" });
 	}
 
-	const childCategoryIds = category.childCategoryIds.filter(
-		(i) => i !== null,
-	) as number[];
+	const childCategoryIds = category.childCategoryIds.filter(Number.isInteger) as number[];
 
 	// Should not be able to delete the last category of a type
 	const atLeastTwoArray = await db

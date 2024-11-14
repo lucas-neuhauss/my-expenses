@@ -36,6 +36,10 @@ export const actions = {
 
 		const searchParams = event.url.searchParams;
 		const categoryId = z.coerce.number().int().min(1).parse(searchParams.get("id"));
+		console.log({
+			1: searchParams.get("id"),
+			2: categoryId,
+		});
 		return deleteCategory({
 			userId: user.id,
 			categoryId,
