@@ -23,7 +23,7 @@ export const load = async (event) => {
 	const currentMonth = new Date().getMonth() + 1;
 	const currentYear = new Date().getFullYear();
 
-	const { wallet, month, year } = z
+	const { category, wallet, month, year } = z
 		.object({
 			category: IntSearchParamSchema.catch(-1),
 			wallet: IntSearchParamSchema.catch(-1),
@@ -31,6 +31,7 @@ export const load = async (event) => {
 			year: z.coerce.number().int().gte(1900).catch(currentYear),
 		})
 		.parse({
+			category: event.url.searchParams.get("category"),
 			wallet: event.url.searchParams.get("wallet"),
 			month: event.url.searchParams.get("month"),
 			year: event.url.searchParams.get("year"),
@@ -41,6 +42,7 @@ export const load = async (event) => {
 
 	const transactionsPromise = getDashboardTransactions({
 		userId,
+		category,
 		wallet,
 		start: date.toString(),
 		end: dateMonthLater.toString(),
@@ -82,6 +84,7 @@ export const load = async (event) => {
 	const { totalIncome, totalExpense } = calculateDashboardData(transactions);
 
 	return {
+		category,
 		categories,
 		wallet,
 		wallets,

@@ -11,10 +11,17 @@
 	let {
 		value = $bindable(),
 		categories,
+		onChange,
+		includeAllCategoriesOption = false,
+		width = "100%",
 	}: {
 		value?: number;
 		categories: NestedCategory[];
+		onChange?: (id: number) => void;
+		includeAllCategoriesOption?: boolean;
+		width?: string;
 	} = $props();
+	const ALL_CATEGORIES_VALUE = -1;
 
 	let open = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
@@ -54,7 +61,8 @@
 		{#snippet child({ props })}
 			<Button
 				variant="outline"
-				class="w-full justify-between"
+				class="justify-between"
+				style={`width: ${width}`}
 				{...props}
 				role="combobox"
 				aria-expanded={open}
@@ -67,7 +75,9 @@
 							width="14"
 							height="14"
 						/>
-						{selectedCategory.name || "Select a framework..."}
+						{selectedCategory.name || "Select a category"}
+					{:else if value === -1 && includeAllCategoriesOption}
+						All categories
 					{:else}
 						Select a category
 					{/if}
@@ -82,12 +92,37 @@
 			<Command.List>
 				<Command.Empty>No framework found.</Command.Empty>
 				<Command.Group>
+					{#if includeAllCategoriesOption}
+						<Command.Item
+							value="All categories"
+							onSelect={() => {
+								value = ALL_CATEGORIES_VALUE;
+								closeAndFocusTrigger();
+								onChange?.(ALL_CATEGORIES_VALUE);
+							}}
+						>
+							<Check
+								class={cn(
+									"mr-2 size-4",
+									value !== ALL_CATEGORIES_VALUE && "text-transparent",
+								)}
+							/>
+							<!-- <img -->
+							<!-- 	src={`/images/category/${category.icon}`} -->
+							<!-- 	alt="category icon" -->
+							<!-- 	width="14" -->
+							<!-- 	height="14" -->
+							<!-- /> -->
+							All categories
+						</Command.Item>
+					{/if}
 					{#each flatCategories as category}
 						<Command.Item
 							value={category.name}
 							onSelect={() => {
 								value = category.id;
 								closeAndFocusTrigger();
+								onChange?.(category.id);
 							}}
 						>
 							<Check

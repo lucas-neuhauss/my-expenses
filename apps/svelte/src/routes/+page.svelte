@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
+	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
@@ -15,6 +16,7 @@
 
 	let { data } = $props();
 	let wallet = $state(String(data.wallet));
+	let category = $state(data.category);
 	let month = $state(String(data.month));
 	let year = $state(String(data.year));
 	let upsertDialog = $state<{
@@ -76,6 +78,15 @@
 		} else {
 			url.searchParams.set("month", month);
 			url.searchParams.set("year", y);
+		}
+		goto(url.href);
+	};
+	const onCategoryChanged = (c: number) => {
+		const url = new URL($page.url.href);
+		if (c === -1) {
+			url.searchParams.delete("category");
+		} else {
+			url.searchParams.set("category", String(c));
 		}
 		goto(url.href);
 	};
@@ -142,6 +153,14 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+
+		<CategoriesCombobox
+			categories={data.categories}
+			value={category}
+			onChange={onCategoryChanged}
+			includeAllCategoriesOption
+			width="220px"
+		/>
 
 		<Select.Root
 			type="single"
