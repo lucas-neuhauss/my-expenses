@@ -14,10 +14,16 @@
 	import Trash from "lucide-svelte/icons/trash";
 
 	let { data } = $props();
-	let transaction = $state<DashboardTransaction | null>(null);
 	let wallet = $state(String(data.wallet));
 	let month = $state(String(data.month));
 	let year = $state(String(data.year));
+	let upsertDialog = $state<{
+		open: boolean;
+		transaction: DashboardTransaction | null;
+	}>({
+		open: false,
+		transaction: null,
+	});
 
 	const monthOptions = [
 		"January",
@@ -73,6 +79,20 @@
 		}
 		goto(url.href);
 	};
+
+	const handleClickCreate = () => {
+		upsertDialog = {
+			open: true,
+			transaction: null,
+		};
+	};
+
+	const handleClickEdit = (transaction: DashboardTransaction) => {
+		upsertDialog = {
+			open: true,
+			transaction,
+		};
+	};
 </script>
 
 <svelte:head>
@@ -98,11 +118,12 @@
 	</div>
 
 	<div class="flex items-center gap-4">
+		<Button variant="outline" onclick={handleClickCreate}>Create Transaction</Button>
 		<UpsertTransaction
-			{transaction}
+			bind:open={upsertDialog.open}
+			bind:transaction={upsertDialog.transaction}
 			wallets={data.wallets}
 			categories={data.categories}
-			onClose={() => (transaction = null)}
 		/>
 
 		<Select.Root
@@ -112,7 +133,7 @@
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			{@const walletOptions = [{ id: -1, name: "All options" }, ...data.wallets]}
+			{@const walletOptions = [{ id: -1, name: "All Wallets" }, ...data.wallets]}
 			{@const selectedWallet = walletOptions.find((w) => String(w.id) === wallet)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedWallet.name}</Select.Trigger>
 			<Select.Content>
@@ -197,7 +218,7 @@
 								aria-label="Edit transaction"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
-								onclick={() => (transaction = t)}
+								onclick={() => handleClickEdit(t)}
 							>
 								<Pencil />
 							</Button>

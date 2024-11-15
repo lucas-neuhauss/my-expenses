@@ -22,9 +22,11 @@
 	let {
 		transaction,
 		wallets,
+		onSuccess,
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
+		onSuccess: () => void;
 	} = $props();
 
 	const df = new DateFormatter("en-US", {
@@ -45,7 +47,17 @@
 	let toWallet = $derived(wallets.find((w) => String(w.id) === toWalletId)!);
 </script>
 
-<form method="post" action="?/upsert-transaction" use:enhance>
+<form
+	method="post"
+	action="?/upsert-transaction"
+	use:enhance={() =>
+		({ result, update }) => {
+			if (result.type === "success") {
+				onSuccess();
+			}
+			update();
+		}}
+>
 	<div
 		class="flex flex-col gap-4 py-4 [&>div]:grid [&>div]:grid-cols-4 [&>div]:items-center [&>div]:justify-items-end [&>div]:gap-4"
 	>

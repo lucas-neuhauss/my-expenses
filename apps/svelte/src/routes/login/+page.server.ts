@@ -1,4 +1,5 @@
 import { dev } from "$app/environment";
+import { CATEGORY_SPECIAL } from "$lib/categories";
 import * as auth from "$lib/server/auth";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
@@ -97,14 +98,14 @@ export const actions: Actions = {
 					name: "_TRANSACTION-IN",
 					type: "income",
 					userId: user.id,
-					unique: "transaction_in",
+					unique: CATEGORY_SPECIAL.TRANSFERENCE_IN,
 					icon: "bill.png",
 				},
 				{
 					name: "_TRANSACTION-OUT",
 					type: "expense",
 					userId: user.id,
-					unique: "transaction_out",
+					unique: CATEGORY_SPECIAL.TRANSFERENCE_OUT,
 					icon: "bill.png",
 				},
 			]);

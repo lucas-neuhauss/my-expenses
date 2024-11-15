@@ -24,17 +24,17 @@
 		}
 	});
 
-	const handleClickEdit = (category: NestedCategory) => {
-		upsertDialog = {
-			open: true,
-			category,
-		};
-	};
-
 	const handleClickCreate = () => {
 		upsertDialog = {
 			open: true,
 			category: null,
+		};
+	};
+
+	const handleClickEdit = (category: NestedCategory) => {
+		upsertDialog = {
+			open: true,
+			category,
 		};
 	};
 </script>

@@ -281,4 +281,4 @@ export const CATEGORY_ICON_LIST = [
 export const CATEGORY_SPECIAL = {
 	TRANSFERENCE_IN: "transference_in",
 	TRANSFERENCE_OUT: "transference_out",
-};
+} as const;

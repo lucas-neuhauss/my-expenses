@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { page } from "$app/stores";
-	import { buttonVariants } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
@@ -9,49 +7,32 @@
 	import UpsertTransactionTransference from "./upsert-transaction-transference.svelte";
 
 	let {
-		wallets,
+		open = $bindable(),
+		transaction = $bindable(),
 		categories,
-		transaction = null,
-		onClose,
+		wallets,
 	}: {
+		open: boolean;
 		transaction: DashboardTransaction | null;
 		wallets: Array<{ id: number; name: string }>;
 		categories: NestedCategory[];
-		onClose: () => void;
 	} = $props();
+	let isUpdate = $derived(transaction !== null);
 
 	let tab = $state<"expense" | "income">("expense");
-	let open = $state(false);
 	let tabsDisabled = $derived(!!transaction);
 
-	$effect(() => {
-		if (transaction) {
-			open = true;
-		}
-	});
-
-	$effect(() => {
-		if ($page.form && $page.form.ok) {
-			open = false;
-		}
-	});
+	const onSuccess = () => {
+		open = false;
+	};
 </script>
 
-<Dialog.Root
-	bind:open
-	onOpenChange={(isOpen) => {
-		if (!isOpen) {
-			onClose();
-		}
-		open = isOpen;
-	}}
->
-	<Dialog.Trigger class={buttonVariants({ variant: "outline" })}>
-		Create Transaction
-	</Dialog.Trigger>
+<Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
-			<Dialog.Title>Create Transaction</Dialog.Title>
+			<Dialog.Title>
+				{isUpdate ? "Update Transaction" : "Create Transaction"}
+			</Dialog.Title>
 		</Dialog.Header>
 
 		<Tabs.Root bind:value={tab}>
@@ -70,6 +51,7 @@
 							categories={categories.filter((c) => c.type === "expense")}
 							{wallets}
 							{tab}
+							{onSuccess}
 						/>
 					</div>
 				{/snippet}
@@ -82,6 +64,7 @@
 							categories={categories.filter((c) => c.type === "income")}
 							{wallets}
 							{tab}
+							{onSuccess}
 						/>
 					</div>
 				{/snippet}
@@ -90,7 +73,7 @@
 				{#snippet child({ props })}
 					{#if wallets.length >= 2}
 						<div {...props} tabindex="-1">
-							<UpsertTransactionTransference {transaction} {wallets} />
+							<UpsertTransactionTransference {transaction} {wallets} {onSuccess} />
 						</div>
 					{/if}
 				{/snippet}

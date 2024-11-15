@@ -25,11 +25,13 @@
 		wallets,
 		categories,
 		tab,
+		onSuccess,
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
 		categories: NestedCategory[];
 		tab: "expense" | "income";
+		onSuccess: () => void;
 	} = $props();
 
 	const df = new DateFormatter("en-US", {
@@ -60,7 +62,17 @@
 	};
 </script>
 
-<form method="post" action="?/upsert-transaction" use:enhance>
+<form
+	method="post"
+	action="?/upsert-transaction"
+	use:enhance={() =>
+		({ result, update }) => {
+			if (result.type === "success") {
+				onSuccess();
+			}
+			update();
+		}}
+>
 	<div
 		class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 	>
