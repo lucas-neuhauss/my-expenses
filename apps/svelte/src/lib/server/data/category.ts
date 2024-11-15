@@ -1,7 +1,7 @@
 import { CATEGORY_ICON_LIST } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import type { NestedCategories } from "$lib/utils/category";
+import type { NestedCategory } from "$lib/utils/category";
 import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -29,7 +29,7 @@ export async function getNestedCategories(
 		)
 		.orderBy(desc(table.category.parentId), table.category.name);
 
-	const nestedCategories = categories.reduce<NestedCategories>((acc, category) => {
+	const nestedCategories = categories.reduce<NestedCategory[]>((acc, category) => {
 		if (category.parentId === null) {
 			acc.push({ ...category, children: [] });
 		} else {

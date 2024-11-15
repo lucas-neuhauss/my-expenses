@@ -13,12 +13,15 @@
 		open: boolean;
 		wallet: LoadWallet | null;
 	} = $props();
+	let isUpdate = $derived(wallet !== null);
 </script>
 
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
-			<Dialog.Title>{wallet ? "Update" : "Create"} Wallet</Dialog.Title>
+			<Dialog.Title>
+				{isUpdate ? "Update Wallet" : "Create Wallet"}
+			</Dialog.Title>
 		</Dialog.Header>
 
 		<form

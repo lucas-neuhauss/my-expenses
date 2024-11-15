@@ -10,7 +10,7 @@
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { cn } from "$lib/utils.js";
-	import type { NestedCategories } from "$lib/utils/category";
+	import type { NestedCategory } from "$lib/utils/category";
 	import {
 		CalendarDate,
 		DateFormatter,
@@ -28,7 +28,7 @@
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
-		categories: NestedCategories;
+		categories: NestedCategory[];
 		tab: "expense" | "income";
 	} = $props();
 

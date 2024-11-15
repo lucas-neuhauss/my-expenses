@@ -7,13 +7,20 @@
 	import Trash from "lucide-svelte/icons/trash";
 	import { CATEGORY_ICON_LIST } from "$lib/categories";
 	import IconsList from "../icons-list.svelte";
+	import type { NestedCategory } from "$lib/utils/category";
 
 	let {
+		category,
 		type,
+		onSuccess,
 	}: {
+		category: NestedCategory | null;
 		type: "expense" | "income";
+		onSuccess: () => void;
 	} = $props();
-	let categories = $state([getEmptyCategory()]);
+	let categories = $state(
+		category ? [category, ...category.children] : [getEmptyCategory()],
+	);
 
 	function getRandomIcon() {
 		const randomIndex = Math.floor(Math.random() * CATEGORY_ICON_LIST.length);
@@ -54,7 +61,17 @@
 	};
 </script>
 
-<form method="post" action="?/upsert-category" use:enhance>
+<form
+	method="post"
+	action="?/upsert-category"
+	use:enhance={() =>
+		({ result, update }) => {
+			if (result.type === "success") {
+				onSuccess();
+			}
+			update();
+		}}
+>
 	<div class="mt-3">
 		<p class="font-bold">Category</p>
 

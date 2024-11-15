@@ -4,7 +4,7 @@
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
-	import type { NestedCategories } from "$lib/utils/category";
+	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertTransactionForm from "./upsert-transaction-form.svelte";
 	import UpsertTransactionTransference from "./upsert-transaction-transference.svelte";
 
@@ -16,7 +16,7 @@
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: Array<{ id: number; name: string }>;
-		categories: NestedCategories;
+		categories: NestedCategory[];
 		onClose: () => void;
 	} = $props();
 

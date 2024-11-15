@@ -3,17 +3,40 @@
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import { UpsertCategory } from "$lib/components/upsert-category";
+	import type { NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 	import { toast } from "svelte-sonner";
 
 	let { data, form } = $props();
 
+	let upsertDialog = $state<{
+		open: boolean;
+		category: NestedCategory | null;
+	}>({
+		open: false,
+		category: null,
+	});
+
 	$effect(() => {
 		if (!!form && !form.ok) {
 			toast.error(form.message ?? "Something went wrong");
 		}
 	});
+
+	const handleClickEdit = (category: NestedCategory) => {
+		upsertDialog = {
+			open: true,
+			category,
+		};
+	};
+
+	const handleClickCreate = () => {
+		upsertDialog = {
+			open: true,
+			category: null,
+		};
+	};
 </script>
 
 <svelte:head>
@@ -22,7 +45,8 @@
 
 <div class="container flex flex-col gap-y-4">
 	<div>
-		<UpsertCategory />
+		<Button variant="outline" onclick={handleClickCreate}>Create Category</Button>
+		<UpsertCategory bind:open={upsertDialog.open} bind:category={upsertDialog.category} />
 	</div>
 
 	{#each data.nestedCategories as category}
@@ -56,7 +80,7 @@
 					{/if}
 				</div>
 				<div>
-					<Button size="icon" variant="ghost">
+					<Button size="icon" variant="ghost" onclick={() => handleClickEdit(category)}>
 						<Pencil />
 					</Button>
 					<ConfirmDialog
