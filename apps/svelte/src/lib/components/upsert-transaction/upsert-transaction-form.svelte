@@ -19,6 +19,7 @@
 		today,
 	} from "@internationalized/date";
 	import CalendarIcon from "svelte-radix/Calendar.svelte";
+	import CategoriesCombobox from "../categories-combobox.svelte";
 
 	let {
 		transaction,
@@ -41,7 +42,27 @@
 	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
 	let wallet = $state(transaction?.wallet ?? wallets[0]);
-	let category = $state(transaction?.category ?? categories[0]);
+	let categoryId = $state(transaction?.category.id ?? categories[0].id);
+	let flatCategories = $derived(getFlatCategories(categories));
+	let category = $derived(
+		flatCategories.find((item) => item.id === categoryId) ?? categories[0],
+	);
+
+	type SelectedCategory = {
+		id: number;
+		name: string;
+		icon: string;
+	};
+	function getFlatCategories(categories: NestedCategory[], hideChildren = false) {
+		return categories.reduce<SelectedCategory[]>((acc, cur) => {
+			acc.push(cur);
+			if (cur.children && !hideChildren) {
+				acc.push(...cur.children);
+			}
+			return acc;
+		}, []);
+	}
+
 	let description = $state(transaction?.description ?? "");
 	let date: CalendarDate | undefined = $state(
 		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
@@ -52,12 +73,6 @@
 		const selectedWallet = wallets.find((w) => String(w.id) === id);
 		if (selectedWallet) {
 			wallet = selectedWallet;
-		}
-	};
-	const onCategoryChange = (id: string) => {
-		const selectedCategory = categories.find((c) => String(c.id) === id);
-		if (selectedCategory) {
-			category = selectedCategory;
 		}
 	};
 </script>
@@ -101,32 +116,7 @@
 
 		<div>
 			<Label>Category</Label>
-			<Select.Root
-				type="single"
-				name="category"
-				value={String(category.id)}
-				onValueChange={onCategoryChange}
-				allowDeselect={false}
-			>
-				<Select.Trigger class="col-span-3">
-					<div class="flex items-center gap-x-2">
-						<img
-							src={`/images/category/${category.icon}`}
-							alt="category icon"
-							width="16"
-							height="16"
-						/>
-						<span>{category.name}</span>
-					</div>
-				</Select.Trigger>
-				<Select.Content>
-					{#each categories as category}
-						<Select.Item value={String(category.id)}>
-							{category.name}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			<CategoriesCombobox bind:value={categoryId} {categories} />
 		</div>
 
 		<div>
