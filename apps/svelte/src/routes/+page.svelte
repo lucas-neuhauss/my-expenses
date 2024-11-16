@@ -11,6 +11,7 @@
 	import { formatCurrency } from "$lib/currency";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { DateFormatter } from "@internationalized/date";
+	import { getLocalDate } from "$lib/utils/date-time";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 
@@ -212,7 +213,7 @@
 					<Table.Row>
 						<Table.Cell class="font-medium">
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
-								new Date(t.date),
+								getLocalDate(t.date),
 							)}
 						</Table.Cell>
 						<Table.Cell>{t.description}</Table.Cell>
