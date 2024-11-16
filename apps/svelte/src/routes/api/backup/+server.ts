@@ -11,11 +11,12 @@ export async function POST({ locals }) {
 		return error(400, "Something went wrong");
 	}
 	const userId = user.id;
+	const BACKUP_USER_ID = 56;
 
 	try {
 		const filePath = resolve("/home/neuhaus/Desktop", "expenses-2024-11-03_10_08.json");
 
-		// Read the backup json
+		// 1. Read the backup json
 		const fileContent = await readFile(filePath, "utf-8");
 
 		type BackupData = {
@@ -57,19 +58,21 @@ export async function POST({ locals }) {
 		const maps = {
 			walletsMap: new Map<number, number>(),
 			categoriesMap: new Map<number, number>(),
+			transactionsMap: new Map<number, number>(),
 		};
 
-		// Clear all user's data
+		// 2. Clear all user's data
 		await db.delete(table.transference).where(eq(table.transference.userId, userId));
 		await db.delete(table.transaction).where(eq(table.transaction.userId, userId));
 		await db.delete(table.category).where(eq(table.category.userId, userId));
 		await db.delete(table.wallet).where(eq(table.wallet.userId, userId));
 
-		// Create wallets, and map the old ids with the new ids
+		// 3. Create wallets, and map the old ids with the new ids
+		const walletsData = data.wallets.filter((w) => w.userId === BACKUP_USER_ID);
 		const newWallets = await db
 			.insert(table.wallet)
 			.values(
-				data.wallets.map((w) => {
+				walletsData.map((w) => {
 					return {
 						userId,
 						name: w.name,
@@ -78,13 +81,15 @@ export async function POST({ locals }) {
 				}),
 			)
 			.returning({ id: table.wallet.id });
-		for (let i = 0; i < data.wallets.length; i++) {
-			maps.walletsMap.set(data.wallets[i].id, newWallets[i].id);
+		for (let i = 0; i < walletsData.length; i++) {
+			maps.walletsMap.set(walletsData[i].id, newWallets[i].id);
 		}
 
-		// Create categories, and map the old ids with the new ids
+		// 4. Create categories, and map the old ids with the new ids
 		// First we need to create the parent categories
-		const parentCategories = data.categories.filter((c) => c.parentId === null);
+		const parentCategories = data.categories.filter(
+			(c) => c.userId === BACKUP_USER_ID && c.parentId === null,
+		);
 		const newParentCategories = await db
 			.insert(table.category)
 			.values(
@@ -105,7 +110,9 @@ export async function POST({ locals }) {
 		}
 
 		// Then we can create the child categories
-		const childCategories = data.categories.filter((c) => c.parentId !== null);
+		const childCategories = data.categories.filter(
+			(c) => c.userId === BACKUP_USER_ID && c.parentId !== null,
+		);
 		const newChildCategories = await db
 			.insert(table.category)
 			.values(
@@ -125,12 +132,70 @@ export async function POST({ locals }) {
 			maps.categoriesMap.set(childCategories[i].id, newChildCategories[i].id);
 		}
 
-		// TODO: Map through transferences. First create the transference transactions, and then the transference
+		// 5. Create all the transactions, and map the old ids with the new ids
+		const getDateFromTimestamp = (timestamp: string) => {
+			return timestamp.substring(0, timestamp.indexOf("T"));
+		};
 
-		// TODO: Create all the transactions that are not included in a transference
+		const transactionsData = data.transactions.filter((t) => t.userId === BACKUP_USER_ID);
+		const newTransactions = await db
+			.insert(table.transaction)
+			.values(
+				transactionsData.map((t) => ({
+					userId,
+					isTransference: t.isTransference,
+					type: t.type,
+					description: t.description,
+					createdAt: new Date(t.createdAt),
+					updatedAt: new Date(t.updatedAt),
+					cents: t.cents,
+					date: getDateFromTimestamp(t.timestamp),
+					categoryId: maps.categoriesMap.get(t.categoryId)!,
+					walletId: maps.walletsMap.get(t.walletId)!,
+				})),
+			)
+			.returning({ id: table.transaction.id });
+		for (let i = 0; i < transactionsData.length; i++) {
+			maps.transactionsMap.set(transactionsData[i].id, newTransactions[i].id);
+		}
 
-		return json({ data }, { status: 201 });
+		// 6. Create all transferences
+		const transferenceTransactions = transactionsData.filter((t) => t.isTransference);
+		const transferenceTransactionsIdsSet = new Set(
+			transferenceTransactions.map((t) => t.id),
+		);
+		const transferencesData = data.transferences.filter(
+			(t) =>
+				transferenceTransactionsIdsSet.has(t.transactionInId) ||
+				transferenceTransactionsIdsSet.has(t.transactionOutId),
+		);
+		const newTransferences = await db
+			.insert(table.transference)
+			.values(
+				transferencesData.map((t) => ({
+					userId,
+					transactionInId: maps.transactionsMap.get(t.transactionInId)!,
+					transactionOutId: maps.transactionsMap.get(t.transactionOutId)!,
+				})),
+			)
+			.returning({ id: table.transference.id });
+
+		return json(
+			{
+				data: {
+					wallets: { old: walletsData.length, new: newWallets.length },
+					categories: {
+						parent: { old: parentCategories.length, new: newParentCategories.length },
+						child: { old: childCategories.length, new: newChildCategories.length },
+					},
+					transactions: { old: transactionsData.length, new: newTransactions.length },
+					transferences: { old: transferencesData.length, new: newTransferences.length },
+				},
+			},
+			{ status: 201 },
+		);
 	} catch (err) {
+		console.log(err);
 		return error(500, "Failed to read the backup file");
 	}
 }
