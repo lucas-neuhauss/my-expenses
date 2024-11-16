@@ -65,7 +65,7 @@ export function loadWallets(userId: number) {
 			id: table.wallet.id,
 			name: table.wallet.name,
 			initialBalance: table.wallet.initialBalance,
-			balance: sql<number>`cast((sum(${table.transaction.cents}) + ${table.wallet.initialBalance}) as int)`,
+			balance: sql<number>`cast((COALESCE(SUM(${table.transaction.cents}), 0) + ${table.wallet.initialBalance}) as int)`,
 		})
 		.from(table.transaction)
 		.rightJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
