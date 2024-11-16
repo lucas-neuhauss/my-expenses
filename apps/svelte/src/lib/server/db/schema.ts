@@ -107,16 +107,23 @@ export const transactionsRelations = relations(transaction, ({ one }) => ({
 
 export const transference = pgTable("transference", {
 	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
+	userId: integer("user_id")
+		.references(() => user.id)
+		.notNull(),
 	transactionOutId: integer("transaction_out_id")
-		.references(() => transaction.id)
+		.references(() => transaction.id, { onDelete: "cascade" })
 		.unique()
 		.notNull(),
 	transactionInId: integer("transaction_in_id")
-		.references(() => transaction.id)
+		.references(() => transaction.id, { onDelete: "cascade" })
 		.unique()
 		.notNull(),
 });
 export const transferenceRelations = relations(transference, ({ one }) => ({
+	user: one(user, {
+		fields: [transference.userId],
+		references: [user.id],
+	}),
 	transactionOut: one(transaction, {
 		fields: [transference.transactionOutId],
 		references: [transaction.id],
@@ -135,7 +142,9 @@ export const category = pgTable(
 		id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
 		name: varchar("name", { length: 255 }).notNull(),
 		type: text("type", { enum: ["income", "expense"] }).notNull(),
-		userId: integer("user_id").references(() => user.id),
+		userId: integer("user_id")
+			.references(() => user.id)
+			.notNull(),
 		parentId: integer("parent_id"),
 		icon: varchar("icon", { length: 255 }).notNull(),
 		unique: text("unique", {

@@ -98,6 +98,7 @@ export const upsertTransaction = async ({
 			await db.insert(table.transference).values({
 				transactionOutId,
 				transactionInId,
+				userId,
 			});
 		} else {
 			// Create normal transaction
