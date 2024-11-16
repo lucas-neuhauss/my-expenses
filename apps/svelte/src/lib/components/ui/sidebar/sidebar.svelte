@@ -26,8 +26,8 @@
 {#if collapsible === "none"}
 	<div
 		class={cn(
-			"flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
-			className,
+			"bg-sidebar text-sidebar-foreground flex h-full w-[--sidebar-width] flex-col",
+			className
 		)}
 		bind:this={ref}
 		{...restProps}
@@ -44,7 +44,7 @@
 		<Sheet.Content
 			data-sidebar="sidebar"
 			data-mobile="true"
-			class="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+			class="bg-sidebar text-sidebar-foreground w-[--sidebar-width] p-0 [&>button]:hidden"
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
 			{side}
 		>
@@ -56,7 +56,7 @@
 {:else}
 	<div
 		bind:this={ref}
-		class="group peer hidden text-sidebar-foreground md:block"
+		class="text-sidebar-foreground group peer hidden md:block"
 		data-state={sidebar.state}
 		data-collapsible={sidebar.state === "collapsed" ? collapsible : ""}
 		data-variant={variant}
@@ -70,7 +70,7 @@
 				"group-data-[side=right]:rotate-180",
 				variant === "floating" || variant === "inset"
 					? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-					: "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
+					: "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
 			)}
 		></div>
 		<div
@@ -83,13 +83,13 @@
 				variant === "floating" || variant === "inset"
 					? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
 					: "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-				className,
+				className
 			)}
 			{...restProps}
 		>
 			<div
 				data-sidebar="sidebar"
-				class="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+				class="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow"
 			>
 				{@render children?.()}
 			</div>

@@ -6,13 +6,13 @@ const Trigger = TooltipPrimitive.Trigger;
 const Provider = TooltipPrimitive.Provider;
 
 export {
+	Root,
+	Trigger,
 	Content,
 	Provider,
-	Root,
 	//
 	Root as Tooltip,
 	Content as TooltipContent,
-	Provider as TooltipProvider,
 	Trigger as TooltipTrigger,
-	Trigger,
+	Provider as TooltipProvider,
 };
