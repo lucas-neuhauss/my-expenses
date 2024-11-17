@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { onDestroy } from "svelte";
-	import * as echarts from "echarts/core";
-	import { PieChart } from "echarts/charts";
-	import { TooltipComponent, TitleComponent } from "echarts/components";
-	import { CanvasRenderer } from "echarts/renderers";
 	import { getOptions, type PieChartDataItem } from "$lib/utils/charts";
+	import { PieChart } from "echarts/charts";
+	import { TitleComponent, TooltipComponent } from "echarts/components";
+	import * as echarts from "echarts/core";
+	import { CanvasRenderer } from "echarts/renderers";
 	import { mode } from "mode-watcher";
+	import { onDestroy } from "svelte";
 
 	let {
 		charts,
@@ -23,17 +23,19 @@
 	let incomePieChart: echarts.ECharts;
 	$effect(() => {
 		if (charts) {
-			expensePieChart?.dispose();
-			incomePieChart?.dispose();
+			if (!expensePieChart) {
+				expensePieChart = echarts.init(
+					document.getElementById("dashboard-expense-chart"),
+					$mode,
+				);
+			}
+			if (!incomePieChart) {
+				incomePieChart = echarts.init(
+					document.getElementById("dashboard-income-chart"),
+					$mode,
+				);
+			}
 
-			expensePieChart = echarts.init(
-				document.getElementById("dashboard-expense-chart"),
-				$mode,
-			);
-			incomePieChart = echarts.init(
-				document.getElementById("dashboard-income-chart"),
-				$mode,
-			);
 			expensePieChart.setOption(
 				getOptions(charts.expensePieChartData, { name: "Expense" }),
 			);
