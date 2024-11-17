@@ -131,7 +131,9 @@
 	</div>
 
 	<div class="flex items-center gap-4">
-		<Button variant="outline" onclick={handleClickCreate}>Create Transaction</Button>
+		<Button autofocus variant="outline" onclick={handleClickCreate}
+			>Create Transaction</Button
+		>
 		<UpsertTransaction
 			bind:open={upsertDialog.open}
 			bind:transaction={upsertDialog.transaction}

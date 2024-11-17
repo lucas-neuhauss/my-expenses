@@ -46,7 +46,7 @@
 
 <div class="container flex flex-col gap-y-4">
 	<div>
-		<Button variant="outline" onclick={handleClickCreate}>Create Wallet</Button>
+		<Button autofocus variant="outline" onclick={handleClickCreate}>Create Wallet</Button>
 		<UpsertWalletDialog bind:open={upsertDialog.open} bind:wallet={upsertDialog.wallet} />
 	</div>
 

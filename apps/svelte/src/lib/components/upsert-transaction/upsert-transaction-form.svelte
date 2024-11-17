@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
+	import { invalidateAll } from "$app/navigation";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import { Calendar } from "$lib/components/ui/calendar";
 	import * as Dialog from "$lib/components/ui/dialog";
@@ -80,12 +81,13 @@
 <form
 	method="post"
 	action="?/upsert-transaction"
-	use:enhance={() =>
-		({ result, update }) => {
+	use:enhance={({ formElement }) =>
+		({ result }) => {
 			if (result.type === "success") {
 				onSuccess();
+				invalidateAll();
+				formElement.reset();
 			}
-			update();
 		}}
 >
 	<div
@@ -162,6 +164,7 @@
 				type="number"
 				name="cents"
 				placeholder="R$ 0.00"
+				step="0.01"
 				class="col-span-3"
 				bind:value={cents}
 			/>
