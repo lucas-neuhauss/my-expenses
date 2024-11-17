@@ -192,7 +192,7 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[100px]">Date</Table.Head>
+					<Table.Head class="w-[102px]">Date</Table.Head>
 					<Table.Head>Description</Table.Head>
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
@@ -203,7 +203,7 @@
 			<Table.Body>
 				{#each data.transactions as t (t.id)}
 					<Table.Row>
-						<Table.Cell class="font-medium">
+						<Table.Cell>
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
 								getLocalDate(t.date),
 							)}
