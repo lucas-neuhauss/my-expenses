@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from "$app/stores";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
@@ -7,6 +8,8 @@
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 	import { toast } from "svelte-sonner";
+	import * as Tabs from "$lib/components/ui/tabs/index.js";
+	import { goto } from "$app/navigation";
 
 	let { data, form } = $props();
 
@@ -37,19 +40,41 @@
 			category,
 		};
 	};
+
+	const handleTypeChange = (type: string) => {
+		const url = new URL($page.url.href);
+
+		if (type === "expense") {
+			url.searchParams.delete("type");
+		} else {
+			url.searchParams.set("type", type);
+		}
+		goto(url.href);
+	};
 </script>
 
 <svelte:head>
 	<title>Categories - My Expenses</title>
 </svelte:head>
 
+<UpsertCategory bind:open={upsertDialog.open} bind:category={upsertDialog.category} />
+
 <div class="container flex flex-col gap-y-4">
-	<div>
-		<Button autofocus variant="outline" onclick={handleClickCreate}
-			>Create Category</Button
-		>
-		<UpsertCategory bind:open={upsertDialog.open} bind:category={upsertDialog.category} />
-	</div>
+	<Tabs.Root
+		value={data.type}
+		class="flex items-center gap-4"
+		onValueChange={handleTypeChange}
+	>
+		<div class="flex items-center gap-4">
+			<Button autofocus variant="outline" onclick={handleClickCreate}
+				>Create Category</Button
+			>
+			<Tabs.List>
+				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
+				<Tabs.Trigger value="income">Income</Tabs.Trigger>
+			</Tabs.List>
+		</div>
+	</Tabs.Root>
 
 	{#each data.nestedCategories as category}
 		<Card.Root class="w-full">

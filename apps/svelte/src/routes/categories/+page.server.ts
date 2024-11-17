@@ -12,8 +12,13 @@ export const load = async (event) => {
 		return redirect(302, "/login");
 	}
 
-	const nestedCategories = await getNestedCategories(user.id, "expense");
+	const type = z
+		.enum(["expense", "income"])
+		.catch("expense")
+		.parse(event.url.searchParams.get("type"));
+	const nestedCategories = await getNestedCategories(user.id, type);
 	return {
+		type,
 		nestedCategories,
 	};
 };

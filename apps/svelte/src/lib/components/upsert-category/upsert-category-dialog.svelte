@@ -28,8 +28,8 @@
 		</Dialog.Header>
 		<Tabs.Root bind:value={tab}>
 			<Tabs.List class="w-full [&_button]:w-full">
-				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
-				<Tabs.Trigger value="income">Income</Tabs.Trigger>
+				<Tabs.Trigger value="expense" disabled={!!category}>Expense</Tabs.Trigger>
+				<Tabs.Trigger value="income" disabled={!!category}>Income</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="expense">
 				{#snippet child({ props })}
