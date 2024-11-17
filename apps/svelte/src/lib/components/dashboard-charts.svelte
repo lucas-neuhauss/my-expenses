@@ -5,6 +5,7 @@
 	import { TooltipComponent, TitleComponent } from "echarts/components";
 	import { CanvasRenderer } from "echarts/renderers";
 	import { getOptions, type PieChartDataItem } from "$lib/utils/charts";
+	import { mode } from "mode-watcher";
 
 	let {
 		charts,
@@ -27,11 +28,11 @@
 
 			expensePieChart = echarts.init(
 				document.getElementById("dashboard-expense-chart"),
-				"dark",
+				$mode,
 			);
 			incomePieChart = echarts.init(
 				document.getElementById("dashboard-income-chart"),
-				"dark",
+				$mode,
 			);
 			expensePieChart.setOption(
 				getOptions(charts.expensePieChartData, { name: "Expense" }),

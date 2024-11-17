@@ -15,12 +15,9 @@
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
+	import { MONTHS } from "$lib/utils/date-time";
 
 	let { data } = $props();
-	let wallet = $state(String(data.wallet));
-	let category = $state(data.category);
-	let month = $state(String(data.month));
-	let year = $state(String(data.year));
 	let upsertDialog = $state<{
 		open: boolean;
 		transaction: DashboardTransaction | null;
@@ -28,27 +25,19 @@
 		open: false,
 		transaction: null,
 	});
-
-	const monthOptions = [
-		"January",
-		"February",
-		"March",
-		"April",
-		"May",
-		"June",
-		"July",
-		"August",
-		"September",
-		"October",
-		"November",
-		"December",
-	].map((month, i) => ({ value: String(i + 1), label: month }));
+	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 100 }, (_, i) => ({
 		label: String(new Date().getFullYear() - i),
-		value: String(new Date().getFullYear() - i),
+		value: new Date().getFullYear() - i,
 	}));
-	const currentYear = String(new Date().getFullYear());
-	const currentMonth = String(new Date().getMonth() + 1);
+
+	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...data.wallets]);
+	let selectedWallet = $derived(walletOptions.find((w) => w.id === data.wallet)!);
+	let selectedMonth = $derived(monthOptions.find((mo) => mo.value === data.month)!);
+	let selectedYear = $derived(yearOptions.find((y) => y.value === data.year)!);
+
+	const currentYear = new Date().getFullYear();
+	const currentMonth = new Date().getMonth() + 1;
 
 	const onWalletChange = (id: string) => {
 		const url = new URL($page.url.href);
@@ -62,7 +51,7 @@
 	};
 	const onMonthChanged = (m: string) => {
 		const url = new URL($page.url.href);
-		if (year === currentYear && month === currentMonth) {
+		if (data.year === currentYear && Number(m) === currentMonth) {
 			url.searchParams.delete("month");
 			url.searchParams.delete("year");
 		} else {
@@ -72,13 +61,13 @@
 	};
 	const onYearChanged = (y: string) => {
 		const url = new URL($page.url.href);
-		if (year === currentYear) {
+		if (Number(y) === currentYear) {
 			url.searchParams.delete("year");
-			if (month === currentMonth) {
+			if (data.month === currentMonth) {
 				url.searchParams.delete("month");
 			}
 		} else {
-			url.searchParams.set("month", month);
+			url.searchParams.set("month", String(data.month));
 			url.searchParams.set("year", y);
 		}
 		goto(url.href);
@@ -139,17 +128,17 @@
 			bind:transaction={upsertDialog.transaction}
 			wallets={data.wallets}
 			categories={data.categories}
+			defaultWallet={data.wallet}
+			defaultCategory={data.category}
 		/>
 
 		<Select.Root
 			type="single"
 			name="wallet"
-			bind:value={wallet}
+			value={String(data.wallet)}
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			{@const walletOptions = [{ id: -1, name: "All Wallets" }, ...data.wallets]}
-			{@const selectedWallet = walletOptions.find((w) => String(w.id) === wallet)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedWallet.name}</Select.Trigger>
 			<Select.Content>
 				{#each walletOptions as w}
@@ -160,7 +149,7 @@
 
 		<CategoriesCombobox
 			categories={data.categories}
-			value={category}
+			value={data.category}
 			onChange={onCategoryChanged}
 			includeAllCategoriesOption
 			width="220px"
@@ -169,11 +158,10 @@
 		<Select.Root
 			type="single"
 			name="month"
-			bind:value={month}
+			value={String(data.month)}
 			onValueChange={onMonthChanged}
 			allowDeselect={false}
 		>
-			{@const selectedMonth = monthOptions.find((mo) => mo.value === month)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
 			<Select.Content>
 				{#each monthOptions as option}
@@ -185,11 +173,10 @@
 		<Select.Root
 			type="single"
 			name="year"
-			bind:value={year}
+			value={String(data.year)}
 			onValueChange={onYearChanged}
 			allowDeselect={false}
 		>
-			{@const selectedYear = yearOptions.find((y) => y.value === year)!}
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
 			<Select.Content>
 				{#each yearOptions as option}

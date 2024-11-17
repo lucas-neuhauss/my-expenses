@@ -27,12 +27,16 @@
 		wallets,
 		categories,
 		tab,
+		defaultWallet,
+		defaultCategory,
 		onSuccess,
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
 		categories: NestedCategory[];
 		tab: "expense" | "income";
+		defaultWallet: number;
+		defaultCategory: number;
 		onSuccess: () => void;
 	} = $props();
 
@@ -40,11 +44,25 @@
 		dateStyle: "long",
 	});
 
+	console.log({
+		defaultWallet,
+		defaultCategory,
+	});
 	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
-	let wallet = $state(transaction?.wallet ?? wallets[0]);
-	let categoryId = $state(transaction?.category.id ?? categories[0].id);
+	let walletId = $state(
+		transaction?.wallet.id ??
+			(defaultWallet === -1 ? null : defaultWallet) ??
+			wallets[0].id,
+	);
+	let categoryId = $state(
+		transaction?.category.id ??
+			(defaultCategory === -1 ? null : defaultCategory) ??
+			categories[0].id,
+	);
+
 	let flatCategories = $derived(getFlatCategories(categories));
+	let wallet = $derived(wallets.find((w) => w.id === walletId)!);
 	let category = $derived(
 		flatCategories.find((item) => item.id === categoryId) ?? categories[0],
 	);
@@ -70,10 +88,11 @@
 	);
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
 
-	const onWalletChange = (id: string) => {
-		const selectedWallet = wallets.find((w) => String(w.id) === id);
+	const onWalletChange = (idStr: string) => {
+		const id = Number(idStr);
+		const selectedWallet = wallets.find((w) => w.id === id);
 		if (selectedWallet) {
-			wallet = selectedWallet;
+			walletId = id;
 		}
 	};
 </script>
@@ -103,7 +122,7 @@
 			<Select.Root
 				type="single"
 				name="wallet"
-				value={String(wallet.id)}
+				value={String(walletId)}
 				onValueChange={onWalletChange}
 				allowDeselect={false}
 			>

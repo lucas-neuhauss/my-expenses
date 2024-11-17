@@ -11,11 +11,15 @@
 		transaction = $bindable(),
 		categories,
 		wallets,
+		defaultWallet,
+		defaultCategory,
 	}: {
 		open: boolean;
 		transaction: DashboardTransaction | null;
 		wallets: Array<{ id: number; name: string }>;
 		categories: NestedCategory[];
+		defaultWallet: number;
+		defaultCategory: number;
 	} = $props();
 	let isUpdate = $derived(transaction !== null);
 
@@ -51,6 +55,8 @@
 							categories={categories.filter((c) => c.type === "expense")}
 							{wallets}
 							{tab}
+							{defaultCategory}
+							{defaultWallet}
 							{onSuccess}
 						/>
 					</div>
@@ -64,6 +70,8 @@
 							categories={categories.filter((c) => c.type === "income")}
 							{wallets}
 							{tab}
+							{defaultCategory}
+							{defaultWallet}
 							{onSuccess}
 						/>
 					</div>
