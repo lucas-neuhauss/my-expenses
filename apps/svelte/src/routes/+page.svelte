@@ -14,6 +14,7 @@
 	import { getLocalDate } from "$lib/utils/date-time";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
+	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
 
 	let { data } = $props();
 	let wallet = $state(String(data.wallet));
@@ -195,6 +196,8 @@
 			</Select.Content>
 		</Select.Root>
 	</div>
+
+	<DashboardCharts charts={data.charts} />
 
 	{#if data.transactions.length > 0}
 		<Table.Root>

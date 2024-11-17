@@ -81,7 +81,7 @@ export const load = async (event) => {
 		.catch([{ balance: 0 }])
 		.parse(balanceResult);
 
-	const { totalIncome, totalExpense } = calculateDashboardData(transactions);
+	const { totalIncome, totalExpense, charts } = calculateDashboardData(transactions);
 
 	return {
 		category,
@@ -94,6 +94,7 @@ export const load = async (event) => {
 		totalExpense,
 		month,
 		year,
+		charts,
 	};
 };
 
