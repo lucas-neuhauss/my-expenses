@@ -9,6 +9,7 @@
 	import { CATEGORY_ICON_LIST } from "$lib/categories";
 	import IconsList from "../icons-list.svelte";
 	import type { NestedCategory } from "$lib/utils/category";
+	import { tick } from "svelte";
 
 	let {
 		category,
@@ -38,6 +39,17 @@
 
 	const handleAddSubcategory = () => {
 		categories.push(getEmptyCategory());
+
+		tick().then(() => {
+			const subcategoryInputElements = document.querySelectorAll(".subcategory-input");
+			const lastSubcategoryInputElement = subcategoryInputElements[
+				subcategoryInputElements.length - 1
+			] as HTMLElement | undefined;
+
+			if (lastSubcategoryInputElement) {
+				lastSubcategoryInputElement.focus();
+			}
+		});
 	};
 
 	const handleDeleteSubcategory = (index: number) => {
@@ -113,6 +125,7 @@
 					<Input
 						id={`subcategory.${index}.name`}
 						name={`subcategory.${index}.name`}
+						class="subcategory-input"
 						bind:value={c.name}
 						required
 					/>
