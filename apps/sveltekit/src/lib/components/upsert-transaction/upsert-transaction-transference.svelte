@@ -61,14 +61,14 @@
 		}}
 >
 	<div
-		class="flex flex-col gap-4 py-4 [&>div]:grid [&>div]:grid-cols-4 [&>div]:items-center [&>div]:justify-items-end [&>div]:gap-4"
+		class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 	>
 		<input type="hidden" name="id" value={id} />
 		<input type="hidden" name="type" value="transference" />
 		<input type="hidden" name="date" value={date} />
 
 		<div>
-			<Label for="fromWallet" class="text-right">From Wallet</Label>
+			<Label for="fromWallet">From Wallet</Label>
 			<Select.Root
 				type="single"
 				name="wallet"
@@ -87,7 +87,7 @@
 		</div>
 
 		<div>
-			<Label for="toWallet" class="text-right">To Wallet</Label>
+			<Label for="toWallet">To Wallet</Label>
 			<Select.Root
 				type="single"
 				name="toWallet"
@@ -104,7 +104,7 @@
 		</div>
 
 		<div>
-			<Label for="description" class="text-right">Description</Label>
+			<Label for="description">Description</Label>
 			<Textarea
 				id="description"
 				class="col-span-3"
@@ -114,7 +114,7 @@
 		</div>
 
 		<div>
-			<Label class="text-right">Date</Label>
+			<Label>Date</Label>
 			<Popover.Root bind:open={calendarOpen}>
 				<Popover.Trigger
 					class={cn(
@@ -139,13 +139,14 @@
 		</div>
 
 		<div>
-			<Label for="cents" class="text-right">Cents</Label>
+			<Label for="cents">Cents</Label>
 			<Input
 				required
 				id="cents"
 				type="number"
 				name="cents"
 				placeholder="R$ 0.00"
+				step="0.01"
 				class="col-span-3"
 				bind:value={cents}
 			/>

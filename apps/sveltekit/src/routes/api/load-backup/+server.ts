@@ -1,4 +1,4 @@
-import { db } from "$lib/server/db/index.js";
+import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { error, json } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";

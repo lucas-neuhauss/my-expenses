@@ -44,10 +44,6 @@
 		dateStyle: "long",
 	});
 
-	console.log({
-		defaultWallet,
-		defaultCategory,
-	});
 	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
 	let walletId = $state(
