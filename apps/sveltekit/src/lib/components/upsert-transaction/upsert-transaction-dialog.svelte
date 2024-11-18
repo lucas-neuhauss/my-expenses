@@ -23,8 +23,18 @@
 	} = $props();
 	let isUpdate = $derived(transaction !== null);
 
-	let tab = $state<"expense" | "income">("expense");
+	let tab = $state<"expense" | "income" | "transference">("expense");
 	let tabsDisabled = $derived(!!transaction);
+
+	$effect(() => {
+		if (open && !!transaction) {
+			if (transaction.isTransference) {
+				tab = "transference";
+			} else {
+				tab = transaction.type;
+			}
+		}
+	});
 
 	const onSuccess = () => {
 		open = false;

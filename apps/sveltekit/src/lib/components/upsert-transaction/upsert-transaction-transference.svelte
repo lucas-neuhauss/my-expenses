@@ -35,7 +35,9 @@
 	});
 
 	let id = $state(transaction ? String(transaction.id) : "new");
-	let fromWalletId = $state(String(transaction?.wallet.id ?? wallets[0].id));
+	let fromWalletId = $state(
+		String(transaction?.transferenceFrom?.walletId ?? wallets[0].id),
+	);
 	let toWalletId = $state(String(transaction?.transferenceTo?.walletId ?? wallets[1].id));
 	let description = $state("");
 	let date: CalendarDate | undefined = $state(

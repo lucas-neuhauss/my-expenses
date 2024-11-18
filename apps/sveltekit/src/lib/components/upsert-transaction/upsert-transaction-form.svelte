@@ -34,7 +34,7 @@
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
 		categories: NestedCategory[];
-		tab: "expense" | "income";
+		tab: "expense" | "income" | "transference";
 		defaultWallet: number;
 		defaultCategory: number;
 		onSuccess: () => void;
