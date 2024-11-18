@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { get } from "svelte/store";
 	import { getOptions, type PieChartDataItem } from "$lib/utils/charts";
 	import { PieChart } from "echarts/charts";
 	import { TitleComponent, TooltipComponent } from "echarts/components";
@@ -7,6 +6,7 @@
 	import { CanvasRenderer } from "echarts/renderers";
 	import { mode } from "mode-watcher";
 	import { onDestroy } from "svelte";
+	import { get } from "svelte/store";
 
 	let {
 		charts,
@@ -71,7 +71,21 @@
 	});
 </script>
 
-<div id="dashboard-charts" class="-mb-4 mt-3 flex w-full items-center justify-center">
-	<div id="dashboard-expense-chart" class="h-[300px] w-[400px]"></div>
-	<div id="dashboard-income-chart" class="h-[300px] w-[400px]"></div>
+<div
+	id="dashboard-charts"
+	class:hidden={charts.incomePieChartData.length === 0 &&
+		charts.expensePieChartData.length === 0}
+	class="-mb-4 mt-3 flex w-full items-center justify-center"
+>
+	<div
+		id="dashboard-expense-chart"
+		class:hidden={charts.expensePieChartData.length === 0}
+		class="h-[300px] w-[400px]"
+	></div>
+
+	<div
+		id="dashboard-income-chart"
+		class:hidden={charts.expensePieChartData.length === 0}
+		class="h-[300px] w-[400px]"
+	></div>
 </div>

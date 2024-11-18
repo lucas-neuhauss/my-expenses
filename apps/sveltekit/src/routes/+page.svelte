@@ -3,6 +3,8 @@
 	import { page } from "$app/stores";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
+	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
+	import SavingsIllustration from "$lib/components/illustrations/savings-illustration.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Select from "$lib/components/ui/select";
@@ -10,12 +12,10 @@
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
+	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
-	import { getLocalDate } from "$lib/utils/date-time";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
-	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
-	import { MONTHS } from "$lib/utils/date-time";
 
 	let { data } = $props();
 	let upsertDialog = $state<{
@@ -260,5 +260,11 @@
 				{/each}
 			</Table.Body>
 		</Table.Root>
+	{:else}
+		<div class="mt-10 flex w-full flex-col items-center justify-center">
+			<SavingsIllustration width={200} height="100%" />
+			<p class="mt-6">You don't have transactions</p>
+			<p>in this month yet</p>
+		</div>
 	{/if}
 </div>
