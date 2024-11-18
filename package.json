@@ -1,0 +1,8 @@
+{
+  "name": "@my-expenses",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "pnpm --parallel --recursive --filter '*' dev"
+  }
+}
