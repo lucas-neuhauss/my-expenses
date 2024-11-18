@@ -5,7 +5,8 @@
 	import { Label } from "$lib/components/ui/label";
 	import { enhance } from "$app/forms";
 
-	let { type }: { type: "login" | "register" } = $props();
+	let { type, error }: { type: "login" | "register"; error: string | undefined } =
+		$props();
 </script>
 
 <Card.Root class="mx-auto w-[360px]">
@@ -39,6 +40,10 @@
 					<!-- </div> -->
 					<Input id="password" type="password" name="password" required />
 				</div>
+				{#if error}
+					<p class="-mt-2.5 text-sm text-red-400">{error}</p>
+				{/if}
+
 				<Button type="submit" class="w-full">
 					{type === "login" ? "Login" : "Register"}
 				</Button>
