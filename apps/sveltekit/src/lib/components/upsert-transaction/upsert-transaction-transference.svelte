@@ -135,6 +135,7 @@
 						type="single"
 						bind:value={date}
 						onValueChange={() => (calendarOpen = false)}
+						preventDeselect
 					/>
 				</Popover.Content>
 			</Popover.Root>
