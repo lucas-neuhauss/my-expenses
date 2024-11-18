@@ -1,26 +1,22 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
-	import { Button, buttonVariants } from "$lib/components/ui/button";
-	import { Calendar } from "$lib/components/ui/calendar";
+	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
-	import * as Popover from "$lib/components/ui/popover";
 	import * as Select from "$lib/components/ui/select";
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
-	import { cn } from "$lib/utils.js";
 	import type { NestedCategory } from "$lib/utils/category";
 	import {
 		CalendarDate,
-		DateFormatter,
 		getLocalTimeZone,
 		parseDate,
 		today,
 	} from "@internationalized/date";
-	import CalendarIcon from "svelte-radix/Calendar.svelte";
 	import CategoriesCombobox from "../categories-combobox.svelte";
+	import DatePicker from "../date-picker.svelte";
 
 	let {
 		transaction,
@@ -39,10 +35,6 @@
 		defaultCategory: number;
 		onSuccess: () => void;
 	} = $props();
-
-	const df = new DateFormatter("en-US", {
-		dateStyle: "long",
-	});
 
 	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
@@ -148,28 +140,7 @@
 
 		<div>
 			<Label>Date</Label>
-			<Popover.Root bind:open={calendarOpen}>
-				<Popover.Trigger
-					class={cn(
-						buttonVariants({
-							variant: "outline",
-							class: "col-span-3 w-full justify-start text-left font-normal",
-						}),
-						!date && "text-muted-foreground",
-					)}
-				>
-					<CalendarIcon class="mr-2 size-4" />
-					{date ? df.format(date.toDate(getLocalTimeZone())) : "Pick a date"}
-				</Popover.Trigger>
-				<Popover.Content class="w-auto p-0" align="start">
-					<Calendar
-						type="single"
-						bind:value={date}
-						onValueChange={() => (calendarOpen = false)}
-						preventDeselect
-					/>
-				</Popover.Content>
-			</Popover.Root>
+			<DatePicker bind:open={calendarOpen} bind:date />
 		</div>
 
 		<div>
