@@ -85,7 +85,7 @@
 
 	<div
 		id="dashboard-income-chart"
-		class:hidden={charts.expensePieChartData.length === 0}
+		class:hidden={charts.incomePieChartData.length === 0}
 		class="h-[300px] w-[400px]"
 	></div>
 </div>

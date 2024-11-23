@@ -76,6 +76,7 @@ export const transaction = pgTable("transaction", {
 		.references(() => wallet.id)
 		.notNull(),
 	isTransference: boolean("is_transference").default(false).notNull(),
+	paid: boolean("paid").default(true).notNull(),
 	date: date("date", { mode: "string" }).notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),

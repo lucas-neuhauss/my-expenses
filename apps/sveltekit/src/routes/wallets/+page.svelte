@@ -50,7 +50,9 @@
 		<UpsertWalletDialog bind:open={upsertDialog.open} bind:wallet={upsertDialog.wallet} />
 	</div>
 
-	<div class="grid grid-cols-4 gap-4 pb-4">
+	<div
+		class="grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
+	>
 		{#each data.wallets as wallet}
 			<Card.Root>
 				<Card.Content class="flex items-center justify-between">
@@ -58,7 +60,7 @@
 						<h3 class="mb-3 font-bold">{wallet.name}</h3>
 						<p>{formatCurrency(wallet.balance)}</p>
 					</div>
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-1 lg:gap-2">
 						<Button size="icon" variant="ghost" onclick={() => handleClickEdit(wallet)}>
 							<Pencil />
 						</Button>
