@@ -2,8 +2,9 @@ import { CATEGORY_SPECIAL } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { DateStringSchema } from "$lib/utils/date-time";
-import { and, desc, eq, gte, inArray, isNotNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 export const upsertTransaction = async ({
@@ -68,38 +69,29 @@ export const upsertTransaction = async ({
 			)!.id;
 
 			// Create in and out transactions
-			const [{ id: transactionOutId }, { id: transactionInId }] = await db
-				.insert(table.transaction)
-				.values([
-					{
-						type: "expense",
-						date,
-						userId,
-						categoryId: categoryTransactionOut,
-						walletId: walletId,
-						isTransference: true,
-						cents: -cents,
-						description,
-					},
-					{
-						type: "income",
-						date,
-						userId,
-						categoryId: categoryTransactionIn,
-						walletId: formValues.toWallet,
-						isTransference: true,
-						cents,
-						description,
-					},
-				])
-				.returning({ id: table.transaction.id });
-
-			// Create transference
-			await db.insert(table.transference).values({
-				transactionOutId,
-				transactionInId,
-				userId,
-			});
+			const transferenceId = uuidv4();
+			await db.insert(table.transaction).values([
+				{
+					type: "expense",
+					date,
+					userId,
+					categoryId: categoryTransactionOut,
+					walletId: walletId,
+					transferenceId,
+					cents: -cents,
+					description,
+				},
+				{
+					type: "income",
+					date,
+					userId,
+					categoryId: categoryTransactionIn,
+					walletId: formValues.toWallet,
+					transferenceId,
+					cents,
+					description,
+				},
+			]);
 		} else {
 			// Create normal transaction
 			await db.insert(table.transaction).values({
@@ -114,15 +106,23 @@ export const upsertTransaction = async ({
 		}
 	} else {
 		if (formValues.type === "transference") {
-			const foundTransference = await db.query.transference.findFirst({
-				where: or(
-					eq(table.transference.transactionOutId, id),
-					eq(table.transference.transactionInId, id),
-				),
+			// Find one of the transactions
+			const foundTransaction = await db.query.transaction.findFirst({
+				where: eq(table.transaction.id, id),
 			});
 
-			if (!foundTransference) {
-				throw new Error("Transference not found");
+			if (!foundTransaction || !foundTransaction.transferenceId) {
+				throw new Error("Transaction not found");
+			}
+
+			const transactions = await db.query.transaction.findMany({
+				where: eq(table.transaction.transferenceId, foundTransaction.transferenceId),
+			});
+			const expense = transactions.find((t) => t.type === "expense");
+			const income = transactions.find((t) => t.type === "income");
+
+			if (!expense || !income) {
+				throw new Error("Transaction not found");
 			}
 
 			// Update expense transaction
@@ -134,7 +134,7 @@ export const upsertTransaction = async ({
 					cents: -cents,
 					description,
 				})
-				.where(eq(table.transaction.id, foundTransference.transactionOutId));
+				.where(eq(table.transaction.id, expense.id));
 
 			// Update income transaction
 			await db
@@ -145,7 +145,7 @@ export const upsertTransaction = async ({
 					cents,
 					description,
 				})
-				.where(eq(table.transaction.id, foundTransference.transactionInId));
+				.where(eq(table.transaction.id, income.id));
 		} else {
 			// update normal transaction
 			await db
@@ -182,26 +182,19 @@ export const deleteTransaction = async ({
 		throw new Error("Transaction not found");
 	}
 
-	if (transaction.isTransference) {
-		const [transference] = await db
-			.select()
-			.from(table.transference)
-			.where(
-				or(
-					eq(table.transference.transactionOutId, transactionId),
-					eq(table.transference.transactionInId, transactionId),
-				),
-			);
-
-		await db.delete(table.transference).where(eq(table.transference.id, transference.id));
-		await db
-			.delete(table.transaction)
-			.where(
-				inArray(table.transaction.id, [
-					transference.transactionOutId,
-					transference.transactionInId,
-				]),
-			);
+	if (transaction.transferenceId !== null) {
+		const transactions = await db.query.transaction.findMany({
+			where: (table, { eq }) => eq(table.transferenceId, transaction.transferenceId!),
+		});
+		if (transactions.length !== 2) {
+			throw new Error("Transactions from transference not found");
+		}
+		await db.delete(table.transaction).where(
+			inArray(
+				table.transaction.id,
+				transactions.map((t) => t.id),
+			),
+		);
 	} else {
 		await db.delete(table.transaction).where(eq(table.transaction.id, transactionId));
 	}
@@ -244,7 +237,7 @@ export const getDashboardTransactions = async ({
 			type: table.transaction.type,
 			description: table.transaction.description,
 			date: table.transaction.date,
-			isTransference: table.transaction.isTransference,
+			transferenceId: table.transaction.transferenceId,
 			wallet: {
 				id: table.wallet.id,
 				name: table.wallet.name,
@@ -281,19 +274,20 @@ export const getDashboardTransactions = async ({
 		.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
 		.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
 		.leftJoin(
-			table.transference,
-			or(
-				eq(table.transaction.id, table.transference.transactionOutId),
-				eq(table.transaction.id, table.transference.transactionInId),
+			tableTransactionFrom,
+			and(
+				isNotNull(tableTransactionFrom.transferenceId),
+				eq(tableTransactionFrom.transferenceId, table.transaction.transferenceId),
+				eq(tableTransactionFrom.type, "expense"),
 			),
 		)
 		.leftJoin(
-			tableTransactionFrom,
-			eq(table.transference.transactionOutId, tableTransactionFrom.id),
-		)
-		.leftJoin(
 			tableTransactionTo,
-			eq(table.transference.transactionInId, tableTransactionTo.id),
+			and(
+				isNotNull(tableTransactionTo.transferenceId),
+				eq(tableTransactionTo.transferenceId, table.transaction.transferenceId),
+				eq(tableTransactionTo.type, "income"),
+			),
 		)
 		.orderBy(desc(table.transaction.date), desc(table.transaction.id));
 };

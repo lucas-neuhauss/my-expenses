@@ -28,7 +28,7 @@
 
 	$effect(() => {
 		if (open && !!transaction) {
-			if (transaction.isTransference) {
+			if (transaction.transferenceId !== null) {
 				tab = "transference";
 			} else {
 				tab = transaction.type;

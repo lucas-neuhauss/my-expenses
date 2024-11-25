@@ -42,8 +42,8 @@ export async function POST({ locals }) {
 				description: string | null;
 				userId: number;
 				categoryId: number;
+				transferenceId: string | null;
 				walletId: number;
-				isTransference: boolean;
 				timestamp: string;
 				createdAt: string;
 				updatedAt: string;
@@ -62,7 +62,7 @@ export async function POST({ locals }) {
 		};
 
 		// 2. Clear all user's data
-		await db.delete(table.transference).where(eq(table.transference.userId, userId));
+		// await db.delete(table.transference).where(eq(table.transference.userId, userId));
 		await db.delete(table.transaction).where(eq(table.transaction.userId, userId));
 		await db.delete(table.category).where(eq(table.category.userId, userId));
 		await db.delete(table.wallet).where(eq(table.wallet.userId, userId));
@@ -143,7 +143,7 @@ export async function POST({ locals }) {
 			.values(
 				transactionsData.map((t) => ({
 					userId,
-					isTransference: t.isTransference,
+					transferenceId: t.transferenceId,
 					type: t.type,
 					description: t.description,
 					createdAt: new Date(t.createdAt),
@@ -160,7 +160,9 @@ export async function POST({ locals }) {
 		}
 
 		// 6. Create all transferences
-		const transferenceTransactions = transactionsData.filter((t) => t.isTransference);
+		const transferenceTransactions = transactionsData.filter(
+			(t) => t.transferenceId !== null,
+		);
 		const transferenceTransactionsIdsSet = new Set(
 			transferenceTransactions.map((t) => t.id),
 		);
@@ -169,16 +171,16 @@ export async function POST({ locals }) {
 				transferenceTransactionsIdsSet.has(t.transactionInId) ||
 				transferenceTransactionsIdsSet.has(t.transactionOutId),
 		);
-		const newTransferences = await db
-			.insert(table.transference)
-			.values(
-				transferencesData.map((t) => ({
-					userId,
-					transactionInId: maps.transactionsMap.get(t.transactionInId)!,
-					transactionOutId: maps.transactionsMap.get(t.transactionOutId)!,
-				})),
-			)
-			.returning({ id: table.transference.id });
+		// const newTransferences = await db
+		// 	.insert(table.transference)
+		// 	.values(
+		// 		transferencesData.map((t) => ({
+		// 			userId,
+		// 			transactionInId: maps.transactionsMap.get(t.transactionInId)!,
+		// 			transactionOutId: maps.transactionsMap.get(t.transactionOutId)!,
+		// 		})),
+		// 	)
+		// 	.returning({ id: table.transference.id });
 
 		return json(
 			{
@@ -189,7 +191,7 @@ export async function POST({ locals }) {
 						child: { old: childCategories.length, new: newChildCategories.length },
 					},
 					transactions: { old: transactionsData.length, new: newTransactions.length },
-					transferences: { old: transferencesData.length, new: newTransferences.length },
+					// transferences: { old: transferencesData.length, new: newTransferences.length },
 				},
 			},
 			{ status: 201 },

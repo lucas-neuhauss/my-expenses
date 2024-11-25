@@ -4,6 +4,7 @@ import {
 	boolean,
 	date,
 	foreignKey,
+	index,
 	integer,
 	pgTable,
 	text,
@@ -61,26 +62,30 @@ export const walletRelations = relations(wallet, ({ one, many }) => ({
 	transactions: many(transaction),
 }));
 
-export const transaction = pgTable("transaction", {
-	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
-	cents: integer("cents").notNull(),
-	type: text("type", { enum: ["income", "expense"] }).notNull(),
-	description: text("description"),
-	userId: integer("user_id")
-		.references(() => user.id)
-		.notNull(),
-	categoryId: integer("category_id")
-		.references(() => category.id)
-		.notNull(),
-	walletId: integer("wallet_id")
-		.references(() => wallet.id)
-		.notNull(),
-	isTransference: boolean("is_transference").default(false).notNull(),
-	paid: boolean("paid").default(true).notNull(),
-	date: date("date", { mode: "string" }).notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const transaction = pgTable(
+	"transaction",
+	{
+		id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
+		cents: integer("cents").notNull(),
+		type: text("type", { enum: ["income", "expense"] }).notNull(),
+		description: text("description"),
+		userId: integer("user_id")
+			.references(() => user.id)
+			.notNull(),
+		categoryId: integer("category_id")
+			.references(() => category.id)
+			.notNull(),
+		walletId: integer("wallet_id")
+			.references(() => wallet.id)
+			.notNull(),
+		transferenceId: text("transference_id"),
+		paid: boolean("paid").default(true).notNull(),
+		date: date("date", { mode: "string" }).notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [index("transference_id_idx").on(table.transferenceId)],
+);
 export const transactionsRelations = relations(transaction, ({ one }) => ({
 	user: one(user, {
 		fields: [transaction.userId],
@@ -93,47 +98,6 @@ export const transactionsRelations = relations(transaction, ({ one }) => ({
 	wallet: one(wallet, {
 		fields: [transaction.walletId],
 		references: [wallet.id],
-	}),
-	transferenceOut: one(transference, {
-		fields: [transaction.id],
-		references: [transference.transactionOutId],
-		relationName: "transactionOut",
-	}),
-	transferenceIn: one(transference, {
-		fields: [transaction.id],
-		references: [transference.transactionOutId],
-		relationName: "transactionIn",
-	}),
-}));
-
-export const transference = pgTable("transference", {
-	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
-	userId: integer("user_id")
-		.references(() => user.id)
-		.notNull(),
-	transactionOutId: integer("transaction_out_id")
-		.references(() => transaction.id, { onDelete: "cascade" })
-		.unique()
-		.notNull(),
-	transactionInId: integer("transaction_in_id")
-		.references(() => transaction.id, { onDelete: "cascade" })
-		.unique()
-		.notNull(),
-});
-export const transferenceRelations = relations(transference, ({ one }) => ({
-	user: one(user, {
-		fields: [transference.userId],
-		references: [user.id],
-	}),
-	transactionOut: one(transaction, {
-		fields: [transference.transactionOutId],
-		references: [transaction.id],
-		relationName: "transactionOut",
-	}),
-	transactionIn: one(transaction, {
-		fields: [transference.transactionInId],
-		references: [transaction.id],
-		relationName: "transactionIn",
 	}),
 }));
 

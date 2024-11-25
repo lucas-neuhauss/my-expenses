@@ -3,7 +3,7 @@ import type { PieChartDataItem } from "./charts";
 
 export function calculateDashboardData(
 	transactions: Array<
-		Pick<Transaction, "id" | "type" | "cents" | "isTransference" | "date"> & {
+		Pick<Transaction, "id" | "type" | "cents" | "transferenceId" | "date"> & {
 			category: { id: number; name: string };
 			categoryParent: { id: number; name: string } | null;
 		}
@@ -17,7 +17,7 @@ export function calculateDashboardData(
 	transactions.forEach((t) => {
 		const category = t.categoryParent ?? t.category;
 
-		if (t.type === "income" && !t.isTransference) {
+		if (t.type === "income" && t.transferenceId === null) {
 			totalIncome += t.cents;
 			const index = incomePieChartData.findIndex((cell) => cell.name === category.name);
 			if (index === -1) {
@@ -29,7 +29,7 @@ export function calculateDashboardData(
 			} else {
 				incomePieChartData[index].value += t.cents;
 			}
-		} else if (t.type === "expense" && !t.isTransference) {
+		} else if (t.type === "expense" && t.transferenceId === null) {
 			totalExpense += t.cents;
 			const index = expensePieChartData.findIndex((cell) => cell.name === category.name);
 			if (index === -1) {
