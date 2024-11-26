@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// TODO: Check if valid date string
 export const DateStringSchema = z.string();
 
 export const getLocalDate = (dateStr: string) => {

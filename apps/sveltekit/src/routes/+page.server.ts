@@ -65,6 +65,7 @@ export const load = async (event) => {
 			and(
 				eq(table.transaction.userId, userId),
 				lt(table.transaction.date, dateMonthLater.toString()),
+				eq(table.transaction.paid, true),
 			),
 		);
 

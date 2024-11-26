@@ -7,6 +7,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
+
 export const upsertTransaction = async ({
 	userId,
 	formData,
@@ -22,8 +24,9 @@ export const upsertTransaction = async ({
 			.number()
 			.gt(0)
 			.transform((v) => Math.round(v * 100)),
-		date: DateStringSchema, // TODO: Check if valid date string
+		date: DateStringSchema,
 		description: z.string().min(1).trim().nullable().catch(null),
+		paid: BooleanStringSchema,
 	});
 	const formSchema = z
 		.discriminatedUnion("type", [
@@ -50,7 +53,7 @@ export const upsertTransaction = async ({
 		}));
 
 	const formValues = formSchema.parse(formObj);
-	const { id, wallet: walletId, cents, date, description } = formValues;
+	const { id, wallet: walletId, cents, date, description, paid } = formValues;
 
 	if (id === "new") {
 		if (formValues.type === "transference") {
@@ -79,6 +82,7 @@ export const upsertTransaction = async ({
 					walletId: walletId,
 					transferenceId,
 					cents: -cents,
+					paid,
 					description,
 				},
 				{
@@ -89,6 +93,7 @@ export const upsertTransaction = async ({
 					walletId: formValues.toWallet,
 					transferenceId,
 					cents,
+					paid,
 					description,
 				},
 			]);
@@ -101,6 +106,7 @@ export const upsertTransaction = async ({
 				categoryId: formValues.category,
 				walletId,
 				cents,
+				paid,
 				description,
 			});
 		}
@@ -132,6 +138,7 @@ export const upsertTransaction = async ({
 					date,
 					walletId: walletId,
 					cents: -cents,
+					paid,
 					description,
 				})
 				.where(eq(table.transaction.id, expense.id));
@@ -143,6 +150,7 @@ export const upsertTransaction = async ({
 					date,
 					walletId: formValues.toWallet,
 					cents,
+					paid,
 					description,
 				})
 				.where(eq(table.transaction.id, income.id));
@@ -155,6 +163,7 @@ export const upsertTransaction = async ({
 					categoryId: formValues.category,
 					walletId,
 					cents,
+					paid,
 					description,
 				})
 				.where(eq(table.transaction.id, id));
@@ -238,6 +247,7 @@ export const getDashboardTransactions = async ({
 			description: table.transaction.description,
 			date: table.transaction.date,
 			transferenceId: table.transaction.transferenceId,
+			paid: table.transaction.paid,
 			wallet: {
 				id: table.wallet.id,
 				name: table.wallet.name,

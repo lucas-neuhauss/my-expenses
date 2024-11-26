@@ -6,6 +6,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
 	import * as Select from "$lib/components/ui/select";
+	import { Switch } from "$lib/components/ui/switch";
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import type { NestedCategory } from "$lib/utils/category";
@@ -75,6 +76,14 @@
 		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
 	);
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
+	let paid = $state(transaction?.paid ?? true);
+
+	$effect(() => {
+		// If selecting a date in the future, set "paid" to false
+		if (!!date && date.compare(today(getLocalTimeZone())) > 0) {
+			paid = false;
+		}
+	});
 
 	const onWalletChange = (idStr: string) => {
 		const id = Number(idStr);
@@ -104,6 +113,7 @@
 		<input type="hidden" name="category" value={category.id} />
 		<input type="hidden" name="date" value={date} />
 		<input type="hidden" name="type" value={tab} />
+		<input type="hidden" name="paid" value={paid} />
 
 		<div>
 			<Label>Wallet</Label>
@@ -143,18 +153,27 @@
 			<DatePicker bind:open={calendarOpen} bind:date />
 		</div>
 
-		<div>
-			<Label for="cents">Value</Label>
-			<Input
-				required
-				id="cents"
-				type="number"
-				name="cents"
-				placeholder="R$ 0.00"
-				step="0.01"
-				class="col-span-3"
-				bind:value={cents}
-			/>
+		<div class="!flex-row !gap-6">
+			<div class="flex flex-1 flex-col justify-items-end gap-2">
+				<Label for="cents">Value</Label>
+				<Input
+					required
+					id="cents"
+					type="number"
+					name="cents"
+					placeholder="R$ 0.00"
+					step="0.01"
+					class="col-span-3"
+					bind:value={cents}
+				/>
+			</div>
+
+			<div class="mr-3 flex flex-col justify-items-end gap-2">
+				<Label for="paid">Paid</Label>
+				<div class="flex h-9 items-center">
+					<Switch id="paid" bind:checked={paid} />
+				</div>
+			</div>
 		</div>
 	</div>
 	<Dialog.Footer>

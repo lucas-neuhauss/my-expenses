@@ -197,6 +197,7 @@
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
 					<Table.Head>Amount</Table.Head>
+					<Table.Head>Paid</Table.Head>
 					<Table.Head>Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
@@ -224,6 +225,7 @@
 							{t.wallet.name}
 						</Table.Cell>
 						<Table.Cell>{formatCurrency(t.cents)}</Table.Cell>
+						<Table.Cell>{t.paid ? "✔️" : "🚫"}</Table.Cell>
 						<Table.Cell class="flex items-center gap-2">
 							<Button
 								title="Edit transaction"

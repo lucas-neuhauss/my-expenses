@@ -69,7 +69,7 @@ export function loadWallets(userId: number) {
 		})
 		.from(table.transaction)
 		.rightJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
-		.where(eq(table.wallet.userId, userId))
+		.where(and(eq(table.wallet.userId, userId), eq(table.transaction.paid, true)))
 		.orderBy(table.wallet.name)
 		.groupBy(table.transaction.userId, table.wallet.id);
 }
