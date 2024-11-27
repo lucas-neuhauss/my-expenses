@@ -13,13 +13,13 @@
 		categories,
 		onChange,
 		includeAllCategoriesOption = false,
-		width = "100%",
+		style,
 	}: {
 		value?: number;
 		categories: NestedCategory[];
 		onChange?: (id: number) => void;
 		includeAllCategoriesOption?: boolean;
-		width?: string;
+		style?: string;
 	} = $props();
 	const ALL_CATEGORIES_VALUE = -1;
 
@@ -62,7 +62,7 @@
 			<Button
 				variant="outline"
 				class="justify-between"
-				style={`width: ${width}`}
+				{style}
 				{...props}
 				role="combobox"
 				aria-expanded={open}

@@ -139,7 +139,9 @@
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			<Select.Trigger class="col-span-3 w-[115px]">{selectedWallet.name}</Select.Trigger>
+			<Select.Trigger class="col-span-3 min-w-[115px]">
+				{selectedWallet.name}
+			</Select.Trigger>
 			<Select.Content>
 				{#each walletOptions as w}
 					<Select.Item value={String(w.id)}>{w.name}</Select.Item>
@@ -152,7 +154,7 @@
 			value={data.category}
 			onChange={onCategoryChanged}
 			includeAllCategoriesOption
-			width="220px"
+			style="min-width: 224px;"
 		/>
 
 		<Select.Root
