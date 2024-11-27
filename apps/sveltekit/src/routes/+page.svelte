@@ -192,13 +192,13 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[102px]">Date</Table.Head>
+					<Table.Head class="w-[104px]">Date</Table.Head>
 					<Table.Head>Description</Table.Head>
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
 					<Table.Head>Amount</Table.Head>
-					<Table.Head>Paid</Table.Head>
-					<Table.Head>Actions</Table.Head>
+					<Table.Head class="w-[72px]">Paid</Table.Head>
+					<Table.Head class="w-[96px]">Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
