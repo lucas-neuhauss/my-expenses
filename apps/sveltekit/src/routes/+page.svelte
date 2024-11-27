@@ -26,9 +26,9 @@
 		transaction: null,
 	});
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
-	const yearOptions = Array.from({ length: 100 }, (_, i) => ({
-		label: String(new Date().getFullYear() - i),
-		value: new Date().getFullYear() - i,
+	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
+		label: String(new Date().getFullYear() - i + 25),
+		value: new Date().getFullYear() - i + 25,
 	}));
 
 	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...data.wallets]);
@@ -212,15 +212,13 @@
 							)}
 						</Table.Cell>
 						<Table.Cell>{t.description}</Table.Cell>
-						<Table.Cell class="inline-flex items-center gap-x-2">
-							<div class="flex items-center justify-center rounded-full bg-card p-2">
-								<img
-									alt="category icon"
-									src={`/images/category/${t.category.icon}`}
-									width="15"
-									height="15"
-								/>
-							</div>
+						<Table.Cell class="inline-flex items-center gap-x-4">
+							<img
+								alt="category icon"
+								src={`/images/category/${t.category.icon}`}
+								width="19"
+								height="19"
+							/>
 							{t.category.name}
 						</Table.Cell>
 						<Table.Cell>
