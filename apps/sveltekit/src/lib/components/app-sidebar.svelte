@@ -4,6 +4,7 @@
 	import House from "lucide-svelte/icons/house";
 	import Inbox from "lucide-svelte/icons/inbox";
 	import LogOut from "lucide-svelte/icons/log-out";
+	import Repeat from "lucide-svelte/icons/repeat";
 	import { page } from "$app/stores";
 
 	// Menu items.
@@ -22,6 +23,11 @@
 			title: "Wallets",
 			url: "/wallets",
 			icon: Calendar,
+		},
+		{
+			title: "Subscriptions",
+			url: "/subscriptions",
+			icon: Repeat,
 		},
 	];
 </script>
