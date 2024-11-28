@@ -133,8 +133,34 @@ export const categoryRelations = relations(category, ({ one, many }) => ({
 	}),
 }));
 
+export const subscription = pgTable("subscription", {
+	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
+	name: varchar("name", { length: 255 }).notNull(),
+	cents: integer("cents").notNull(),
+	userId: integer("user_id")
+		.references(() => user.id)
+		.notNull(),
+	categoryId: integer("category_id")
+		.references(() => category.id)
+		.notNull(),
+	startDate: date("start_date", { mode: "string" }).notNull(),
+	endDate: date("end_date", { mode: "string" }),
+	lastGenerated: date("last_generated", { mode: "string" }).notNull(),
+});
+export const subscriptionRelations = relations(subscription, ({ one }) => ({
+	user: one(user, {
+		fields: [subscription.userId],
+		references: [user.id],
+	}),
+	category: one(category, {
+		fields: [subscription.categoryId],
+		references: [category.id],
+	}),
+}));
+
 export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
 export type Transaction = typeof transaction.$inferSelect;
 export type Category = typeof category.$inferSelect;
 export type Wallet = typeof wallet.$inferSelect;
+export type Subscription = typeof subscription.$inferSelect;
