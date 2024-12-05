@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { page } from "$app/stores";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import Calendar from "lucide-svelte/icons/calendar";
 	import House from "lucide-svelte/icons/house";
 	import Inbox from "lucide-svelte/icons/inbox";
 	import LogOut from "lucide-svelte/icons/log-out";
-	import { page } from "$app/stores";
+
+	let { isAdmin }: { isAdmin: boolean } = $props();
 
 	// Menu items.
 	const items = [
@@ -24,6 +26,9 @@
 			icon: Calendar,
 		},
 	];
+	if (isAdmin) {
+		items.push({ title: "Backup", url: "/backup", icon: Calendar });
+	}
 </script>
 
 <Sidebar.Root>

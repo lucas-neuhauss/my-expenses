@@ -1,31 +1,23 @@
-import { db } from "$lib/server/db";
-import * as schema from "$lib/server/db/schema";
-import { error } from "@sveltejs/kit";
+import { createBackup } from "$lib/server/data/backup.js";
+import { USER_ADMIN_ID } from "$lib/user.js";
+import { error, json } from "@sveltejs/kit";
 import dayjs from "dayjs";
-import { PgTable } from "drizzle-orm/pg-core";
 
-export async function POST({ locals }) {
-	console.log("\n\n========");
-	const user = locals.user;
-	if (!user || user.id !== 1000) {
-		return error(400);
-	}
+export async function GET({ locals }) {
+  const user = locals.user;
+  if (!user || user.id !== USER_ADMIN_ID) {
+    return error(401);
+  }
 
-	const res: any = {};
-	for (const [key, value] of Object.entries(schema)) {
-		console.log(`key: ${key} | isTable: ${value instanceof PgTable}`);
-		if (value instanceof PgTable) {
-			const tableRows = await db.select().from(value);
-			res[key] = tableRows;
-		}
-	}
-	const date = dayjs().format("YYYY-MM-DD_HH:mm");
+  console.log("\n========");
+  console.log("\nCREATING BACKUP\n");
+  const backupData = await createBackup();
+  console.log("\n========\n");
 
-	return new Response(JSON.stringify(res), {
-		status: 200,
-		headers: {
-			"Content-Type": "application/json",
-			"Content-Disposition": `attachment; filename=expenses-${date}.json`,
-		},
-	});
+  return json(backupData, {
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Disposition": `attachment; filename=expenses-${dayjs().format("YYYY-MM-DD")}.json`,
+    },
+  })
 }
