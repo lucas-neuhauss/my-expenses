@@ -5,6 +5,7 @@
 	import House from "lucide-svelte/icons/house";
 	import Inbox from "lucide-svelte/icons/inbox";
 	import LogOut from "lucide-svelte/icons/log-out";
+	import Database from "lucide-svelte/icons/database";
 
 	let { isAdmin }: { isAdmin: boolean } = $props();
 
@@ -27,7 +28,7 @@
 		},
 	];
 	if (isAdmin) {
-		items.push({ title: "Backup", url: "/backup", icon: Calendar });
+		items.push({ title: "Backup", url: "/backup", icon: Database });
 	}
 </script>
 
