@@ -69,6 +69,7 @@
 		<input type="hidden" name="id" value={id} />
 		<input type="hidden" name="type" value="transference" />
 		<input type="hidden" name="date" value={date} />
+		<input type="hidden" name="paid" value={paid} />
 
 		<div>
 			<Label for="fromWallet">From Wallet</Label>
