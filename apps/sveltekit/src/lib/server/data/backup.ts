@@ -1,7 +1,9 @@
 import { db } from "$lib/server/db";
+import * as schema from "$lib/server/db/schema";
 import * as table from "$lib/server/db/schema";
-import { error, json } from "@sveltejs/kit";
+import { error } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
+import { PgTable } from "drizzle-orm/pg-core";
 import { readFile } from "fs/promises";
 import { resolve } from "path";
 import { v4 as uuidv4 } from 'uuid';
@@ -43,12 +45,7 @@ type BackupData = {
   }[];
 };
 
-export async function POST({ locals }) {
-  const user = locals.user;
-  if (!user) {
-    return error(400, "Something went wrong");
-  }
-  const userId = user.id;
+export async function loadBackup(userId: number) {
   const BACKUP_USER_ID = 1000;
 
   let data: BackupData | null = null;
@@ -60,7 +57,6 @@ export async function POST({ locals }) {
     data = JSON.parse(fileContent);
     if (!data) throw Error();
   } catch (err) {
-    console.log(err);
     return error(500, "Failed to read the backup file");
   }
   const maps = {
@@ -73,7 +69,6 @@ export async function POST({ locals }) {
   await db.delete(table.transaction).where(eq(table.transaction.userId, userId));
   await db.delete(table.category).where(eq(table.category.userId, userId));
   await db.delete(table.wallet).where(eq(table.wallet.userId, userId));
-  console.log("[2]", Object.keys(data));
 
   // 3. Create wallets, and map the old ids with the new ids
   const walletsData = data.wallet.filter((w) => w.userId === BACKUP_USER_ID);
@@ -92,7 +87,6 @@ export async function POST({ locals }) {
   for (let i = 0; i < walletsData.length; i++) {
     maps.walletsMap.set(walletsData[i].id, newWallets[i].id);
   }
-  console.log("[3]");
 
   // 4. Create categories, and map the old ids with the new ids
   // First we need to create the parent categories
@@ -140,7 +134,6 @@ export async function POST({ locals }) {
   for (let i = 0; i < childCategories.length; i++) {
     maps.categoriesMap.set(childCategories[i].id, newChildCategories[i].id);
   }
-  console.log("[4]");
 
   // 5. Create all the transactions, and map the old ids with the new ids
   const transactionsData = data.transaction.filter((t) => t.userId === BACKUP_USER_ID);
@@ -164,7 +157,6 @@ export async function POST({ locals }) {
   for (let i = 0; i < transactionsData.length; i++) {
     maps.transactionsMap.set(transactionsData[i].id, newTransactions[i].id);
   }
-  console.log("[5]");
 
   // 6. Update transactions that are transferences
   const transferencesData = data.transference.filter(
@@ -185,18 +177,17 @@ export async function POST({ locals }) {
     }).where(eq(table.transaction.id, transferenceOutId));
   }
 
-  return json(
-    {
-      data: {
-        wallets: { old: walletsData.length, new: newWallets.length },
-        categories: {
-          parent: { old: parentCategories.length, new: newParentCategories.length },
-          child: { old: childCategories.length, new: newChildCategories.length },
-        },
-        transactions: { old: transactionsData.length, new: newTransactions.length },
-        // transferences: { old: transferencesData.length, new: newTransferences.length },
-      },
-    },
-    { status: 201 },
-  );
+  return { ok: true };
+}
+
+export async function createBackup() {
+  const backupData: any = {};
+  for (const [key, value] of Object.entries(schema)) {
+    console.log(`key: ${key} | isTable: ${value instanceof PgTable}`);
+    if (value instanceof PgTable) {
+      const tableRows = await db.select().from(value);
+      backupData[key] = tableRows;
+    }
+  }
+  return backupData;
 }
