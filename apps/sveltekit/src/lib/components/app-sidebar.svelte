@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import Calendar from "lucide-svelte/icons/calendar";
 	import House from "lucide-svelte/icons/house";
@@ -41,7 +41,7 @@
 				<Sidebar.Menu>
 					{#each items as item (item.title)}
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={$page.route.id === item.url}>
+							<Sidebar.MenuButton isActive={page.route.id === item.url}>
 								{#snippet child({ props })}
 									<a href={item.url} {...props}>
 										<item.icon />

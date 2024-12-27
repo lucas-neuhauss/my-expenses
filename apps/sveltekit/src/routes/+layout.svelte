@@ -22,7 +22,7 @@
 
 <Toaster />
 {#if data.user}
-	<Sidebar.Provider>
+	<Sidebar.Provider open={data.sidebarOpen}>
 		<AppSidebar {isAdmin} />
 		<main class="flex min-h-svh flex-1 flex-col">
 			<header class="flex justify-between p-4">
