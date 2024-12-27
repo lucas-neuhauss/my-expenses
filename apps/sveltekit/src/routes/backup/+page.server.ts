@@ -1,14 +1,13 @@
-import { loadBackup } from "$lib/server/data/backup.js";
-import { USER_ADMIN_ID } from "$lib/user.js";
-import { error, fail, redirect } from "@sveltejs/kit";
+import { createBackup, loadBackup } from "$lib/server/data/backup.js";
+import { error, fail, json, redirect } from "@sveltejs/kit";
+import dayjs from "dayjs";
 
 export const load = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, "/login");
 	}
 
-	const userId = event.locals.user.id;
-	if (userId !== USER_ADMIN_ID) {
+	if (event.locals.user.role !== "admin") {
 		return fail(404);
 	}
 
@@ -16,10 +15,28 @@ export const load = async (event) => {
 };
 
 export const actions = {
+	"create-backup": async (event) => {
+		const user = event.locals.user;
+		console.log("[1]", user);
+		if (!user || user.role !== "admin") {
+			return error(401);
+		}
+
+		const backupData = await createBackup();
+		console.log("Backup data");
+		console.log(Object.keys(backupData));
+
+		return json(backupData, {
+			headers: {
+				"Content-Type": "application/json",
+				"Content-Disposition": `attachment; filename=expenses-${dayjs().format("YYYY-MM-DD")}.json`,
+			},
+		});
+	},
 	"load-backup": async (event) => {
 		const user = event.locals.user;
 		console.log("[1]", user);
-		if (!user || user.id !== USER_ADMIN_ID) {
+		if (!user || user.role !== "admin") {
 			return error(401);
 		}
 

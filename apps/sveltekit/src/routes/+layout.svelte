@@ -3,7 +3,6 @@
 	import ThemeToggle from "$lib/components/theme-toggle.svelte";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import { Toaster } from "$lib/components/ui/sonner";
-	import { USER_ADMIN_ID } from "$lib/user";
 	import dayjs from "dayjs";
 	import localizedFormat from "dayjs/plugin/localizedFormat";
 	import { ModeWatcher } from "mode-watcher";
@@ -11,7 +10,7 @@
 
 	let { children, data } = $props();
 
-	let isAdmin = data.user?.id === USER_ADMIN_ID;
+	let isAdmin = data.user?.role === "admin";
 	dayjs.extend(localizedFormat);
 </script>
 

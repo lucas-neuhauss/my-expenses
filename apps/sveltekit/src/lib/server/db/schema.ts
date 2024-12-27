@@ -23,6 +23,9 @@ export const user = pgTable(
 	{
 		id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
 		email: text("email").unique().notNull(),
+		role: text("role", { enum: ["admin", "user"] })
+			.default("user")
+			.notNull(),
 		passwordHash: text("password_hash").notNull(),
 	},
 	(table) => [uniqueIndex("emailUniqueIndex").on(lower(table.email))],
