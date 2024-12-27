@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
@@ -14,6 +14,8 @@
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
+	import ChevronLeft from "lucide-svelte/icons/chevron-left";
+	import ChevronRight from "lucide-svelte/icons/chevron-right";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
 
@@ -40,7 +42,7 @@
 	const currentMonth = new Date().getMonth() + 1;
 
 	const onWalletChange = (id: string) => {
-		const url = new URL($page.url.href);
+		const url = new URL(page.url.href);
 
 		if (id === "-1") {
 			url.searchParams.delete("wallet");
@@ -49,31 +51,28 @@
 		}
 		goto(url.href);
 	};
-	const onMonthChanged = (m: string) => {
-		const url = new URL($page.url.href);
-		if (data.year === currentYear && Number(m) === currentMonth) {
-			url.searchParams.delete("month");
-			url.searchParams.delete("year");
-		} else {
-			url.searchParams.set("month", m);
+	const onDateChanged = (m: number, y: number) => {
+		if (m === 0) {
+			m = 12;
+			y -= 1;
+		} else if (m === 13) {
+			m = 1;
+			y += 1;
 		}
-		goto(url.href);
-	};
-	const onYearChanged = (y: string) => {
-		const url = new URL($page.url.href);
-		if (Number(y) === currentYear) {
-			url.searchParams.delete("year");
-			if (data.month === currentMonth) {
-				url.searchParams.delete("month");
-			}
-		} else {
-			url.searchParams.set("month", String(data.month));
-			url.searchParams.set("year", y);
+
+		const url = new URL(page.url.href);
+		url.searchParams.delete("year");
+		url.searchParams.delete("month");
+		if (y !== currentYear) {
+			url.searchParams.set("year", String(y));
+		}
+		if (m !== currentMonth || y !== currentYear) {
+			url.searchParams.set("month", String(m));
 		}
 		goto(url.href);
 	};
 	const onCategoryChanged = (c: number) => {
-		const url = new URL($page.url.href);
+		const url = new URL(page.url.href);
 		if (c === -1) {
 			url.searchParams.delete("category");
 		} else {
@@ -120,9 +119,9 @@
 	</div>
 
 	<div class="flex items-center gap-4">
-		<Button autofocus variant="outline" onclick={handleClickCreate}
-			>Create Transaction</Button
-		>
+		<Button autofocus variant="outline" onclick={handleClickCreate}>
+			Create Transaction
+		</Button>
 		<UpsertTransaction
 			bind:open={upsertDialog.open}
 			bind:transaction={upsertDialog.transaction}
@@ -139,7 +138,7 @@
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			<Select.Trigger class="col-span-3 min-w-[115px]">
+			<Select.Trigger class="col-span-3 w-[170px]">
 				{selectedWallet.name}
 			</Select.Trigger>
 			<Select.Content>
@@ -154,14 +153,25 @@
 			value={data.category}
 			onChange={onCategoryChanged}
 			includeAllCategoriesOption
-			style="min-width: 224px;"
+			style="width: 224px;"
 		/>
+
+		<Button
+			variant="outline"
+			size="icon"
+			class="shrink-0"
+			title="Go to the previous month"
+			aria-label="Go to the previous month"
+			onclick={() => onDateChanged(data.month - 1, data.year)}
+		>
+			<ChevronLeft />
+		</Button>
 
 		<Select.Root
 			type="single"
 			name="month"
 			value={String(data.month)}
-			onValueChange={onMonthChanged}
+			onValueChange={(m) => onDateChanged(Number(m), data.year)}
 			allowDeselect={false}
 		>
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
@@ -176,7 +186,7 @@
 			type="single"
 			name="year"
 			value={String(data.year)}
-			onValueChange={onYearChanged}
+			onValueChange={(y) => onDateChanged(data.month, Number(y))}
 			allowDeselect={false}
 		>
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
@@ -186,6 +196,17 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+
+		<Button
+			variant="outline"
+			size="icon"
+			class="shrink-0"
+			title="Go to the next month"
+			aria-label="Go to the next month"
+			onclick={() => onDateChanged(data.month + 1, data.year)}
+		>
+			<ChevronRight />
+		</Button>
 	</div>
 
 	<DashboardCharts charts={data.charts} />
