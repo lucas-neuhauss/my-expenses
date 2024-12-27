@@ -1,6 +1,8 @@
 import type { Transaction } from "$lib/server/db/schema";
 import type { PieChartDataItem } from "./charts";
 
+const CHARTS_LIMIT = 10;
+
 export function calculateDashboardData(
 	transactions: Array<
 		Pick<Transaction, "id" | "type" | "cents" | "transferenceId" | "paid" | "date"> & {
@@ -22,6 +24,7 @@ export function calculateDashboardData(
 			const index = incomePieChartData.findIndex((cell) => cell.name === category.name);
 			if (index === -1) {
 				incomePieChartData.push({
+					id: category.id,
 					name: category.name,
 					value: t.cents,
 					// color: getRandomColor(),
@@ -34,6 +37,7 @@ export function calculateDashboardData(
 			const index = expensePieChartData.findIndex((cell) => cell.name === category.name);
 			if (index === -1) {
 				expensePieChartData.push({
+					id: category.id,
 					name: category.name,
 					value: t.cents * -1,
 					// color: getRandomColor(),
@@ -48,20 +52,24 @@ export function calculateDashboardData(
 	expensePieChartData.sort((a, b) => b.value - a.value);
 	incomePieChartData.sort((a, b) => b.value - a.value);
 
-	if (expensePieChartData.length > 5) {
-		expensePieChartData = expensePieChartData.slice(0, 5).concat([
+	if (expensePieChartData.length > CHARTS_LIMIT) {
+		expensePieChartData = expensePieChartData.slice(0, CHARTS_LIMIT).concat([
 			{
 				name: "Others",
-				value: expensePieChartData.slice(5).reduce((acc, c) => acc + c.value, 0),
+				value: expensePieChartData
+					.slice(CHARTS_LIMIT)
+					.reduce((acc, c) => acc + c.value, 0),
 				// color: getRandomColor(),
 			},
 		]);
 	}
-	if (incomePieChartData.length > 5) {
-		incomePieChartData = incomePieChartData.slice(0, 5).concat([
+	if (incomePieChartData.length > CHARTS_LIMIT) {
+		incomePieChartData = incomePieChartData.slice(0, CHARTS_LIMIT).concat([
 			{
 				name: "Others",
-				value: incomePieChartData.slice(5).reduce((acc, c) => acc + c.value, 0),
+				value: incomePieChartData
+					.slice(CHARTS_LIMIT)
+					.reduce((acc, c) => acc + c.value, 0),
 				// color: getRandomColor(),
 			},
 		]);
