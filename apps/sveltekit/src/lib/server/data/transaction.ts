@@ -213,13 +213,11 @@ export const deleteTransaction = async ({
 
 export const getDashboardTransactions = async ({
 	userId,
-	category,
 	wallet,
 	start,
 	end,
 }: {
 	userId: number;
-	category: number;
 	wallet: number;
 	start: string;
 	end: string;
@@ -227,17 +225,6 @@ export const getDashboardTransactions = async ({
 	const tableCategoryParent = alias(table.category, "parent");
 	const tableTransactionFrom = alias(table.transaction, "from");
 	const tableTransactionTo = alias(table.transaction, "to");
-
-	const categoryIds = (
-		await db
-			.select({ id: table.category.id })
-			.from(table.category)
-			.where(
-				and(eq(table.category.userId, userId), eq(table.category.parentId, category)),
-			)
-	)
-		.map((c) => c.id)
-		.concat([category]);
 
 	return db
 		.select({
@@ -276,7 +263,6 @@ export const getDashboardTransactions = async ({
 				eq(table.transaction.userId, userId),
 				gte(table.transaction.date, start),
 				lte(table.transaction.date, end),
-				category === -1 ? undefined : inArray(table.transaction.categoryId, categoryIds),
 				wallet === -1 ? undefined : eq(table.transaction.walletId, wallet),
 			),
 		)

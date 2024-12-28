@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import { getOptions, type PieChartDataItem } from "$lib/utils/charts";
 	import { PieChart } from "echarts/charts";
 	import { TitleComponent, TooltipComponent } from "echarts/components";
@@ -26,8 +26,24 @@
 	let previousMode = $mode;
 	let expensePieChart: echarts.ECharts;
 	let incomePieChart: echarts.ECharts;
+
+	const onClickCategory = (params: { data: unknown }) => {
+		const categoryId = z
+			.object({ id: z.number().int() })
+			.transform((v) => String(v.id))
+			.parse(params.data);
+		const url = new URL(page.url.href);
+		if (url.searchParams.get("category") === categoryId) {
+			url.searchParams.delete("category");
+		} else {
+			url.searchParams.set("category", categoryId);
+		}
+		goto(url.href);
+	};
+
 	$effect(() => {
 		if (previousMode !== $mode) {
+			// Set up expense pie chart
 			expensePieChart?.dispose();
 			expensePieChart = echarts.init(
 				document.getElementById("dashboard-expense-chart"),
@@ -36,16 +52,16 @@
 			expensePieChart.setOption(
 				getOptions(charts.expensePieChartData, { name: "Expense" }),
 			);
-			expensePieChart.on("click", (params) => {
-				console.log(params);
-			});
+			expensePieChart.on("click", onClickCategory);
 
+			// Set up income pie chart
 			incomePieChart?.dispose();
 			incomePieChart = echarts.init(
 				document.getElementById("dashboard-income-chart"),
 				$mode,
 			);
 			incomePieChart.setOption(getOptions(charts.incomePieChartData, { name: "Income" }));
+			incomePieChart.on("click", onClickCategory);
 		}
 		previousMode = $mode;
 	});
@@ -68,25 +84,9 @@
 		expensePieChart.setOption(
 			getOptions(charts.expensePieChartData, { name: "Expense" }),
 		);
-		expensePieChart.on("click", (params) => {
-			const categoryId = z
-				.object({ id: z.number().int() })
-				.transform((v) => String(v.id))
-				.parse(params.data);
-			const url = new URL($page.url.href);
-			url.searchParams.set("category", categoryId);
-			goto(url.href);
-		});
+		expensePieChart.on("click", onClickCategory);
 		incomePieChart.setOption(getOptions(charts.incomePieChartData, { name: "Income" }));
-		incomePieChart.on("click", (params) => {
-			const categoryId = z
-				.object({ id: z.number().int() })
-				.transform((v) => String(v.id))
-				.parse(params.data);
-			const url = new URL($page.url.href);
-			url.searchParams.set("category", categoryId);
-			goto(url.href);
-		});
+		incomePieChart.on("click", onClickCategory);
 	});
 
 	onDestroy(() => {
