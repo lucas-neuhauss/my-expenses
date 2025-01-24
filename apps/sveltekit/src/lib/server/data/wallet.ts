@@ -68,8 +68,14 @@ export function loadWallets(userId: number) {
 			balance: sql<number>`cast((COALESCE(SUM(${table.transaction.cents}), 0) + ${table.wallet.initialBalance}) as int)`,
 		})
 		.from(table.transaction)
-		.rightJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
-		.where(and(eq(table.wallet.userId, userId), eq(table.transaction.paid, true)))
+		.rightJoin(
+			table.wallet,
+			and(
+				eq(table.transaction.walletId, table.wallet.id),
+				eq(table.transaction.paid, true),
+			),
+		)
+		.where(eq(table.wallet.userId, userId))
 		.orderBy(table.wallet.name)
 		.groupBy(table.transaction.userId, table.wallet.id);
 }
