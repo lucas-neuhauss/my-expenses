@@ -4,7 +4,6 @@
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertTransactionForm from "./upsert-transaction-form.svelte";
-	import UpsertTransactionTransference from "./upsert-transaction-transference.svelte";
 
 	let {
 		open = $bindable(),
@@ -93,7 +92,15 @@
 				{#snippet child({ props })}
 					{#if wallets.length >= 2}
 						<div {...props} tabindex="-1">
-							<UpsertTransactionTransference {transaction} {wallets} {onSuccess} />
+							<UpsertTransactionForm
+								{transaction}
+								categories={categories.filter((c) => c.type === "income")}
+								{wallets}
+								{tab}
+								{defaultCategory}
+								{defaultWallet}
+								{onSuccess}
+							/>
 						</div>
 					{/if}
 				{/snippet}
