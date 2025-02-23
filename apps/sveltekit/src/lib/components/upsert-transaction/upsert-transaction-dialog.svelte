@@ -36,8 +36,10 @@
 		}
 	});
 
-	const onSuccess = () => {
-		open = false;
+	const onSuccess = (shouldContinue = false) => {
+		if (!shouldContinue) {
+			open = false;
+		}
 	};
 </script>
 
