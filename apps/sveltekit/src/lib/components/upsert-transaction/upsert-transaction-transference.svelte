@@ -24,7 +24,7 @@
 	}: {
 		transaction: DashboardTransaction | null;
 		wallets: { id: number; name: string }[];
-		onSuccess: () => void;
+		onSuccess: (shouldContinue: boolean) => void;
 	} = $props();
 
 	let id = $state(transaction ? String(transaction.id) : "new");
@@ -54,12 +54,17 @@
 <form
 	method="post"
 	action="?/upsert-transaction"
-	use:enhance={({ formElement }) =>
-		({ result }) => {
+	use:enhance={() =>
+		({ result, update }) => {
 			if (result.type === "success") {
-				onSuccess();
+				const shouldContinue = result.data?.shouldContinue === true;
+				if (shouldContinue) {
+					update({ reset: false });
+					description = "";
+					cents = undefined;
+				}
+				onSuccess(shouldContinue);
 				invalidateAll();
-				formElement.reset();
 			}
 		}}
 >
@@ -145,7 +150,14 @@
 			</div>
 		</div>
 	</div>
-	<Dialog.Footer>
+	<Dialog.Footer class="gap-2 sm:flex-row-reverse sm:justify-start">
 		<Button type="submit">Save</Button>
+		<Button
+			variant="secondary"
+			type="submit"
+			formaction="?/upsert-transaction&continue=true"
+		>
+			Save and Create Another
+		</Button>
 	</Dialog.Footer>
 </form>
