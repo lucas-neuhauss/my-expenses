@@ -11,9 +11,11 @@ const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "tr
 
 export const upsertTransaction = async ({
 	userId,
+	shouldContinue,
 	formData,
 }: {
 	userId: number;
+	shouldContinue: boolean;
 	formData: FormData;
 }) => {
 	const formObj = Object.fromEntries(formData.entries());
@@ -170,7 +172,7 @@ export const upsertTransaction = async ({
 		}
 	}
 
-	return { ok: true };
+	return { ok: true, shouldContinue };
 };
 
 export const deleteTransaction = async ({

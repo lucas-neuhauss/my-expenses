@@ -109,9 +109,13 @@ export const actions = {
 			return fail(401);
 		}
 
+		const searchParams = event.url.searchParams;
+		const shouldContinue = searchParams.get("continue") === "true";
+
 		const formData = await event.request.formData();
 		return upsertTransaction({
 			userId: user.id,
+			shouldContinue,
 			formData,
 		});
 	},

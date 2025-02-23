@@ -34,9 +34,10 @@
 		tab: "expense" | "income" | "transference";
 		defaultWallet: number;
 		defaultCategory: number;
-		onSuccess: () => void;
+		onSuccess: (shouldContinue?: boolean) => void;
 	} = $props();
 
+	let walletTriggerRef = $state<HTMLButtonElement | null>(null);
 	let id = $state(transaction ? String(transaction.id) : "new");
 	let calendarOpen = $state(false);
 	let walletId = $state(
@@ -97,12 +98,18 @@
 <form
 	method="post"
 	action="?/upsert-transaction"
-	use:enhance={({ formElement }) =>
-		({ result }) => {
+	use:enhance={() =>
+		({ result, update }) => {
 			if (result.type === "success") {
-				onSuccess();
+				const shouldContinue = result.data?.shouldContinue === true;
+				if (shouldContinue) {
+					update({ reset: false });
+					description = "";
+					cents = undefined;
+					walletTriggerRef?.focus();
+				}
+				onSuccess(shouldContinue);
 				invalidateAll();
-				formElement.reset();
 			}
 		}}
 >
@@ -124,7 +131,9 @@
 				onValueChange={onWalletChange}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3">{wallet.name}</Select.Trigger>
+				<Select.Trigger bind:ref={walletTriggerRef} class="col-span-3">
+					{wallet.name}
+				</Select.Trigger>
 				<Select.Content>
 					{#each wallets as wallet}
 						<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
@@ -176,7 +185,14 @@
 			</div>
 		</div>
 	</div>
-	<Dialog.Footer>
+	<Dialog.Footer class="gap-2 sm:flex-row-reverse sm:justify-start">
 		<Button type="submit">Save</Button>
+		<Button
+			variant="secondary"
+			type="submit"
+			formaction="?/upsert-transaction&continue=true"
+		>
+			Save and Create Another
+		</Button>
 	</Dialog.Footer>
 </form>
