@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Moon from "svelte-radix/Moon.svelte";
-	import Sun from "svelte-radix/Sun.svelte";
+	import Sun from "lucide-svelte/icons/sun";
+	import Moon from "lucide-svelte/icons/moon";
 
 	import { buttonVariants } from "$lib/components/ui/button";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";

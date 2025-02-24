@@ -155,9 +155,6 @@ importers:
       svelte-check:
         specifier: ^4.1.4
         version: 4.1.4(picomatch@4.0.2)(svelte@5.20.2)(typescript@5.7.3)
-      svelte-radix:
-        specifier: ^2.0.1
-        version: 2.0.1(svelte@5.20.2)
       svelte-sonner:
         specifier: ^0.3.28
         version: 0.3.28(svelte@5.20.2)
@@ -3260,12 +3257,6 @@ packages:
         optional: true
       typescript:
         optional: true
-
-  svelte-radix@2.0.1:
-    resolution: {integrity: sha512-YrX44Dj+Rp6YZuPSjdmyd6P8QTkb2NXwySUCZYzjwkP6Cl3dZaTBPPeaSOutP3v3ycQ2XwyNOpyn4p0QcN+uYQ==}
-    engines: {node: '>=18.0.0', npm: '>=7.0.0'}
-    peerDependencies:
-      svelte: ^5.0.0
 
   svelte-sonner@0.3.28:
     resolution: {integrity: sha512-K3AmlySeFifF/cKgsYNv5uXqMVNln0NBAacOYgmkQStLa/UoU0LhfAACU6Gr+YYC8bOCHdVmFNoKuDbMEsppJg==}
@@ -6406,10 +6397,6 @@ snapshots:
       postcss: 8.5.3
       postcss-load-config: 4.0.2(postcss@8.5.3)
       typescript: 5.7.3
-
-  svelte-radix@2.0.1(svelte@5.20.2):
-    dependencies:
-      svelte: 5.20.2
 
   svelte-sonner@0.3.28(svelte@5.20.2):
     dependencies:
