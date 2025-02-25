@@ -22,7 +22,6 @@
 
 	let { data, form } = $props();
 	$effect(() => {
-		console.log("form ", form);
 		if (typeof form?.toast === "string") {
 			toast.success(form.toast);
 		}

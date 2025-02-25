@@ -115,7 +115,7 @@ export async function deleteCategory({
 	}
 
 	await db.delete(table.category).where(eq(table.category.id, id));
-	return { ok: true };
+	return { ok: true, toast: "Category deleted" };
 }
 
 export async function upsertCategory({
@@ -269,5 +269,5 @@ export async function upsertCategory({
 		}
 	}
 
-	return { ok: true };
+	return { ok: true, toast: id === "new" ? "Category created" : "Category updated" };
 }
