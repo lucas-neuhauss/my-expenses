@@ -113,11 +113,21 @@ export const actions = {
 		const shouldContinue = searchParams.get("continue") === "true";
 
 		const formData = await event.request.formData();
-		return upsertTransaction({
-			userId: user.id,
-			shouldContinue,
-			formData,
-		});
+		try {
+			const result = await upsertTransaction({
+				userId: user.id,
+				shouldContinue,
+				formData,
+			});
+			return result;
+		} catch (e) {
+			const errorMessage = z
+				.object({ message: z.string() })
+				.catch({ message: "Something went wrong" })
+				.parse(e).message;
+			console.error(e);
+			return fail(400, { toast: errorMessage });
+		}
 	},
 	"delete-transaction": async (event) => {
 		const user = event.locals.user;

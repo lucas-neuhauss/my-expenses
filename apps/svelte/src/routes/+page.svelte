@@ -18,8 +18,16 @@
 	import ChevronRight from "lucide-svelte/icons/chevron-right";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
+	import { toast } from "svelte-sonner";
 
-	let { data } = $props();
+	let { data, form } = $props();
+	$effect(() => {
+		console.log("form ", form);
+		if (typeof form?.toast === "string") {
+			toast.success(form.toast);
+		}
+	});
+
 	let upsertDialog = $state<{
 		open: boolean;
 		transaction: DashboardTransaction | null;
