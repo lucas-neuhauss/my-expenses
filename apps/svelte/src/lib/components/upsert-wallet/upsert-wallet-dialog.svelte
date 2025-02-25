@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { enhance } from "$app/forms";
 	import { Input } from "$lib/components/ui/input";
@@ -26,12 +25,11 @@
 		</Dialog.Header>
 
 		<form
-			use:enhance={({ formElement }) => {
-				return ({ result }) => {
+			use:enhance={() => {
+				return ({ result, update }) => {
+					update();
 					if (result.type === "success") {
 						open = false;
-						invalidateAll();
-						formElement.reset();
 					}
 				};
 			}}
