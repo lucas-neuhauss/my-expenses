@@ -10,6 +10,11 @@
 	import { toast } from "svelte-sonner";
 
 	let { data, form } = $props();
+	$effect(() => {
+		if (typeof form?.toast === "string") {
+			toast.success(form.toast);
+		}
+	});
 
 	let upsertDialog = $state<{
 		open: boolean;

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
 	import { enhance } from "$app/forms";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Label } from "$lib/components/ui/label";
@@ -77,12 +76,11 @@
 <form
 	method="post"
 	action="?/upsert-category"
-	use:enhance={({ formElement }) =>
-		({ result }) => {
+	use:enhance={() =>
+		({ result, update }) => {
+			update();
 			if (result.type === "success") {
 				onSuccess();
-				invalidateAll();
-				formElement.reset();
 			}
 		}}
 >

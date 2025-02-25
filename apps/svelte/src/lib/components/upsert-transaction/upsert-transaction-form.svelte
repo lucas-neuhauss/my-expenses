@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
-	import { invalidateAll } from "$app/navigation";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
@@ -64,8 +63,10 @@
 		({ result, update }) => {
 			if (result.type === "success") {
 				const shouldContinue = result.data?.shouldContinue === true;
+				update({ reset: !shouldContinue });
+				onSuccess(shouldContinue);
+
 				if (shouldContinue) {
-					update({ reset: false });
 					description = "";
 					cents = undefined;
 
@@ -73,8 +74,6 @@
 					walletTriggerRef?.focus();
 					fromWalletTriggerRef?.focus();
 				}
-				onSuccess(shouldContinue);
-				invalidateAll();
 			}
 		}}
 >

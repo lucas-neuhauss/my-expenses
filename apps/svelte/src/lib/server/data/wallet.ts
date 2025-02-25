@@ -28,7 +28,7 @@ export async function upsertWallet({
 		await db.update(table.wallet).set({ name }).where(eq(table.wallet.id, id));
 	}
 
-	return { ok: true };
+	return { ok: true, toast: id === "new" ? "Wallet created" : "Wallet updated" };
 }
 
 export async function deleteWallet({ userId, id }: { userId: number; id: number }) {
@@ -56,7 +56,7 @@ export async function deleteWallet({ userId, id }: { userId: number; id: number 
 	}
 
 	await db.delete(table.wallet).where(eq(table.wallet.id, id));
-	return { ok: true };
+	return { ok: true, toast: "Category deleted" };
 }
 
 export function loadWallets(userId: number) {

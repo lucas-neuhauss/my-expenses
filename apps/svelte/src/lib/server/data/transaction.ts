@@ -172,7 +172,11 @@ export const upsertTransaction = async ({
 		}
 	}
 
-	return { ok: true, shouldContinue };
+	return {
+		ok: true,
+		shouldContinue,
+		toast: id === "new" ? "Transaction created" : "Transaction updated",
+	};
 };
 
 export const deleteTransaction = async ({
@@ -210,7 +214,7 @@ export const deleteTransaction = async ({
 		await db.delete(table.transaction).where(eq(table.transaction.id, transactionId));
 	}
 
-	return { ok: true };
+	return { ok: true, toast: "Transaction deleted" };
 };
 
 export const getDashboardTransactions = async ({

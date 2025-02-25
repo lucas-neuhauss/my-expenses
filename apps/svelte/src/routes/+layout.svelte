@@ -20,7 +20,7 @@
 
 <ModeWatcher />
 
-<Toaster />
+<Toaster position="top-center" />
 {#if data.user}
 	<Sidebar.Provider open={data.sidebarOpen}>
 		<AppSidebar {isAdmin} />
