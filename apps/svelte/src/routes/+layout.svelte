@@ -7,11 +7,10 @@
 	import localizedFormat from "dayjs/plugin/localizedFormat";
 	import { ModeWatcher } from "mode-watcher";
 	import "../app.css";
+	dayjs.extend(localizedFormat);
 
 	let { children, data } = $props();
-
-	let isAdmin = data.user?.role === "admin";
-	dayjs.extend(localizedFormat);
+	let isAdmin = $derived(data.user?.role === "admin");
 </script>
 
 <svelte:head>
@@ -33,5 +32,7 @@
 		</main>
 	</Sidebar.Provider>
 {:else}
-	{@render children()}
+	<main class="flex h-screen w-full items-center justify-center px-4">
+		{@render children()}
+	</main>
 {/if}

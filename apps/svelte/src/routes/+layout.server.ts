@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 export const load = async ({ locals, cookies }) => {
 	if (!locals.user) {
 		return { user: null };
