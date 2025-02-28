@@ -11,9 +11,7 @@
 			<Card.Title>Create Backup</Card.Title>
 		</Card.Header>
 		<Card.Content>
-			<form action="/api/create-backup">
-				<Button type="submit">Create Backup</Button>
-			</form>
+			<Button href="/api/create-backup" target="_blank">Create Backup</Button>
 		</Card.Content>
 	</Card.Root>
 
@@ -22,7 +20,7 @@
 			<Card.Title>Load Backup</Card.Title>
 		</Card.Header>
 		<Card.Content>
-			<form method="post" action="?/load-backup" class="" enctype="multipart/form-data">
+			<form method="POST" action="?/load-backup" enctype="multipart/form-data">
 				<div class="mb-3 flex flex-col gap-2">
 					<Label for="backup-json">Backup File</Label>
 					<Input
