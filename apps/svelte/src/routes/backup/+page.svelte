@@ -27,9 +27,9 @@
 						id="backup-json"
 						name="file"
 						type="file"
-						accept="application/json"
+						accept="application/x-gzip"
 						class="w-full"
-					></Input>
+					/>
 				</div>
 
 				<Button type="submit">Load Backup</Button>

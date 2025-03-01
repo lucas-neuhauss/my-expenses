@@ -10,13 +10,13 @@ export async function GET({ locals }) {
 
 	console.log("\n========");
 	console.log("\nCREATING BACKUP\n");
-	const backupData = await createBackup();
+	const backupData = await createBackup(user.id);
 	console.log("\n========\n");
 
 	return json(backupData, {
 		headers: {
-			"Content-Type": "application/json",
-			"Content-Disposition": `attachment; filename=expenses-${dayjs().format("YYYY-MM-DD")}.json`,
+			"Content-Type": "application/x-gzip",
+			"Content-Disposition": `attachment; filename=expenses-${dayjs().format("YYYY-MM-DD")}.gz`,
 		},
 	});
 }

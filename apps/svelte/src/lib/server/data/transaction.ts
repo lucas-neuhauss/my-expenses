@@ -281,6 +281,7 @@ export const getDashboardTransactions = async ({
 				isNotNull(tableTransactionFrom.transferenceId),
 				eq(tableTransactionFrom.transferenceId, table.transaction.transferenceId),
 				eq(tableTransactionFrom.type, "expense"),
+				eq(tableTransactionFrom.userId, userId),
 			),
 		)
 		.leftJoin(
@@ -289,6 +290,7 @@ export const getDashboardTransactions = async ({
 				isNotNull(tableTransactionTo.transferenceId),
 				eq(tableTransactionTo.transferenceId, table.transaction.transferenceId),
 				eq(tableTransactionTo.type, "income"),
+				eq(tableTransactionTo.userId, userId),
 			),
 		)
 		.orderBy(desc(table.transaction.date), desc(table.transaction.id));

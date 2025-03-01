@@ -1,6 +1,6 @@
-import { createBackup, loadBackup } from "$lib/server/data/backup.js";
-import { error, fail, json, redirect } from "@sveltejs/kit";
-import dayjs from "dayjs";
+import { loadBackup } from "$lib/server/data/backup.js";
+import { error, fail, redirect } from "@sveltejs/kit";
+import { ungzip } from "pako";
 
 export const load = async (event) => {
 	if (!event.locals.user) {
@@ -15,44 +15,31 @@ export const load = async (event) => {
 };
 
 export const actions = {
-	"create-backup": async (event) => {
-		const user = event.locals.user;
-		console.log("[1]", user);
-		if (!user || user.role !== "admin") {
-			return error(401);
-		}
-
-		const backupData = await createBackup();
-		console.log("Backup data");
-		console.log(Object.keys(backupData));
-
-		return json(backupData, {
-			headers: {
-				"Content-Type": "application/json",
-				"Content-Disposition": `attachment; filename=expenses-${dayjs().format("YYYY-MM-DD")}.json`,
-			},
-		});
-	},
 	"load-backup": async (event) => {
 		const user = event.locals.user;
-		console.log("[1]", user);
 		if (!user || user.role !== "admin") {
 			return error(401);
 		}
 
-		const formData = await event.request.formData();
-		const file = formData.get("file");
+		try {
+			const formData = await event.request.formData();
+			const file = formData.get("file");
+			console.log(file);
 
-		if (!(file instanceof File) || file.type !== "application/json") {
-			return error(400, "Invalid file type");
+			if (!(file instanceof File) || file.type !== "application/x-gzip") {
+				return error(400, "Invalid file type");
+			}
+
+			// Uncompress and prepare the data
+			const fileContent = await file.text();
+			const binaryData = Buffer.from(fileContent, "base64");
+			const decompressed = ungzip(binaryData, { to: "string" });
+			const jsonData = JSON.parse(decompressed);
+
+			// Load the data with the processed JSON
+			return loadBackup(user.id, jsonData);
+		} catch (error) {
+			console.log(error);
 		}
-
-		const fileContent = await file.text();
-		const jsonData = JSON.parse(fileContent);
-
-		// Process the JSON data as needed
-		console.log(jsonData);
-
-		return loadBackup(user.id, jsonData);
 	},
 };
