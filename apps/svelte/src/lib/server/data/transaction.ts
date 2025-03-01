@@ -24,7 +24,7 @@ export const upsertTransaction = async ({
 		wallet: z.coerce.number().int(),
 		cents: z.coerce
 			.number()
-			.gt(0)
+			.gte(0)
 			.transform((v) => Math.round(v * 100)),
 		date: DateStringSchema,
 		description: z.string().min(1).trim().nullable().catch(null),

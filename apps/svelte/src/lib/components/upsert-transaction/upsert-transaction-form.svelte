@@ -124,6 +124,7 @@
 					placeholder="R$ 0.00"
 					step="0.01"
 					class="col-span-3"
+					min={0}
 					bind:value={cents}
 				/>
 			</div>

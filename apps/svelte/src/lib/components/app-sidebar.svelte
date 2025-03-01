@@ -7,7 +7,7 @@
 	import LogOut from "lucide-svelte/icons/log-out";
 	import Database from "lucide-svelte/icons/database";
 
-	let { isAdmin }: { isAdmin: boolean } = $props();
+	let { isAdmin, email }: { isAdmin: boolean; email: string } = $props();
 
 	// Menu items.
 	const items = [
@@ -36,6 +36,7 @@
 	<Sidebar.Header></Sidebar.Header>
 	<Sidebar.Content>
 		<Sidebar.Group>
+			<span class="mb-2 ml-2 text-xs">{email}</span>
 			<Sidebar.GroupLabel>Application</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>

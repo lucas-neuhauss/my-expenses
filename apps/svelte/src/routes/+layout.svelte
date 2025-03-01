@@ -11,6 +11,7 @@
 
 	let { children, data } = $props();
 	let isAdmin = $derived(data.user?.role === "admin");
+	let email = $derived(data.user?.email ?? "");
 </script>
 
 <svelte:head>
@@ -22,7 +23,7 @@
 <Toaster position="top-center" />
 {#if data.user}
 	<Sidebar.Provider open={data.sidebarOpen}>
-		<AppSidebar {isAdmin} />
+		<AppSidebar {isAdmin} {email} />
 		<main class="flex min-h-svh flex-1 flex-col">
 			<header class="flex justify-between p-4">
 				<Sidebar.Trigger />
