@@ -66,7 +66,12 @@
 						<p>{formatCurrency(wallet.balance)}</p>
 					</div>
 					<div class="flex items-center gap-1 lg:gap-2">
-						<Button size="icon" variant="ghost" onclick={() => handleClickEdit(wallet)}>
+						<Button
+							title="Edit wallet"
+							size="icon"
+							variant="ghost"
+							onclick={() => handleClickEdit(wallet)}
+						>
 							<Pencil />
 						</Button>
 						<ConfirmDialog

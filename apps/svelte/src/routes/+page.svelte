@@ -145,7 +145,7 @@
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			<Select.Trigger class="col-span-3 w-[170px]">
+			<Select.Trigger title="Select wallet" class="col-span-3 w-[170px]">
 				{selectedWallet.name}
 			</Select.Trigger>
 			<Select.Content>

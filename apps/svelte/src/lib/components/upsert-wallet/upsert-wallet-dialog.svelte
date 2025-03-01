@@ -42,6 +42,17 @@
 				<Label for="name">Name</Label>
 				<Input required id="name" name="name" value={wallet?.name} />
 			</div>
+			<div>
+				<Label for="initial_balance">Initial Balance</Label>
+				<Input
+					id="initial_balance"
+					type="number"
+					name="initialBalance"
+					placeholder="R$ 0.00"
+					step="0.01"
+					value={wallet?.initialBalance ? wallet.initialBalance / 100 : undefined}
+				/>
+			</div>
 			<Dialog.Footer class="mt-2">
 				<Button type="submit" class="ml-auto">Save</Button>
 			</Dialog.Footer>

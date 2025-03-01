@@ -71,8 +71,11 @@
 		onValueChange={handleTypeChange}
 	>
 		<div class="flex items-center gap-4">
-			<Button autofocus variant="outline" onclick={handleClickCreate}
-				>Create Category</Button
+			<Button
+				title="Create category"
+				autofocus
+				variant="outline"
+				onclick={handleClickCreate}>Create Category</Button
 			>
 			<Tabs.List>
 				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
@@ -112,7 +115,12 @@
 					{/if}
 				</div>
 				<div>
-					<Button size="icon" variant="ghost" onclick={() => handleClickEdit(category)}>
+					<Button
+						title="Edit category"
+						size="icon"
+						variant="ghost"
+						onclick={() => handleClickEdit(category)}
+					>
 						<Pencil />
 					</Button>
 					<ConfirmDialog
@@ -126,7 +134,6 @@
 						{#snippet triggerChild({ props })}
 							<Button
 								title="Delete category"
-								aria-label="delete category"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
 								{...props}

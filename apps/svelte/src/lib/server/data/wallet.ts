@@ -15,17 +15,21 @@ export async function upsertWallet({
 	const formSchema = z.object({
 		id: z.coerce.number().int().or(z.literal("new")),
 		name: z.string().min(1).max(255),
+		initialBalance: z.coerce.number().transform((v) => Math.round(v * 100)),
 	});
-	const { id, name } = formSchema.parse(formObj);
+	const { id, name, initialBalance } = formSchema.parse(formObj);
 
 	if (id === "new") {
 		await db.insert(table.wallet).values({
 			userId,
 			name,
-			initialBalance: 0,
+			initialBalance,
 		});
 	} else {
-		await db.update(table.wallet).set({ name }).where(eq(table.wallet.id, id));
+		await db
+			.update(table.wallet)
+			.set({ name, initialBalance })
+			.where(eq(table.wallet.id, id));
 	}
 
 	return { ok: true, toast: id === "new" ? "Wallet created" : "Wallet updated" };
