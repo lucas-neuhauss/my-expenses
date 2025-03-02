@@ -3,6 +3,7 @@
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertCategoryForm from "./upsert-category-form.svelte";
+	import { page } from "$app/state";
 
 	let {
 		open = $bindable(),
@@ -13,6 +14,14 @@
 	} = $props();
 	let isUpdate = $derived(category !== null);
 	let tab = $state<"expense" | "income">("expense");
+
+	$effect(() => {
+		if (page.url.searchParams.get("type") === "income") {
+			tab = "income";
+		} else {
+			tab = "expense";
+		}
+	});
 
 	const onSuccess = () => {
 		open = false;
