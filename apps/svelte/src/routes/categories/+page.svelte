@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
@@ -47,7 +47,7 @@
 	};
 
 	const handleTypeChange = (type: string) => {
-		const url = new URL($page.url.href);
+		const url = new URL(page.url.href);
 
 		if (type === "expense") {
 			url.searchParams.delete("type");

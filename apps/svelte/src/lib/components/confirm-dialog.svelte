@@ -3,7 +3,7 @@
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import type { Snippet } from "svelte";
 	import type { HTMLFormAttributes } from "svelte/elements";
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 
 	let {
 		title,
@@ -21,7 +21,7 @@
 
 	// Close the alert on any action
 	$effect(() => {
-		if ($page.form) {
+		if (page.form) {
 			open = false;
 		}
 	});
