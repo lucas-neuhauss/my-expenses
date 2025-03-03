@@ -4,45 +4,14 @@
 	import * as Card from "$lib/components/ui/card";
 	import UpsertWalletDialog from "$lib/components/upsert-wallet/upsert-wallet-dialog.svelte";
 	import { formatCurrency } from "$lib/currency";
-	import type { LoadWallet } from "$lib/server/data/wallet.js";
 	import Pencil from "lucide-svelte/icons/pencil";
 	import Trash from "lucide-svelte/icons/trash";
-	import { toast } from "svelte-sonner";
+	import { page } from "$app/state";
 
-	let { data, form } = $props();
-	$effect(() => {
-		if (typeof form?.toast === "string") {
-			toast.success(form.toast);
-		}
-	});
-
-	let upsertDialog = $state<{
-		open: boolean;
-		wallet: LoadWallet | null;
-	}>({
-		open: false,
-		wallet: null,
-	});
-
-	$effect(() => {
-		if (!!form && !form.ok) {
-			toast.error(form.message ?? "Something went wrong");
-		}
-	});
-
-	const handleClickEdit = (wallet: LoadWallet) => {
-		upsertDialog = {
-			open: true,
-			wallet,
-		};
-	};
-
-	const handleClickCreate = () => {
-		upsertDialog = {
-			open: true,
-			wallet: null,
-		};
-	};
+	let { data } = $props();
+	let updateId = $derived(page.url.searchParams.get("id"));
+	let wallet = $derived(data.wallets.find((w) => w.id === Number(updateId)) ?? null);
+	let open = $derived(!!wallet || updateId === "new");
 </script>
 
 <svelte:head>
@@ -51,8 +20,8 @@
 
 <div class="container flex flex-col gap-y-4">
 	<div>
-		<Button autofocus variant="outline" onclick={handleClickCreate}>Create Wallet</Button>
-		<UpsertWalletDialog bind:open={upsertDialog.open} bind:wallet={upsertDialog.wallet} />
+		<Button autofocus variant="outline" href="/wallets?id=new">Create Wallet</Button>
+		<UpsertWalletDialog {open} {wallet} />
 	</div>
 
 	<div
@@ -67,10 +36,10 @@
 					</div>
 					<div class="flex items-center gap-1 lg:gap-2">
 						<Button
+							href={`/wallets?id=${wallet.id}`}
 							title="Edit wallet"
 							size="icon"
 							variant="ghost"
-							onclick={() => handleClickEdit(wallet)}
 						>
 							<Pencil />
 						</Button>
@@ -84,6 +53,7 @@
 						>
 							{#snippet triggerChild({ props })}
 								<Button
+									type="button"
 									title="Delete wallet"
 									aria-label="delete wallet"
 									variant="ghost"

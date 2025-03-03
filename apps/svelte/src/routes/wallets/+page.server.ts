@@ -1,13 +1,16 @@
+import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema.js";
 import { deleteWallet, loadWallets, upsertWallet } from "$lib/server/data/wallet";
 import { error, redirect } from "@sveltejs/kit";
+import { message, superValidate } from "sveltekit-superforms";
+import { zod } from "sveltekit-superforms/adapters";
 import { z } from "zod";
 
-export const load = async (event) => {
-	if (!event.locals.user) {
+export const load = async ({ locals }) => {
+	if (!locals.user) {
 		return redirect(302, "/login");
 	}
 
-	const userId = event.locals.user.id;
+	const userId = locals.user.id;
 	const wallets = await loadWallets(userId);
 	return { wallets };
 };
@@ -19,11 +22,25 @@ export const actions = {
 			return error(401);
 		}
 
-		const formData = await event.request.formData();
-		return upsertWallet({
-			userId: user.id,
-			formData,
-		});
+		const form = await superValidate(event, zod(upsertWalletSchema));
+		if (!form.valid) {
+			return message(form, { type: "error", text: "Invalid form" });
+		}
+
+		try {
+			const text = await upsertWallet({
+				userId: user.id,
+				data: form.data,
+			});
+			return message(form, { type: "success", text });
+		} catch (error) {
+			const { text } = z
+				.object({ message: z.string() })
+				.transform((v) => ({ text: v.message }))
+				.catch({ text: "Something went wrong" })
+				.parse(error);
+			return message(form, { type: "error", text }, { status: 400 });
+		}
 	},
 	"delete-wallet": async (event) => {
 		const user = event.locals.user;

@@ -1,3 +1,4 @@
+import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { fail } from "@sveltejs/kit";
@@ -6,33 +7,42 @@ import { z } from "zod";
 
 export async function upsertWallet({
 	userId,
-	formData,
+	data,
 }: {
 	userId: number;
-	formData: FormData;
+	data: z.infer<typeof upsertWalletSchema>;
 }) {
-	const formObj = Object.fromEntries(formData.entries());
-	const formSchema = z.object({
-		id: z.coerce.number().int().or(z.literal("new")),
-		name: z.string().min(1).max(255),
-		initialBalance: z.coerce.number().transform((v) => Math.round(v * 100)),
-	});
-	const { id, name, initialBalance } = formSchema.parse(formObj);
+	const { id, name } = data;
+	const initialBalance = data.initialBalance ? Math.floor(data.initialBalance * 100) : 0;
 
-	if (id === "new") {
-		await db.insert(table.wallet).values({
-			userId,
-			name,
-			initialBalance,
-		});
-	} else {
-		await db
-			.update(table.wallet)
-			.set({ name, initialBalance })
-			.where(eq(table.wallet.id, id));
+	try {
+		if (!id) {
+			await db.insert(table.wallet).values({
+				userId,
+				name,
+				initialBalance,
+			});
+		} else {
+			// Check if the wallet is owned by the user
+			const wallet = await db
+				.select({ id: table.wallet.id })
+				.from(table.wallet)
+				.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId)));
+			if (!wallet) {
+				throw Error("Wallet not found");
+			}
+
+			await db
+				.update(table.wallet)
+				.set({ name, initialBalance })
+				.where(eq(table.wallet.id, id));
+		}
+
+		return id ? "Wallet updated" : "Wallet created";
+	} catch (error) {
+		console.error(error);
+		throw Error("Something went wrong");
 	}
-
-	return { ok: true, toast: id === "new" ? "Wallet created" : "Wallet updated" };
 }
 
 export async function deleteWallet({ userId, id }: { userId: number; id: number }) {
@@ -68,7 +78,10 @@ export function loadWallets(userId: number) {
 		.select({
 			id: table.wallet.id,
 			name: table.wallet.name,
-			initialBalance: table.wallet.initialBalance,
+			initialBalance:
+				sql<number>`ROUND(CAST(${table.wallet.initialBalance} AS numeric) / 100, 2)`.as(
+					"initialBalance",
+				),
 			balance: sql<number>`cast((COALESCE(SUM(${table.transaction.cents}), 0) + ${table.wallet.initialBalance}) as int)`,
 		})
 		.from(table.transaction)
