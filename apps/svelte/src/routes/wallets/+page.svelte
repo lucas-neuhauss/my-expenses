@@ -10,7 +10,10 @@
 
 	let { data } = $props();
 	let updateId = $derived(page.url.searchParams.get("id"));
-	let wallet = $derived(data.wallets.find((w) => w.id === Number(updateId)) ?? null);
+	let wallet = $derived.by(() => {
+		if (!updateId) return null;
+		return data.wallets.find((w) => w.id === Number(updateId)) ?? null;
+	});
 	let open = $derived(!!wallet || updateId === "new");
 </script>
 
