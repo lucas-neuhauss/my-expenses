@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
@@ -42,7 +43,12 @@
 	};
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	{open}
+	onOpenChange={(o) => {
+		if (!o) goto("/");
+	}}
+>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
 			<Dialog.Title>

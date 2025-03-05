@@ -11,7 +11,6 @@
 	import * as Table from "$lib/components/ui/table";
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
-	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
 	import ChevronLeft from "lucide-svelte/icons/chevron-left";
@@ -27,13 +26,6 @@
 		}
 	});
 
-	let upsertDialog = $state<{
-		open: boolean;
-		transaction: DashboardTransaction | null;
-	}>({
-		open: false,
-		transaction: null,
-	});
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
 		label: String(new Date().getFullYear() - i + 25),
@@ -88,19 +80,14 @@
 		goto(url.href);
 	};
 
-	const handleClickCreate = () => {
-		upsertDialog = {
-			open: true,
-			transaction: null,
-		};
-	};
-
-	const handleClickEdit = (transaction: DashboardTransaction) => {
-		upsertDialog = {
-			open: true,
-			transaction,
-		};
-	};
+	let updateId = $derived(page.url.searchParams.get("id"));
+	let transaction = $derived.by(() => {
+		const id = updateId;
+		if (id === null || id === "new") return null;
+		return data.transactions.find((t) => t.id === Number(id)) ?? null;
+	});
+	let isDelete = $derived(page.url.searchParams.get("delete") === "true");
+	let upsertDialogOpen = $derived(!isDelete && (!!transaction || updateId === "new"));
 </script>
 
 <svelte:head>
@@ -126,12 +113,10 @@
 	</div>
 
 	<div class="flex items-center gap-4">
-		<Button autofocus variant="outline" onclick={handleClickCreate}>
-			Create Transaction
-		</Button>
+		<Button autofocus variant="outline" href="/?id=new">Create Transaction</Button>
 		<UpsertTransaction
-			bind:open={upsertDialog.open}
-			bind:transaction={upsertDialog.transaction}
+			open={upsertDialogOpen}
+			{transaction}
 			wallets={data.wallets}
 			categories={data.categories}
 			defaultWallet={data.wallet}
@@ -260,7 +245,7 @@
 								aria-label="Edit transaction"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
-								onclick={() => handleClickEdit(t)}
+								href={`/?id=${t.id}`}
 							>
 								<Pencil />
 							</Button>
