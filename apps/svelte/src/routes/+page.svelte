@@ -88,6 +88,17 @@
 	});
 	let isDelete = $derived(page.url.searchParams.get("delete") === "true");
 	let upsertDialogOpen = $derived(!isDelete && (!!transaction || updateId === "new"));
+	let createHref = $derived.by(() => {
+		const url = new URL(page.url.href);
+		url.searchParams.set("id", "new");
+		return url.href;
+	});
+
+	const getUpdateHref = (id: number) => {
+		const url = new URL(page.url.href);
+		url.searchParams.set("id", String(id));
+		return url.href;
+	};
 </script>
 
 <svelte:head>
@@ -113,7 +124,7 @@
 	</div>
 
 	<div class="flex items-center gap-4">
-		<Button autofocus variant="outline" href="/?id=new">Create Transaction</Button>
+		<Button autofocus variant="outline" href={createHref}>Create Transaction</Button>
 		<UpsertTransaction
 			open={upsertDialogOpen}
 			{transaction}
@@ -245,7 +256,9 @@
 								aria-label="Edit transaction"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
-								href={`/?id=${t.id}`}
+								href={getUpdateHref(t.id)}
+								data-sveltekit-noscroll
+								data-sveltekit-keepfocus
 							>
 								<Pencil />
 							</Button>

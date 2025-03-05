@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Tabs from "$lib/components/ui/tabs";
@@ -46,7 +47,11 @@
 <Dialog.Root
 	{open}
 	onOpenChange={(o) => {
-		if (!o) goto("/");
+		if (!o) {
+			const url = new URL(page.url);
+			url.searchParams.delete("id");
+			goto(url.href, { noScroll: true, keepFocus: true });
+		}
 	}}
 >
 	<Dialog.Content class="sm:max-w-[425px]">
