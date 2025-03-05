@@ -61,7 +61,7 @@
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Name</Form.Label>
-						<Input {...props} bind:value={$formData.name} />
+						<Input placeholder="Name" {...props} bind:value={$formData.name} />
 					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
