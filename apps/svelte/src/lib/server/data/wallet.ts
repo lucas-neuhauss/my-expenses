@@ -1,7 +1,6 @@
 import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import { fail } from "@sveltejs/kit";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -53,7 +52,7 @@ export async function deleteWallet({ userId, id }: { userId: number; id: number 
 		.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId)));
 
 	if (!wallet) {
-		return fail(400, { ok: false, message: "Category not found" });
+		throw Error("Category not found");
 	}
 
 	// Should not be able to delete a wallet with transactions
@@ -63,14 +62,11 @@ export async function deleteWallet({ userId, id }: { userId: number; id: number 
 		.where(eq(table.transaction.walletId, id))
 		.limit(1);
 	if (walletTransaction) {
-		return fail(400, {
-			ok: false,
-			message: "Wallet has one or more transactions, cannot be deleted",
-		});
+		throw Error("Wallet has one or more transactions, cannot be deleted");
 	}
 
 	await db.delete(table.wallet).where(eq(table.wallet.id, id));
-	return { ok: true, toast: "Category deleted" };
+	return "Wallet deleted";
 }
 
 export function loadWallets(userId: number) {

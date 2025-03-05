@@ -1,14 +1,18 @@
-import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema.js";
+import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { deleteWallet, loadWallets, upsertWallet } from "$lib/server/data/wallet";
-import { error, redirect } from "@sveltejs/kit";
+import { FormUtil } from "$lib/utils/form";
+import { error, fail, redirect } from "@sveltejs/kit";
 import { message, superValidate } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
 import { z } from "zod";
 
-export const load = async ({ locals }) => {
+export const load = async ({ locals, url, untrack }) => {
 	if (!locals.user) {
 		return redirect(302, "/login");
 	}
+
+	const isDelete = untrack(() => url.searchParams.get("delete") === "true");
+	if (isDelete) return redirect(302, "/wallets");
 
 	const userId = locals.user.id;
 	const wallets = await loadWallets(userId);
@@ -24,9 +28,8 @@ export const actions = {
 
 		const form = await superValidate(event, zod(upsertWalletSchema));
 		if (!form.valid) {
-			return message(form, { type: "error", text: "Invalid form" });
+			return message(form, FormUtil.getErrorMessage("Invalid form"));
 		}
-
 		try {
 			const text = await upsertWallet({
 				userId: user.id,
@@ -34,12 +37,7 @@ export const actions = {
 			});
 			return message(form, { type: "success", text });
 		} catch (error) {
-			const { text } = z
-				.object({ message: z.string() })
-				.transform((v) => ({ text: v.message }))
-				.catch({ text: "Something went wrong" })
-				.parse(error);
-			return message(form, { type: "error", text }, { status: 400 });
+			return message(form, FormUtil.getErrorMessage(error), { status: 400 });
 		}
 	},
 	"delete-wallet": async (event) => {
@@ -49,7 +47,20 @@ export const actions = {
 		}
 
 		const searchParams = event.url.searchParams;
-		const id = z.coerce.number().int().min(1).parse(searchParams.get("id"));
-		return deleteWallet({ userId: user.id, id });
+		try {
+			const idSafeParse = z.coerce
+				.number()
+				.int()
+				.min(1)
+				.safeParse(searchParams.get("id"));
+			if (!idSafeParse.success) {
+				return FormUtil.getErrorForm("Invalid wallet id");
+			}
+			const id = idSafeParse.data;
+			const text = await deleteWallet({ userId: user.id, id });
+			return { form: { message: { type: "success", text } } };
+		} catch (error) {
+			return fail(400, FormUtil.getErrorForm(error));
+		}
 	},
 };

@@ -1,14 +1,13 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import * as Form from "$lib/components/ui/form";
 	import { Input } from "$lib/components/ui/input";
 	import type { LoadWallet } from "$lib/server/data/wallet";
-	import SuperDebug, { superForm, defaults } from "sveltekit-superforms";
+	import { omit } from "es-toolkit";
+	import SuperDebug, { defaults, superForm } from "sveltekit-superforms";
 	import { zod, zodClient } from "sveltekit-superforms/adapters";
 	import { upsertWalletSchema } from "./upsert-wallet-schema";
-	import { omit } from "es-toolkit";
-	import { toast } from "svelte-sonner";
-	import { goto } from "$app/navigation";
 
 	let {
 		open,
@@ -21,9 +20,6 @@
 		validators: zodClient(upsertWalletSchema),
 		onUpdated({ form }) {
 			if (form.message) {
-				// Display the message using a toast library
-				toast[form.message.type](form.message.text);
-
 				// Close the dialog on success
 				if (form.message.type === "success") {
 					goto("/wallets");
