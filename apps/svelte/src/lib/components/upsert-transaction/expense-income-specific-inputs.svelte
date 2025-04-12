@@ -77,7 +77,7 @@
 			{wallet.name}
 		</Select.Trigger>
 		<Select.Content>
-			{#each wallets as wallet}
+			{#each wallets as wallet (wallet.id)}
 				<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
 			{/each}
 		</Select.Content>

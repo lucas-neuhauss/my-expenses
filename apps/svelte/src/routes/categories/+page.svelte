@@ -84,7 +84,7 @@
 		</div>
 	</Tabs.Root>
 
-	{#each data.nestedCategories as category}
+	{#each data.nestedCategories as category (category.id)}
 		<Card.Root class="w-full">
 			<Card.Content class="flex items-center justify-between p-5 pt-3">
 				<div class="flex flex-col items-start justify-between gap-3">
@@ -101,7 +101,7 @@
 
 					{#if category.children.length > 0}
 						<div class="flex gap-2">
-							{#each category.children as subcategory}
+							{#each category.children as subcategory (subcategory.id)}
 								<div class="flex items-center gap-1.5 rounded border px-2 py-1">
 									<img
 										alt="subcategory icon"

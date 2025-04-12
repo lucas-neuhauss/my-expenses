@@ -24,7 +24,7 @@
 {#if data.user}
 	<Sidebar.Provider open={data.sidebarOpen}>
 		<AppSidebar {isAdmin} {email} />
-		<main class="flex min-h-svh flex-1 flex-col">
+		<main class="flex min-h-svh w-screen flex-1 flex-col">
 			<header class="flex justify-between p-4">
 				<Sidebar.Trigger />
 				<ThemeToggle />
@@ -33,7 +33,7 @@
 		</main>
 	</Sidebar.Provider>
 {:else}
-	<main class="flex h-screen w-full items-center justify-center px-4">
+	<main class="flex h-screen w-screen items-center justify-center px-4">
 		{@render children()}
 	</main>
 {/if}

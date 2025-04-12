@@ -99,7 +99,7 @@
 	id="dashboard-charts"
 	class:hidden={charts.incomePieChartData.length === 0 &&
 		charts.expensePieChartData.length === 0}
-	class="-mb-4 mt-3 flex w-full items-center justify-center"
+	class="-mb-4 mt-3 flex w-full flex-wrap items-center justify-center"
 >
 	<div id="dashboard-expense-chart" class="h-[300px] w-[400px]"></div>
 

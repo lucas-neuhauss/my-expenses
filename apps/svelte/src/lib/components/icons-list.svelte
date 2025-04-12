@@ -24,9 +24,9 @@
 	</Popover.Trigger>
 	<Popover.Content side="right">
 		{#snippet child({ props })}
-			<ScrollArea {...props} class={cn((props as any).class, "h-[400px] w-[320px]")}>
+			<ScrollArea {...props} class={cn(props.class, "h-[400px] w-[320px]")}>
 				<div class="grid grid-cols-6 gap-2">
-					{#each CATEGORY_ICON_LIST as icon}
+					{#each CATEGORY_ICON_LIST as icon (icon)}
 						<button
 							class={buttonVariants({
 								variant: "secondary",

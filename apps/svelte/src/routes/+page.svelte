@@ -119,13 +119,13 @@
 {/snippet}
 
 <div class="flex flex-col items-start gap-y-3 px-4 pb-4">
-	<div class="flex gap-4">
+	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
 		{@render MoneyCard("Current balance", data.balance)}
 		{@render MoneyCard("Income", data.totalIncome)}
 		{@render MoneyCard("Expense", data.totalExpense)}
 	</div>
 
-	<div class="flex items-center gap-4">
+	<div class="flex flex-wrap items-center gap-4">
 		<Button autofocus variant="outline" onclick={handleClickCreate}>
 			Create Transaction
 		</Button>
@@ -149,7 +149,7 @@
 				{selectedWallet.name}
 			</Select.Trigger>
 			<Select.Content>
-				{#each walletOptions as w}
+				{#each walletOptions as w (w.id)}
 					<Select.Item value={String(w.id)}>{w.name}</Select.Item>
 				{/each}
 			</Select.Content>
@@ -183,7 +183,7 @@
 		>
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
 			<Select.Content>
-				{#each monthOptions as option}
+				{#each monthOptions as option (option.value)}
 					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
 				{/each}
 			</Select.Content>
@@ -198,7 +198,7 @@
 		>
 			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
 			<Select.Content>
-				{#each yearOptions as option}
+				{#each yearOptions as option (option.value)}
 					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
 				{/each}
 			</Select.Content>

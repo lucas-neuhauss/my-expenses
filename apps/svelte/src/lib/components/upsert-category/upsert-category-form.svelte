@@ -106,7 +106,7 @@
 	<div class="mt-5">
 		<p class="font-bold">Sub-categories</p>
 
-		{#each categories.slice(1) as c, index}
+		{#each categories.slice(1) as c, index (c.id)}
 			<div class="mt-2.5 flex items-center [&>div]:flex [&>div]:flex-col [&>div]:gap-2.5">
 				<input type="hidden" name={`subcategory.${index}.id`} value={c.id} />
 				<input type="hidden" name={`subcategory.${index}.icon`} value={c.icon} />

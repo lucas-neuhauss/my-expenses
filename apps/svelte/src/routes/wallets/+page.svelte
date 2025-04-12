@@ -36,7 +36,7 @@
 	<div
 		class="grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
 	>
-		{#each data.wallets as w}
+		{#each data.wallets as w (w.id)}
 			<Card.Root>
 				<Card.Content class="flex items-center justify-between">
 					<div>

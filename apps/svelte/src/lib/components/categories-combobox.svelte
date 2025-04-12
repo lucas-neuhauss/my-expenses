@@ -116,7 +116,7 @@
 							All categories
 						</Command.Item>
 					{/if}
-					{#each flatCategories as category}
+					{#each flatCategories as category (category.id)}
 						<Command.Item
 							value={category.name}
 							onSelect={() => {
@@ -129,7 +129,7 @@
 								class={cn("mr-2 size-4", value !== category.id && "text-transparent")}
 							/>
 							{#if category.isChild}
-								<span> {"• "}</span>
+								<span>• </span>
 							{/if}
 							<img
 								src={`/images/category/${category.icon}`}
