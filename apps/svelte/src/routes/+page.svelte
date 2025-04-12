@@ -14,10 +14,10 @@
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
-	import ChevronLeft from "lucide-svelte/icons/chevron-left";
-	import ChevronRight from "lucide-svelte/icons/chevron-right";
-	import Pencil from "lucide-svelte/icons/pencil";
-	import Trash from "lucide-svelte/icons/trash";
+	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
+	import ChevronRight from "@lucide/svelte/icons/chevron-right";
+	import Pencil from "@lucide/svelte/icons/pencil";
+	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
 
 	let { data, form } = $props();

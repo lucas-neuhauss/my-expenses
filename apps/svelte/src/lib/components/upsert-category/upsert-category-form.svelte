@@ -4,7 +4,7 @@
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
 	import { Button } from "$lib/components/ui/button";
-	import Trash from "lucide-svelte/icons/trash";
+	import Trash from "@lucide/svelte/icons/trash";
 	import { CATEGORY_ICON_LIST } from "$lib/categories";
 	import IconsList from "../icons-list.svelte";
 	import type { NestedCategory } from "$lib/utils/category";

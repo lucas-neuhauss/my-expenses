@@ -1,28 +1,19 @@
 <script lang="ts">
-	import { Dialog, type WithoutChildrenOrChild } from "bits-ui";
-	import { fade } from "svelte/transition";
-	import type { Snippet } from "svelte";
+	import { Dialog as DialogPrimitive } from "bits-ui";
 	import { cn } from "$lib/utils.js";
- 
+
 	let {
 		ref = $bindable(null),
-    class: className,
-		duration = 100,
-		children,
+		class: className,
 		...restProps
-	}: WithoutChildrenOrChild<Dialog.OverlayProps> & {
-		duration?: number;
-		children?: Snippet;
-	} = $props();
+	}: DialogPrimitive.OverlayProps = $props();
 </script>
- 
-<Dialog.Overlay forceMount bind:ref class={cn("bg-black/80 fixed inset-0 z-50", className)} {...restProps}>
-	{#snippet child({ props, open })}
-		{#if open}
-			<div {...props} transition:fade={{ duration }}>
-				{@render children?.()}
-			</div>
-		{/if}
-	{/snippet}
-</Dialog.Overlay>
 
+<DialogPrimitive.Overlay
+	bind:ref
+	class={cn(
+		"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0  fixed inset-0 z-50 bg-black/80",
+		className
+	)}
+	{...restProps}
+/>

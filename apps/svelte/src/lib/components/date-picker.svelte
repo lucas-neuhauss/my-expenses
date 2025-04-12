@@ -5,7 +5,7 @@
 	import { cn } from "$lib/utils.js";
 	import { CalendarDate, DateFormatter, getLocalTimeZone } from "@internationalized/date";
 	import { tick } from "svelte";
-	import CalendarIcon from "lucide-svelte/icons/calendar";
+	import CalendarIcon from "@lucide/svelte/icons/calendar";
 
 	let {
 		date = $bindable(),

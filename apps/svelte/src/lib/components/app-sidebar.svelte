@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import * as Sidebar from "$lib/components/ui/sidebar";
-	import Calendar from "lucide-svelte/icons/calendar";
-	import House from "lucide-svelte/icons/house";
-	import Inbox from "lucide-svelte/icons/inbox";
-	import LogOut from "lucide-svelte/icons/log-out";
-	import Database from "lucide-svelte/icons/database";
+	import Calendar from "@lucide/svelte/icons/calendar";
+	import House from "@lucide/svelte/icons/house";
+	import Inbox from "@lucide/svelte/icons/inbox";
+	import LogOut from "@lucide/svelte/icons/log-out";
+	import Database from "@lucide/svelte/icons/database";
 
 	let { isAdmin, email }: { isAdmin: boolean; email: string } = $props();
 

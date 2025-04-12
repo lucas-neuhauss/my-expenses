@@ -5,8 +5,8 @@
 	import * as Card from "$lib/components/ui/card";
 	import UpsertWalletDialog from "$lib/components/upsert-wallet/upsert-wallet-dialog.svelte";
 	import { formatCurrency } from "$lib/currency";
-	import Pencil from "lucide-svelte/icons/pencil";
-	import Trash from "lucide-svelte/icons/trash";
+	import Pencil from "@lucide/svelte/icons/pencil";
+	import Trash from "@lucide/svelte/icons/trash";
 	import ToastEffect from "$lib/components/toast-effect.svelte";
 
 	let { data } = $props();

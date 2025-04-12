@@ -5,8 +5,8 @@
 	import * as Card from "$lib/components/ui/card";
 	import { UpsertCategory } from "$lib/components/upsert-category";
 	import type { NestedCategory } from "$lib/utils/category.js";
-	import Pencil from "lucide-svelte/icons/pencil";
-	import Trash from "lucide-svelte/icons/trash";
+	import Pencil from "@lucide/svelte/icons/pencil";
+	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { goto } from "$app/navigation";
