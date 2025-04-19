@@ -1,6 +1,7 @@
 import { CATEGORY_ICON_LIST } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import type { UserId } from "$lib/types";
 import type { NestedCategory } from "$lib/utils/category";
 import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
@@ -8,7 +9,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 export async function getNestedCategories(
-	userId: number,
+	userId: UserId,
 	type: "income" | "expense" | null = null,
 ) {
 	const categories = await db
@@ -48,7 +49,7 @@ export async function deleteCategory({
 	userId,
 	categoryId: id,
 }: {
-	userId: number;
+	userId: UserId;
 	categoryId: number;
 }) {
 	const tableChild = alias(table.category, "tableChild");
@@ -122,7 +123,7 @@ export async function upsertCategory({
 	userId,
 	formData,
 }: {
-	userId: number;
+	userId: UserId;
 	formData: FormData;
 }) {
 	const formObj = Object.fromEntries(formData.entries());

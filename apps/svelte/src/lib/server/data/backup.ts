@@ -1,6 +1,7 @@
 import { db } from "$lib/server/db";
 import * as schema from "$lib/server/db/schema";
 import * as table from "$lib/server/db/schema";
+import type { UserId } from "$lib/types";
 import { eq, sql } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
 import { gzip } from "pako";
@@ -36,7 +37,7 @@ type BackupData = {
 	}[];
 };
 
-export async function loadBackup(userId: number, data: BackupData) {
+export async function loadBackup(userId: UserId, data: BackupData) {
 	const maps = {
 		walletsMap: new Map<number, number>(),
 		categoriesMap: new Map<number, number>(),
@@ -137,7 +138,7 @@ export async function loadBackup(userId: number, data: BackupData) {
 	return { ok: true };
 }
 
-export async function createBackup(userId: number) {
+export async function createBackup(userId: UserId) {
 	const TABLES = ["wallet", "transaction", "category"];
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const tables: any = {};
@@ -146,7 +147,7 @@ export async function createBackup(userId: number) {
 		if (value instanceof PgTable && TABLES.includes(key)) {
 			console.log(`Table: ${key}`);
 			const rows = await db.execute(
-				sql.raw(`select * from ${key} where ${key}.user_id = ${userId}`),
+				sql.raw(`select * from ${key} where ${key}.user_id = '${userId}'`),
 			);
 			tables[key] = Array.from(rows);
 		}

@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 
 export async function GET({ locals }) {
 	const user = locals.user;
-	if (!user || user.role !== "admin") {
+	if (!user) {
 		return error(401);
 	}
 

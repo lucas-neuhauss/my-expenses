@@ -1,14 +1,10 @@
 import { loadBackup } from "$lib/server/data/backup.js";
-import { error, fail, redirect } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { ungzip } from "pako";
 
 export const load = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, "/login");
-	}
-
-	if (event.locals.user.role !== "admin") {
-		return fail(404);
 	}
 
 	return {};
@@ -17,7 +13,7 @@ export const load = async (event) => {
 export const actions = {
 	"load-backup": async (event) => {
 		const user = event.locals.user;
-		if (!user || user.role !== "admin") {
+		if (!user) {
 			return error(401);
 		}
 

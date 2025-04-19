@@ -1,6 +1,7 @@
 import { CATEGORY_SPECIAL } from "$lib/categories";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import type { UserId } from "$lib/types";
 import { DateStringSchema } from "$lib/utils/date-time";
 import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -14,7 +15,7 @@ export const upsertTransaction = async ({
 	shouldContinue,
 	formData,
 }: {
-	userId: number;
+	userId: UserId;
 	shouldContinue: boolean;
 	formData: FormData;
 }) => {
@@ -183,7 +184,7 @@ export const deleteTransaction = async ({
 	userId,
 	transactionId,
 }: {
-	userId: number;
+	userId: UserId;
 	transactionId: number;
 }) => {
 	// Get the transaction to be deleted. Make sure to check if the `userId` matches
@@ -223,7 +224,7 @@ export const getDashboardTransactions = async ({
 	start,
 	end,
 }: {
-	userId: number;
+	userId: UserId;
 	wallet: number;
 	start: string;
 	end: string;

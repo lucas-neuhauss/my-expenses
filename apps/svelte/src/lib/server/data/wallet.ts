@@ -1,6 +1,7 @@
 import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import type { UserId } from "$lib/types";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -8,7 +9,7 @@ export async function upsertWallet({
 	userId,
 	data,
 }: {
-	userId: number;
+	userId: UserId;
 	data: z.infer<typeof upsertWalletSchema>;
 }) {
 	const { id, name } = data;
@@ -44,7 +45,7 @@ export async function upsertWallet({
 	}
 }
 
-export async function deleteWallet({ userId, id }: { userId: number; id: number }) {
+export async function deleteWallet({ userId, id }: { userId: UserId; id: number }) {
 	// Get the wallet to be deleted. Make sure to check if the `userId` matches
 	const [wallet] = await db
 		.select()
@@ -69,7 +70,7 @@ export async function deleteWallet({ userId, id }: { userId: number; id: number 
 	return "Wallet deleted";
 }
 
-export function loadWallets(userId: number) {
+export function loadWallets(userId: UserId) {
 	return db
 		.select({
 			id: table.wallet.id,
