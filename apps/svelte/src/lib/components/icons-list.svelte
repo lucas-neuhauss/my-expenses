@@ -22,31 +22,29 @@
 	>
 		<img src={`/images/category/${icon}`} alt="category icon" class="size-5" />
 	</Popover.Trigger>
-	<Popover.Content side="right">
-		{#snippet child({ props })}
-			<ScrollArea {...props} class={cn(props.class, "h-[400px] w-[320px]")}>
-				<div class="grid grid-cols-6 gap-2">
-					{#each CATEGORY_ICON_LIST as icon (icon)}
-						<button
-							class={buttonVariants({
-								variant: "secondary",
-								class: "h-auto w-auto self-center justify-self-center rounded-full p-2",
-							})}
-							onclick={() => {
-								onSelect(icon);
-								open = false;
-							}}
-						>
-							<img
-								src={`/images/category/${icon}`}
-								alt="category icon"
-								width="26"
-								height="26"
-							/>
-						</button>
-					{/each}
-				</div>
-			</ScrollArea>
-		{/snippet}
+	<Popover.Content side="right" class="w-auto p-0">
+		<ScrollArea class={cn("h-[400px] w-[320px]")}>
+			<div class="grid grid-cols-6 gap-2 p-4">
+				{#each CATEGORY_ICON_LIST as icon (icon)}
+					<button
+						class={buttonVariants({
+							variant: "secondary",
+							class: "h-auto w-auto self-center justify-self-center rounded-full p-2",
+						})}
+						onclick={() => {
+							onSelect(icon);
+							open = false;
+						}}
+					>
+						<img
+							src={`/images/category/${icon}`}
+							alt="category icon"
+							width="26"
+							height="26"
+						/>
+					</button>
+				{/each}
+			</div>
+		</ScrollArea>
 	</Popover.Content>
 </Popover.Root>
