@@ -50,7 +50,7 @@
 
 	$effect(() => {
 		// If selecting a date in the future, set "paid" to false
-		if (!!date && date.compare(today(getLocalTimeZone())) > 0) {
+		if (!transaction && !!date && date.compare(today(getLocalTimeZone())) > 0) {
 			paid = false;
 		}
 	});

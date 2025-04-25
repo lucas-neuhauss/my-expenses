@@ -32,6 +32,7 @@ type BackupData = {
 		wallet_id: number;
 		transference_id: string | null;
 		date: string;
+		paid: boolean;
 		created_at: string;
 		updated_at: string;
 	}[];
@@ -128,6 +129,7 @@ export async function loadBackup(userId: UserId, data: BackupData) {
 				date: t.date,
 				categoryId: maps.categoriesMap.get(t.category_id)!,
 				walletId: maps.walletsMap.get(t.wallet_id)!,
+				paid: t.paid,
 			})),
 		)
 		.returning({ id: table.transaction.id });
