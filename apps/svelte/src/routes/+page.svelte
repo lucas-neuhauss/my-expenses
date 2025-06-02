@@ -222,7 +222,7 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[104px]">Date</Table.Head>
+					<Table.Head class="w-[105px]">Date</Table.Head>
 					<Table.Head>Description</Table.Head>
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
