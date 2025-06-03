@@ -113,7 +113,7 @@
 			<DatePicker bind:open={calendarOpen} bind:date />
 		</div>
 
-		<div class="!flex-row !gap-6">
+		<div class="flex-row! gap-6!">
 			<div class="flex flex-1 flex-col justify-items-end gap-2">
 				<Label for="cents">Value</Label>
 				<Input
