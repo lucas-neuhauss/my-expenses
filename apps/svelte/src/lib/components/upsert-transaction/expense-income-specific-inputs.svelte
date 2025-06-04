@@ -73,7 +73,7 @@
 		onValueChange={onWalletChange}
 		allowDeselect={false}
 	>
-		<Select.Trigger bind:ref={walletTriggerRef} class="col-span-3">
+		<Select.Trigger bind:ref={walletTriggerRef} class="w-full">
 			{wallet.name}
 		</Select.Trigger>
 		<Select.Content>

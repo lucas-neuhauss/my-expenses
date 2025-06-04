@@ -64,12 +64,8 @@
 
 <UpsertCategory bind:open={upsertDialog.open} bind:category={upsertDialog.category} />
 
-<div class="container flex flex-col gap-y-4">
-	<Tabs.Root
-		value={data.type}
-		class="flex items-center gap-4"
-		onValueChange={handleTypeChange}
-	>
+<div class="container flex flex-col gap-y-4 px-8">
+	<Tabs.Root value={data.type} onValueChange={handleTypeChange}>
 		<div class="flex items-center gap-4">
 			<Button
 				title="Create category"
@@ -85,7 +81,7 @@
 	</Tabs.Root>
 
 	{#each data.nestedCategories as category (category.id)}
-		<Card.Root class="w-full">
+		<Card.Root class="w-full p-0">
 			<Card.Content class="flex items-center justify-between p-5 pt-3">
 				<div class="flex flex-col items-start justify-between gap-3">
 					<div class="mt-0.5 flex items-center justify-start gap-x-3">

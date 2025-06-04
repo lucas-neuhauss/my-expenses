@@ -27,7 +27,7 @@
 
 <ToastEffect />
 
-<div class="container flex flex-col gap-y-4">
+<div class="container flex flex-col gap-y-4 px-8">
 	<div>
 		<Button autofocus variant="outline" href="/wallets?id=new">Create Wallet</Button>
 		<UpsertWalletDialog open={upsertDialogOpen} {wallet} />
@@ -37,7 +37,7 @@
 		class="grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
 	>
 		{#each data.wallets as w (w.id)}
-			<Card.Root>
+			<Card.Root class="py-6">
 				<Card.Content class="flex items-center justify-between">
 					<div>
 						<h3 class="mb-3 font-bold">{w.name}</h3>

@@ -7,6 +7,7 @@
 	import localizedFormat from "dayjs/plugin/localizedFormat";
 	import { ModeWatcher } from "mode-watcher";
 	import "../app.css";
+	import { Tooltip } from "bits-ui";
 	dayjs.extend(localizedFormat);
 
 	let { children, data } = $props();
@@ -21,19 +22,21 @@
 <ModeWatcher />
 
 <Toaster position="top-center" />
-{#if data.user}
-	<Sidebar.Provider open={data.sidebarOpen}>
-		<AppSidebar {isAdmin} {email} />
-		<main class="flex min-h-svh w-screen flex-1 flex-col">
-			<header class="flex justify-between p-4">
-				<Sidebar.Trigger />
-				<ThemeToggle />
-			</header>
+<Tooltip.Provider>
+	{#if data.user}
+		<Sidebar.Provider open={data.sidebarOpen}>
+			<AppSidebar {isAdmin} {email} />
+			<main class="flex min-h-svh w-screen flex-1 flex-col">
+				<header class="flex items-center justify-between p-4">
+					<Sidebar.Trigger />
+					<ThemeToggle />
+				</header>
+				{@render children()}
+			</main>
+		</Sidebar.Provider>
+	{:else}
+		<main class="flex h-screen w-screen items-center justify-center px-4">
 			{@render children()}
 		</main>
-	</Sidebar.Provider>
-{:else}
-	<main class="flex h-screen w-screen items-center justify-center px-4">
-		{@render children()}
-	</main>
-{/if}
+	{/if}
+</Tooltip.Provider>

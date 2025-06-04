@@ -61,11 +61,11 @@
 		{#snippet child({ props })}
 			<Button
 				variant="outline"
-				class="justify-between"
 				{style}
-				{...props}
 				role="combobox"
 				aria-expanded={open}
+				{...props}
+				class="justify-between"
 			>
 				<span class="flex items-center gap-2">
 					{#if selectedCategory}

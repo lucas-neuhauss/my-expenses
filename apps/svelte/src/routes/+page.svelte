@@ -108,11 +108,11 @@
 </svelte:head>
 
 {#snippet MoneyCard(label: string, value: number)}
-	<Card.Root class="w-[200px]">
+	<Card.Root class="w-[200px] gap-0 p-0">
 		<Card.Header class="p-5 pb-0">
 			<Card.Title>{label}</Card.Title>
 		</Card.Header>
-		<Card.Content class="p-5 pt-3">
+		<Card.Content class="px-5 pt-3 pb-4">
 			<p>{formatCurrency(value)}</p>
 		</Card.Content>
 	</Card.Root>

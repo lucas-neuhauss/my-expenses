@@ -32,9 +32,9 @@
 		bind:value={fromWalletId}
 		allowDeselect={false}
 	>
-		<Select.Trigger bind:ref={fromWalletTriggerRef} class="col-span-3"
-			>{fromWallet?.name}</Select.Trigger
-		>
+		<Select.Trigger bind:ref={fromWalletTriggerRef} class="w-full">
+			{fromWallet?.name}
+		</Select.Trigger>
 		<Select.Content>
 			{#each wallets as wallet (wallet.id)}
 				<Select.Item value={String(wallet.id)}>
@@ -53,7 +53,7 @@
 		bind:value={toWalletId}
 		allowDeselect={false}
 	>
-		<Select.Trigger class="col-span-3">{toWallet?.name}</Select.Trigger>
+		<Select.Trigger class="w-full">{toWallet?.name}</Select.Trigger>
 		<Select.Content>
 			{#each wallets as wallet (wallet.id)}
 				<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
