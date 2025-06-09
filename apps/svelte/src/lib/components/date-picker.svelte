@@ -39,7 +39,7 @@
 	<Popover.Trigger
 		class={cn(
 			buttonVariants({
-				variant: "outline-solid",
+				variant: "outline",
 				class: "col-span-3 w-full justify-start text-left font-normal",
 			}),
 			!date && "text-muted-foreground",
