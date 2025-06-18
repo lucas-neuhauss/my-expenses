@@ -22,7 +22,10 @@ export const actions = {
 			const file = formData.get("file");
 			console.log(file);
 
-			if (!(file instanceof File) || file.type !== "application/x-gzip") {
+			if (
+				!(file instanceof File) ||
+				!["application/x-gzip", "application/gzip"].includes(file.type)
+			) {
 				return error(400, "Invalid file type");
 			}
 
