@@ -6,7 +6,7 @@
 	import type { LoadWallet } from "$lib/server/data/wallet";
 	import { omit } from "es-toolkit";
 	import SuperDebug, { defaults, superForm } from "sveltekit-superforms";
-	import { zod, zodClient } from "sveltekit-superforms/adapters";
+	import { zod4, zod4Client } from "sveltekit-superforms/adapters";
 	import { upsertWalletSchema } from "./upsert-wallet-schema";
 
 	let {
@@ -16,8 +16,8 @@
 		open: boolean;
 		wallet: LoadWallet | null;
 	} = $props();
-	const form = superForm(defaults(wallet, zod(upsertWalletSchema)), {
-		validators: zodClient(upsertWalletSchema),
+	const form = superForm(defaults(wallet, zod4(upsertWalletSchema)), {
+		validators: zod4Client(upsertWalletSchema),
 		onUpdated({ form }) {
 			if (form.message) {
 				// Close the dialog on success

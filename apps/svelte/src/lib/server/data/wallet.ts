@@ -3,7 +3,7 @@ import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, sql } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export async function upsertWallet({
 	userId,

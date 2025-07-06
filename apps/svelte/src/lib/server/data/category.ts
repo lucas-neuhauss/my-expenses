@@ -6,7 +6,7 @@ import type { NestedCategory } from "$lib/utils/category";
 import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export async function getNestedCategories(
 	userId: UserId,
@@ -128,17 +128,14 @@ export async function upsertCategory({
 }) {
 	const formObj = Object.fromEntries(formData.entries());
 	const formSchema = z
-		.object({
+		.looseObject({
 			"category.id": z.coerce.number().int().or(z.literal("new")),
 			"category.type": z.enum(["income", "expense"]),
 			"category.name": z.string().min(1).max(255),
 			"category.icon": z.enum(CATEGORY_ICON_LIST),
 		})
-		.passthrough()
 		.transform((values) => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const childrenObj: Record<string, any> = {};
-
+			const childrenObj: Record<string, unknown> = {};
 			for (const [key, value] of Object.entries(values)) {
 				if (key.startsWith("category.")) continue;
 				const firstDotIndex = key.indexOf(".");
@@ -149,7 +146,6 @@ export async function upsertCategory({
 					[key.substring(secondDotIndex + 1)]: value,
 				};
 			}
-
 			return {
 				id: values["category.id"],
 				type: values["category.type"],
@@ -160,13 +156,13 @@ export async function upsertCategory({
 		})
 		.pipe(
 			z.object({
-				id: z.coerce.number().int().or(z.literal("new")),
+				id: z.int().positive().or(z.literal("new")),
 				type: z.enum(["income", "expense"]),
 				name: z.string().min(1).max(255),
 				icon: z.enum(CATEGORY_ICON_LIST),
 				children: z.array(
 					z.object({
-						id: z.coerce.number().int().or(z.literal("new")),
+						id: z.coerce.number().int().positive().or(z.literal("new")),
 						name: z.string().min(1).max(255),
 						icon: z.enum(CATEGORY_ICON_LIST),
 					}),

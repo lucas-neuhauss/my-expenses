@@ -8,7 +8,7 @@
 	import { CanvasRenderer } from "echarts/renderers";
 	import { mode } from "mode-watcher";
 	import { onDestroy } from "svelte";
-	import { z } from "zod";
+	import { z } from "zod/v4";
 
 	let {
 		charts,

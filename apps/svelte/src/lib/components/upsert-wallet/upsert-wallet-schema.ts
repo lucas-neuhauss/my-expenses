@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const upsertWalletSchema = z.object({
 	id: z.coerce.number().int().positive().optional(),

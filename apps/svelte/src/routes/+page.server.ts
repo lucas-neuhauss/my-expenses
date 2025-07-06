@@ -10,9 +10,13 @@ import { calculateDashboardData } from "$lib/utils/transaction";
 import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "zod/v4";
 
-const IntSearchParamSchema = z.string().pipe(z.coerce.number().int());
+const IntSearchParamSchema = z
+	.string()
+	.regex(/\d+/)
+	.transform(Number)
+	.pipe(z.int().positive());
 
 export const load = async (event) => {
 	if (!event.locals.user) {

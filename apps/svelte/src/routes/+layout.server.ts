@@ -1,6 +1,6 @@
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from "$env/static/public";
 import { createServerClient } from "@supabase/ssr";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const load = async ({ cookies }) => {
 	const supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {

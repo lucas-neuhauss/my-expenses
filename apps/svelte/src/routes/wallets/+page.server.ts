@@ -3,8 +3,8 @@ import { deleteWallet, loadWallets, upsertWallet } from "$lib/server/data/wallet
 import { FormUtil } from "$lib/utils/form";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { message, superValidate } from "sveltekit-superforms";
-import { zod } from "sveltekit-superforms/adapters";
-import { z } from "zod";
+import { zod4 } from "sveltekit-superforms/adapters";
+import { z } from "zod/v4";
 
 export const load = async ({ locals, url, untrack }) => {
 	if (!locals.user) {
@@ -26,7 +26,7 @@ export const actions = {
 			return error(401);
 		}
 
-		const form = await superValidate(event, zod(upsertWalletSchema));
+		const form = await superValidate(event, zod4(upsertWalletSchema));
 		if (!form.valid) {
 			return message(form, FormUtil.getErrorMessage("Invalid form"));
 		}

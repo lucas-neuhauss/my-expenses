@@ -4,7 +4,7 @@ import {
 	upsertCategory,
 } from "$lib/server/data/category";
 import { error, redirect } from "@sveltejs/kit";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const load = async (event) => {
 	const user = event.locals.user;

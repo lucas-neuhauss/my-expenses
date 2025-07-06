@@ -6,7 +6,7 @@ import { DateStringSchema } from "$lib/utils/date-time";
 import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
 
