@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { type Handle, redirect } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
+import { dev } from '$app/environment'
 
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public'
 
@@ -20,7 +21,12 @@ const supabase: Handle = async ({ event, resolve }) => {
        */
       setAll: (cookiesToSet) => {
         cookiesToSet.forEach(({ name, value, options }) => {
-          event.cookies.set(name, value, { ...options, path: '/' })
+          event.cookies.set(name, value, {
+            ...options,
+            path: '/',
+            sameSite: dev ? 'lax' : 'strict',
+            secure: !dev
+          })
         })
       },
     },
