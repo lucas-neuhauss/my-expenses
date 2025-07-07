@@ -14,7 +14,6 @@
 		date: CalendarDate | undefined;
 		open: boolean;
 	} = $props();
-
 	let calendarElement = $state<HTMLDivElement | null>(null);
 
 	const df = new DateFormatter("en-US", {
@@ -22,20 +21,7 @@
 	});
 </script>
 
-<Popover.Root
-	bind:open
-	onOpenChange={() => {
-		tick().then(() => {
-			// Can't figure out without 2 ticks...
-			tick().then(() => {
-				const el = calendarElement?.querySelector("[data-selected] [role='button']") as
-					| HTMLElement
-					| undefined;
-				if (el) el.focus();
-			});
-		});
-	}}
->
+<Popover.Root bind:open>
 	<Popover.Trigger
 		class={cn(
 			buttonVariants({
@@ -52,6 +38,15 @@
 		id="transaction-form-calendar-popover"
 		class="calendar-popover w-auto p-0"
 		align="start"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			tick().then(() => {
+				const el = calendarElement?.querySelector("[data-selected] [role='button']") as
+					| HTMLElement
+					| undefined;
+				if (el) el.focus();
+			});
+		}}
 	>
 		<Calendar
 			bind:ref={calendarElement}

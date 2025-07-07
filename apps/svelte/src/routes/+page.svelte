@@ -240,14 +240,16 @@
 							)}
 						</Table.Cell>
 						<Table.Cell>{t.description}</Table.Cell>
-						<Table.Cell class="inline-flex items-center gap-x-4">
-							<img
-								alt="category icon"
-								src={`/images/category/${t.category.icon}`}
-								width="19"
-								height="19"
-							/>
-							{t.category.name}
+						<Table.Cell>
+							<div class="flex h-full items-center gap-x-4">
+								<img
+									alt="category icon"
+									src={`/images/category/${t.category.icon}`}
+									width="19"
+									height="19"
+								/>
+								{t.category.name}
+							</div>
 						</Table.Cell>
 						<Table.Cell>
 							{t.wallet.name}
