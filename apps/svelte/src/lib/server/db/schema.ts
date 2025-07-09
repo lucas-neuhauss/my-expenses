@@ -19,12 +19,16 @@ export function lower(email: AnyPgColumn): SQL {
 
 const userId = varchar("user_id", { length: 50 }).notNull();
 
-export const wallet = pgTable("wallet", {
-	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
-	userId,
-	name: varchar("name", { length: 255 }).notNull(),
-	initialBalance: integer("initial_balance").default(0).notNull(),
-});
+export const wallet = pgTable(
+	"wallet",
+	{
+		id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
+		userId,
+		name: varchar("name", { length: 255 }).notNull(),
+		initialBalance: integer("initial_balance").default(0).notNull(),
+	},
+	(table) => [index("wallet_user_id_idx").on(table.userId)],
+);
 
 export const walletRelations = relations(wallet, ({ many }) => ({
 	transactions: many(transaction),
@@ -50,7 +54,10 @@ export const transaction = pgTable(
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at").defaultNow().notNull(),
 	},
-	(table) => [index("transference_id_idx").on(table.transferenceId)],
+	(table) => [
+		index("transaction_transference_id_idx").on(table.transferenceId),
+		index("transaction_user_id_idx").on(table.userId),
+	],
 );
 export const transactionsRelations = relations(transaction, ({ one }) => ({
 	category: one(category, {
@@ -82,6 +89,7 @@ export const category = pgTable(
 			foreignColumns: [table.id],
 			name: "category_parent_fk",
 		}).onDelete("cascade"),
+		index("category_user_id_idx").on(table.userId),
 	],
 );
 
@@ -89,18 +97,22 @@ export const categoryRelations = relations(category, ({ many }) => ({
 	transactions: many(transaction),
 }));
 
-export const subscription = pgTable("subscription", {
-	id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
-	name: varchar("name", { length: 255 }).notNull(),
-	cents: integer("cents").notNull(),
-	userId,
-	categoryId: integer("category_id")
-		.references(() => category.id)
-		.notNull(),
-	startDate: date("start_date", { mode: "string" }).notNull(),
-	endDate: date("end_date", { mode: "string" }),
-	lastGenerated: date("last_generated", { mode: "string" }).notNull(),
-});
+export const subscription = pgTable(
+	"subscription",
+	{
+		id: integer("id").primaryKey().generatedAlwaysAsIdentity({ startWith: 1000 }),
+		name: varchar("name", { length: 255 }).notNull(),
+		cents: integer("cents").notNull(),
+		userId,
+		categoryId: integer("category_id")
+			.references(() => category.id)
+			.notNull(),
+		startDate: date("start_date", { mode: "string" }).notNull(),
+		endDate: date("end_date", { mode: "string" }),
+		lastGenerated: date("last_generated", { mode: "string" }).notNull(),
+	},
+	(table) => [index("subscription_user_id_idx").on(table.userId)],
+);
 export const subscriptionRelations = relations(subscription, ({ one }) => ({
 	category: one(category, {
 		fields: [subscription.categoryId],
