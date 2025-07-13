@@ -56,6 +56,7 @@ export const transaction = pgTable(
 	},
 	(table) => [
 		index("transaction_transference_id_idx").on(table.transferenceId),
+		index("transaction_wallet_id_idx").on(table.transferenceId),
 		index("transaction_user_id_idx").on(table.userId),
 	],
 );
