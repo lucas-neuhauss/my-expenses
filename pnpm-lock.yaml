@@ -142,8 +142,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3
       bits-ui:
-        specifier: 2.8.11
-        version: 2.8.11(@internationalized/date@3.8.2)(svelte@5.37.1)
+        specifier: 2.9.0
+        version: 2.9.0(@internationalized/date@3.8.2)(svelte@5.37.1)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -199,8 +199,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       tailwind-variants:
-        specifier: ^1.0.0
-        version: 1.0.0(tailwindcss@4.1.11)
+        specifier: ^2.0.1
+        version: 2.0.1(tailwind-merge@3.3.1)(tailwindcss@4.1.11)
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.11
@@ -1705,8 +1705,8 @@ packages:
       '@internationalized/date': ^3.8.1
       svelte: ^5.33.0
 
-  bits-ui@2.8.11:
-    resolution: {integrity: sha512-lKN9rAk69my6j7H1D4B87r8LrHuEtfEsf1xCixBj9yViql2BdI3f04HyyyT7T1GOCpgb9+8b0B+nm3LN81Konw==}
+  bits-ui@2.9.0:
+    resolution: {integrity: sha512-5lj7L4/TvC0SQHfynwGSXFXO9mDeVszW4+C+lDbEMQFesWT78Z3tkfPTzGYsm8PBauP847uE5xovDGAhndjuog==}
     engines: {node: '>=20'}
     peerDependencies:
       '@internationalized/date': ^3.8.1
@@ -2998,6 +2998,16 @@ packages:
     engines: {node: '>=16.x', pnpm: '>=7.x'}
     peerDependencies:
       tailwindcss: '*'
+
+  tailwind-variants@2.0.1:
+    resolution: {integrity: sha512-1wt8c4PWO3jbZcKGBrjIV8cehWarREw1C2os0k8Mcq0nof/CbafNhUUjb0LRWiiRfAvDK6v1deswtHLsygKglw==}
+    engines: {node: '>=16.x', pnpm: '>=7.x'}
+    peerDependencies:
+      tailwind-merge: '>=3.0.0'
+      tailwindcss: '*'
+    peerDependenciesMeta:
+      tailwind-merge:
+        optional: true
 
   tailwindcss@4.1.11:
     resolution: {integrity: sha512-2E9TBm6MDD/xKYe+dvJZAmg3yxIEDNRc0jwlNyDg/4Fil2QcSLjFKGVff0lAf1jjeaArlG/M75Ey/EYr/OJtBA==}
@@ -4730,7 +4740,7 @@ snapshots:
       svelte-toolbelt: 0.9.1(svelte@5.37.1)
       tabbable: 6.2.0
 
-  bits-ui@2.8.11(@internationalized/date@3.8.2)(svelte@5.37.1):
+  bits-ui@2.9.0(@internationalized/date@3.8.2)(svelte@5.37.1):
     dependencies:
       '@floating-ui/core': 1.7.3
       '@floating-ui/dom': 1.7.3
@@ -5914,6 +5924,12 @@ snapshots:
     dependencies:
       tailwind-merge: 3.0.2
       tailwindcss: 4.1.11
+
+  tailwind-variants@2.0.1(tailwind-merge@3.3.1)(tailwindcss@4.1.11):
+    dependencies:
+      tailwindcss: 4.1.11
+    optionalDependencies:
+      tailwind-merge: 3.3.1
 
   tailwindcss@4.1.11: {}
 
