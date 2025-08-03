@@ -123,6 +123,16 @@
 		{@render MoneyCard("Current balance", data.balance)}
 		{@render MoneyCard("Month Income", data.totalIncome)}
 		{@render MoneyCard("Month Expense", data.totalExpense)}
+
+		<div class="text-sm">
+			<p>
+				Out: {formatCurrency(data.filteredExpense)}
+			</p>
+			<p>
+				In: {formatCurrency(data.filteredIncome)}
+			</p>
+			<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
+		</div>
 	</div>
 
 	<div class="flex flex-wrap items-center gap-4">
@@ -163,70 +173,63 @@
 			style="width: 224px;"
 		/>
 
-		<Button
-			variant="outline"
-			size="icon"
-			class="shrink-0"
-			title="Go to the previous month"
-			aria-label="Go to the previous month"
-			onclick={() => onDateChanged(data.month - 1, data.year)}
-		>
-			<ChevronLeft />
-		</Button>
+		<div class="flex items-center gap-2">
+			<Button
+				variant="outline"
+				size="icon"
+				class="shrink-0"
+				title="Go to the previous month"
+				aria-label="Go to the previous month"
+				onclick={() => onDateChanged(data.month - 1, data.year)}
+			>
+				<ChevronLeft />
+			</Button>
 
-		<Select.Root
-			type="single"
-			name="month"
-			value={String(data.month)}
-			onValueChange={(m) => onDateChanged(Number(m), data.year)}
-			allowDeselect={false}
-		>
-			<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger>
-			<Select.Content>
-				{#each monthOptions as option (option.value)}
-					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
+			<Select.Root
+				type="single"
+				name="month"
+				value={String(data.month)}
+				onValueChange={(m) => onDateChanged(Number(m), data.year)}
+				allowDeselect={false}
+			>
+				<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger
+				>
+				<Select.Content>
+					{#each monthOptions as option (option.value)}
+						<Select.Item value={String(option.value)}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 
-		<Select.Root
-			type="single"
-			name="year"
-			value={String(data.year)}
-			onValueChange={(y) => onDateChanged(data.month, Number(y))}
-			allowDeselect={false}
-		>
-			<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
-			<Select.Content>
-				{#each yearOptions as option (option.value)}
-					<Select.Item value={String(option.value)}>{option.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
+			<Select.Root
+				type="single"
+				name="year"
+				value={String(data.year)}
+				onValueChange={(y) => onDateChanged(data.month, Number(y))}
+				allowDeselect={false}
+			>
+				<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
+				<Select.Content>
+					{#each yearOptions as option (option.value)}
+						<Select.Item value={String(option.value)}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 
-		<Button
-			variant="outline"
-			size="icon"
-			class="shrink-0"
-			title="Go to the next month"
-			aria-label="Go to the next month"
-			onclick={() => onDateChanged(data.month + 1, data.year)}
-		>
-			<ChevronRight />
-		</Button>
+			<Button
+				variant="outline"
+				size="icon"
+				class="shrink-0"
+				title="Go to the next month"
+				aria-label="Go to the next month"
+				onclick={() => onDateChanged(data.month + 1, data.year)}
+			>
+				<ChevronRight />
+			</Button>
+		</div>
 	</div>
 
 	<DashboardCharts charts={data.charts} />
-
-	<div class="text-sm">
-		<p>
-			Out: {formatCurrency(data.filteredExpense)}
-		</p>
-		<p>
-			In: {formatCurrency(data.filteredIncome)}
-		</p>
-		<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
-	</div>
 
 	{#if data.transactions.length > 0}
 		<Table.Root>
@@ -258,7 +261,9 @@
 									width="19"
 									height="19"
 								/>
-								{t.category.name}
+								<span class="truncate">
+									{t.category.name}
+								</span>
 							</div>
 						</Table.Cell>
 						<Table.Cell>

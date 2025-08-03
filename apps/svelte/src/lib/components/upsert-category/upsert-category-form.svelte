@@ -133,7 +133,7 @@
 					title="Delete sub-category"
 					aria-label="delete sub-category"
 					variant="ghost"
-					class="ml-2 mt-6"
+					class="mt-6 ml-2"
 					size="icon"
 					onclick={() => handleDeleteSubcategory(index)}
 				>
@@ -142,9 +142,9 @@
 			</div>
 		{/each}
 
-		<Button size="sm" variant="outline" class="mt-4" onclick={handleAddSubcategory}
-			>Add subcategory</Button
-		>
+		<Button size="sm" variant="outline" class="mt-4" onclick={handleAddSubcategory}>
+			Add subcategory
+		</Button>
 	</div>
 
 	<Dialog.Footer>
