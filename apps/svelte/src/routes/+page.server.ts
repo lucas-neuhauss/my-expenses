@@ -46,7 +46,6 @@ export const load = async (event) => {
 
 	const transactionsPromise = getDashboardTransactions({
 		userId,
-		wallet,
 		start: date.toString(),
 		end: dateMonthLater.toString(),
 	});
@@ -79,8 +78,13 @@ export const load = async (event) => {
 		balanceResultPromise,
 	]);
 	const transactions = allTransactions.filter((t) => {
-		if (category === -1) return true;
-		return [t.category.id, t.categoryParent?.id].includes(category);
+		if (wallet !== -1 && wallet !== t.wallet.id) {
+			return false;
+		}
+		if (category !== -1 && ![t.category.id, t.categoryParent?.id].includes(category)) {
+			return false;
+		}
+		return true;
 	});
 
 	const [{ balance }] = z
@@ -89,7 +93,8 @@ export const load = async (event) => {
 		.catch([{ balance: 0 }])
 		.parse(balanceResult);
 
-	const { totalIncome, totalExpense, charts } = calculateDashboardData(allTransactions);
+	const { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } =
+		calculateDashboardData(allTransactions, wallet, category);
 
 	return {
 		category,
@@ -100,6 +105,8 @@ export const load = async (event) => {
 		transactions,
 		totalIncome,
 		totalExpense,
+		filteredIncome,
+		filteredExpense,
 		month,
 		year,
 		charts,

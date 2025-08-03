@@ -8,16 +8,40 @@ export function calculateDashboardData(
 		Pick<Transaction, "id" | "type" | "cents" | "transferenceId" | "paid" | "date"> & {
 			category: { id: number; name: string };
 			categoryParent: { id: number; name: string } | null;
+			wallet: { id: number; name: string };
 		}
 	>,
+	walletFilter: number,
+	categoryFilter: number,
 ) {
 	let totalExpense = 0;
 	let totalIncome = 0;
+	let filteredExpense = 0;
+	let filteredIncome = 0;
 	let expensePieChartData: PieChartDataItem[] = [];
 	let incomePieChartData: PieChartDataItem[] = [];
 
 	transactions.forEach((t) => {
 		const category = t.categoryParent ?? t.category;
+		const filteredIn = (() => {
+			if (walletFilter !== -1 && walletFilter !== t.wallet.id) {
+				return false;
+			}
+			if (
+				categoryFilter !== -1 &&
+				![t.category.id, t.categoryParent?.id].includes(categoryFilter)
+			) {
+				return false;
+			}
+			return true;
+		})();
+
+		if (t.type === "income" && t.paid && filteredIn) {
+			filteredIncome += t.cents;
+		}
+		if (t.type === "expense" && t.paid && filteredIn) {
+			filteredExpense += t.cents;
+		}
 
 		if (t.type === "income" && t.transferenceId === null && t.paid) {
 			totalIncome += t.cents;
@@ -78,6 +102,8 @@ export function calculateDashboardData(
 	return {
 		totalExpense,
 		totalIncome,
+		filteredExpense,
+		filteredIncome,
 		charts: {
 			expensePieChartData,
 			incomePieChartData,

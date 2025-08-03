@@ -96,7 +96,7 @@
 					</div>
 
 					{#if category.children.length > 0}
-						<div class="flex gap-2">
+						<div class="flex flex-wrap gap-2">
 							{#each category.children as subcategory (subcategory.id)}
 								<div class="flex items-center gap-1.5 rounded border px-2 py-1">
 									<img
@@ -110,7 +110,7 @@
 						</div>
 					{/if}
 				</div>
-				<div>
+				<div class="shrink-0">
 					<Button
 						title="Edit category"
 						size="icon"

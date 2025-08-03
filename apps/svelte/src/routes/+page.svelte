@@ -121,8 +121,8 @@
 <div class="flex flex-col items-start gap-y-3 px-4 pb-4">
 	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
 		{@render MoneyCard("Current balance", data.balance)}
-		{@render MoneyCard("Income", data.totalIncome)}
-		{@render MoneyCard("Expense", data.totalExpense)}
+		{@render MoneyCard("Month Income", data.totalIncome)}
+		{@render MoneyCard("Month Expense", data.totalExpense)}
 	</div>
 
 	<div class="flex flex-wrap items-center gap-4">
@@ -217,6 +217,16 @@
 	</div>
 
 	<DashboardCharts charts={data.charts} />
+
+	<div class="text-sm">
+		<p>
+			Out: {formatCurrency(data.filteredExpense)}
+		</p>
+		<p>
+			In: {formatCurrency(data.filteredIncome)}
+		</p>
+		<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
+	</div>
 
 	{#if data.transactions.length > 0}
 		<Table.Root>
