@@ -1,74 +1,106 @@
-import { upsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
-import { db } from "$lib/server/db";
+import type { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
+import { db, Db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, sql } from "drizzle-orm";
-import { z } from "zod/v4";
+import { Data, Effect } from "effect";
 
-export async function upsertWallet({
+export class UpsertWalletError extends Data.TaggedError("UpsertWalletError")<{
+	cause?: unknown;
+	message: string;
+	action: "create" | "update";
+}> {}
+
+export class EntityNotFoundError extends Data.TaggedError("EntityNotFoundError")<{
+	entity: string;
+	id: number;
+	where?: string[];
+}> {}
+
+export const upsertWalletData = Effect.fn("upsertWalletData")(function* ({
 	userId,
 	data,
 }: {
 	userId: UserId;
-	data: z.infer<typeof upsertWalletSchema>;
+	data: UpsertWalletSchema;
 }) {
+	yield* Effect.annotateCurrentSpan("args", { userId, data });
+	const db = yield* Db;
 	const { id, name } = data;
+	const action: "create" | "update" = !id ? "create" : "update";
 	const initialBalance = data.initialBalance ? Math.floor(data.initialBalance * 100) : 0;
 
-	try {
-		if (!id) {
-			await db.insert(table.wallet).values({
+	switch (action) {
+		case "create": {
+			yield* db.insert(table.wallet).values({
 				userId,
 				name,
 				initialBalance,
 			});
-		} else {
+			return "Wallet created";
+		}
+		case "update": {
 			// Check if the wallet is owned by the user
-			const wallet = await db
+			const wallet = yield* db
 				.select({ id: table.wallet.id })
 				.from(table.wallet)
 				.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId)));
 			if (!wallet) {
-				throw Error("Wallet not found");
+				yield* new EntityNotFoundError({
+					entity: "wallet",
+					id,
+					where: [`wallet.userId = ${userId}`],
+				});
 			}
 
-			await db
+			yield* db
 				.update(table.wallet)
 				.set({ name, initialBalance })
 				.where(eq(table.wallet.id, id));
+			return "Wallet updated";
 		}
-
-		return id ? "Wallet updated" : "Wallet created";
-	} catch (error) {
-		console.error(error);
-		throw Error("Something went wrong");
 	}
-}
+});
 
-export async function deleteWallet({ userId, id }: { userId: UserId; id: number }) {
+class DeleteWalletError extends Data.TaggedError("DeleteWalletError")<{
+	message: string;
+}> {}
+export const deleteWalletData = Effect.fn("deleteWalletData")(function* ({
+	userId,
+	id,
+}: {
+	userId: UserId;
+	id: number;
+}) {
+	const db = yield* Db;
 	// Get the wallet to be deleted. Make sure to check if the `userId` matches
-	const [wallet] = await db
+	const [wallet] = yield* db
 		.select()
 		.from(table.wallet)
 		.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId)));
 
 	if (!wallet) {
-		throw Error("Category not found");
+		return yield* new EntityNotFoundError({
+			entity: "category",
+			id,
+			where: [`category.userId = ${userId}`],
+		});
 	}
 
 	// Should not be able to delete a wallet with transactions
-	const [walletTransaction] = await db
+	const [walletTransaction] = yield* db
 		.select({ id: table.transaction.id })
 		.from(table.transaction)
 		.where(eq(table.transaction.walletId, id))
 		.limit(1);
 	if (walletTransaction) {
-		throw Error("Wallet has one or more transactions, cannot be deleted");
+		yield* new DeleteWalletError({
+			message: "Wallet has one or more transactions, cannot be deleted",
+		});
 	}
-
-	await db.delete(table.wallet).where(eq(table.wallet.id, id));
+	yield* db.delete(table.wallet).where(eq(table.wallet.id, id));
 	return "Wallet deleted";
-}
+});
 
 export function loadWallets(userId: UserId) {
 	return db

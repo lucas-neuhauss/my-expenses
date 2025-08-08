@@ -1,39 +1,27 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
+	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
-	import * as Form from "$lib/components/ui/form";
 	import { Input } from "$lib/components/ui/input";
+	import { Label } from "$lib/components/ui/label";
+	import { upsertWalletAction } from "$lib/remote/wallet.remote";
 	import type { LoadWallet } from "$lib/server/data/wallet";
-	import { omit } from "es-toolkit";
-	import SuperDebug, { defaults, superForm } from "sveltekit-superforms";
-	import { zod4, zod4Client } from "sveltekit-superforms/adapters";
-	import { upsertWalletSchema } from "./upsert-wallet-schema";
+	import { toast } from "svelte-sonner";
 
 	let {
-		open,
+		open = $bindable(),
 		wallet,
 	}: {
 		open: boolean;
 		wallet: LoadWallet | null;
 	} = $props();
-	const form = superForm(defaults(wallet, zod4(upsertWalletSchema)), {
-		validators: zod4Client(upsertWalletSchema),
-		onUpdated({ form }) {
-			if (form.message) {
-				// Close the dialog on success
-				if (form.message.type === "success") {
-					goto("/wallets");
-				}
-			}
-		},
+
+	let formErrors: Record<string, string> = $state({});
+	$effect(() => {
+		if (open) formErrors = {};
 	});
-	const { form: formData, enhance, reset } = form;
 
 	let isUpdate = $derived(wallet !== null);
-
-	$effect(() => {
-		reset({ data: wallet ? omit(wallet, ["balance"]) : undefined });
-	});
 </script>
 
 <Dialog.Root
@@ -50,43 +38,60 @@
 		</Dialog.Header>
 
 		<form
-			use:enhance
-			method="post"
-			action="?/upsert-wallet"
+			{...upsertWalletAction.enhance(async ({ form, submit }) => {
+				try {
+					await submit();
+					const res = upsertWalletAction.result;
+					if (!res) throw Error();
+
+					if (res.success) {
+						form.reset();
+						toast.success(res.message);
+						open = false;
+						goto("/wallets");
+					} else {
+						if (res.errorType === "ParseError") {
+							formErrors = res.formErrors;
+						} else {
+							throw Error();
+						}
+					}
+				} catch {
+					toast.error("Something went wrong. Please try again later.");
+				}
+			})}
 			class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 		>
-			<input hidden name="id" bind:value={$formData.id} />
+			<input hidden name="id" value={wallet?.id} />
 
-			<Form.Field {form} name="name">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Name</Form.Label>
-						<Input placeholder="Name" {...props} bind:value={$formData.name} />
-					{/snippet}
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
+			<Label for="wallet-name-input">Name</Label>
+			<Input
+				placeholder="Name"
+				name="name"
+				id="wallet-name-input"
+				value={wallet?.name}
+				required
+			/>
+			{#if formErrors.name}
+				<p class="text-sm text-red-400">{formErrors.name}</p>
+			{/if}
 
-			<Form.Field {form} name="initialBalance">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Initial Balance</Form.Label>
-						<Input
-							placeholder="R$ 0.00"
-							type="number"
-							step="0.01"
-							{...props}
-							bind:value={$formData.initialBalance}
-						/>
-					{/snippet}
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
+			<Label for="wallet-initialbalance-input">Initial Balance</Label>
+			<Input
+				id="wallet-initialbalance-input"
+				name="initialBalance"
+				placeholder="R$ 0.00"
+				type="number"
+				step="0.01"
+				value={wallet?.initialBalance}
+			/>
+			{#if formErrors.initialBalance}
+				<p class="text-sm text-red-400">{formErrors.initialBalance}</p>
+			{/if}
 
 			<Dialog.Footer class="mt-2">
-				<Form.Button class="ml-auto">Save</Form.Button>
+				<Button type="submit" class="ml-auto">Save</Button>
 			</Dialog.Footer>
 		</form>
-		<SuperDebug data={$formData} display={false} />
 	</Dialog.Content>
 </Dialog.Root>

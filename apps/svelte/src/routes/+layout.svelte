@@ -21,7 +21,7 @@
 
 <ModeWatcher />
 
-<Toaster position="top-center" />
+<Toaster position="top-center" richColors />
 <Tooltip.Provider>
 	{#if data.user}
 		<Sidebar.Provider open={data.sidebarOpen}>

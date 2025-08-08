@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import ConfirmDialogNew from "$lib/components/confirm-dialog-new.svelte";
+	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import UpsertWalletDialog from "$lib/components/upsert-wallet/upsert-wallet-dialog.svelte";
@@ -8,6 +8,8 @@
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
 	import ToastEffect from "$lib/components/toast-effect.svelte";
+	import { deleteWalletAction } from "$lib/remote/wallet.remote";
+	import { toast } from "svelte-sonner";
 
 	let { data } = $props();
 	let updateId = $derived(page.url.searchParams.get("id"));
@@ -30,7 +32,7 @@
 <div class="container flex flex-col gap-y-4 px-8">
 	<div>
 		<Button autofocus variant="outline" href="/wallets?id=new">Create Wallet</Button>
-		<UpsertWalletDialog open={upsertDialogOpen} {wallet} />
+		<UpsertWalletDialog bind:open={upsertDialogOpen} {wallet} />
 	</div>
 
 	<div
@@ -61,14 +63,19 @@
 						>
 							<Trash />
 						</Button>
-						<ConfirmDialogNew
+						<ConfirmDialog
 							open={deleteConfirmOpen && w.id === wallet?.id}
 							successRedirect="/wallets"
 							title="Are you sure?"
 							description="Are you sure you want to delete this wallet?"
-							formProps={{
-								action: `?/delete-wallet&id=${w.id}`,
-								method: "post",
+							remoteCommand={async () => {
+								try {
+									const res = await deleteWalletAction(w.id);
+									if (!res) throw Error();
+									toast[res.success ? "success" : "error"](res.message);
+								} catch {
+									toast.error("Something went wrong. Please try again later.");
+								}
 							}}
 						/>
 					</div>
