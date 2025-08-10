@@ -151,7 +151,7 @@ export async function createBackup(userId: UserId) {
 			const rows = await db.execute(
 				sql.raw(`select * from ${key} where ${key}.user_id = '${userId}'`),
 			);
-			tables[key] = Array.from(rows);
+			tables[key] = Array.from(rows.rows);
 		}
 	}
 
