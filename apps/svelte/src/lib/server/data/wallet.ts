@@ -1,4 +1,5 @@
 import type { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
+import { EntityNotFoundError } from "$lib/errors/db";
 import { db, Db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
@@ -9,12 +10,6 @@ export class UpsertWalletError extends Data.TaggedError("UpsertWalletError")<{
 	cause?: unknown;
 	message: string;
 	action: "create" | "update";
-}> {}
-
-export class EntityNotFoundError extends Data.TaggedError("EntityNotFoundError")<{
-	entity: string;
-	id: number;
-	where?: string[];
 }> {}
 
 export const upsertWalletData = Effect.fn("upsertWalletData")(function* ({
@@ -72,10 +67,16 @@ export const deleteWalletData = Effect.fn("deleteWalletData")(function* ({
 	userId: UserId;
 	id: number;
 }) {
+	yield* Effect.annotateCurrentSpan("args", { userId, id });
 	const db = yield* Db;
-	// Get the wallet to be deleted. Make sure to check if the `userId` matches
 	const [wallet] = yield* db
-		.select()
+		.select({
+			id: table.wallet.id,
+			hasTransactions: sql<boolean>`EXISTS(
+            SELECT 1 FROM ${table.transaction}
+            WHERE ${table.transaction.walletId} = ${id}
+        )`.as("hasTransactions"),
+		})
 		.from(table.wallet)
 		.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId)));
 
@@ -86,18 +87,13 @@ export const deleteWalletData = Effect.fn("deleteWalletData")(function* ({
 			where: [`category.userId = ${userId}`],
 		});
 	}
-
 	// Should not be able to delete a wallet with transactions
-	const [walletTransaction] = yield* db
-		.select({ id: table.transaction.id })
-		.from(table.transaction)
-		.where(eq(table.transaction.walletId, id))
-		.limit(1);
-	if (walletTransaction) {
+	if (wallet.hasTransactions) {
 		yield* new DeleteWalletError({
 			message: "Wallet has one or more transactions, cannot be deleted",
 		});
 	}
+
 	yield* db.delete(table.wallet).where(eq(table.wallet.id, id));
 	return "Wallet deleted";
 });

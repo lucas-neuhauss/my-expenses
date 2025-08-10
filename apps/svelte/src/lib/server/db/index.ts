@@ -1,14 +1,17 @@
 import { env } from "$env/dynamic/private";
 import * as Pg from "@effect/sql-drizzle/Pg";
 import { PgClient } from "@effect/sql-pg";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Effect, Layer, Redacted } from "effect";
-import postgres from "postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
 
 if (!env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
-const client = postgres(env.DATABASE_URL);
-export const db = drizzle(client, { schema });
+
+const pool = new Pool({
+	connectionString: env.DATABASE_URL,
+});
+export const db = drizzle({ client: pool, schema });
 
 export class Db extends Effect.Service<Db>()("Db", {
 	effect: Pg.make({ schema }),

@@ -46,6 +46,7 @@
 		"@types/eslint": "^9.6.1",
 		"@types/node": "^22.17.0",
 		"@types/pako": "^2.0.3",
+		"@types/pg": "^8.15.5",
 		"bits-ui": "2.9.0",
 		"clsx": "^2.1.1",
 		"drizzle-kit": "^0.31.4",
@@ -94,7 +95,7 @@
 		"effect": "^3.17.5",
 		"es-toolkit": "^1.39.8",
 		"pako": "^2.1.0",
-		"postgres": "^3.4.7",
+		"pg": "^8.16.3",
 		"uuid": "^11.1.0"
 	}
 }

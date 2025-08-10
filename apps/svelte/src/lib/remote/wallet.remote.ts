@@ -1,4 +1,5 @@
 import { command, form, getRequestEvent } from "$app/server";
+import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
 import { Db } from "$lib/server/db";
 import { NodeSdk } from "@effect/opentelemetry";
@@ -21,7 +22,7 @@ export const upsertWalletAction = form(async (data) => {
 				name: data.get("name"),
 				initialBalance: data.get("initialBalance"),
 			});
-			const parsedData = yield* S.decodeUnknown(UpsertWalletSchemaa)(
+			const parsedData = yield* S.decodeUnknown(UpsertWalletSchema)(
 				{
 					id: data.get("id"),
 					name: data.get("name"),
