@@ -7,11 +7,9 @@ import {
 } from "$lib/server/data/transaction";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import { NodeSdkLive } from "$lib/server/observability";
 import { calculateDashboardData } from "$lib/utils/transaction";
-import { NodeSdk } from "@effect/opentelemetry";
 import { CalendarDate } from "@internationalized/date";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
 import { Effect, Either, Schema as S } from "effect";
@@ -133,11 +131,6 @@ export const load = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, "/login");
 	}
-
-	const NodeSdkLive = NodeSdk.layer(() => ({
-		resource: { serviceName: "test" },
-		spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
-	}));
 
 	return await Effect.runPromise(
 		program({

@@ -3,10 +3,8 @@ import {
 	getNestedCategories,
 	upsertCategory,
 } from "$lib/server/data/category";
+import { NodeSdkLive } from "$lib/server/observability";
 import type { UserId } from "$lib/types.js";
-import { NodeSdk } from "@effect/opentelemetry";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { error, redirect } from "@sveltejs/kit";
 import { Effect, Either, Schema as S } from "effect";
 import { z } from "zod/v4";
@@ -32,11 +30,6 @@ export const load = async (event) => {
 	if (!user) {
 		return redirect(302, "/login");
 	}
-
-	const NodeSdkLive = NodeSdk.layer(() => ({
-		resource: { serviceName: "test" },
-		spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
-	}));
 
 	return await Effect.runPromise(
 		program({

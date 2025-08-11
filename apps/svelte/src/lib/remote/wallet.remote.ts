@@ -1,9 +1,7 @@
 import { command, form, getRequestEvent } from "$app/server";
 import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
-import { NodeSdk } from "@effect/opentelemetry";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { NodeSdkLive } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
 import { Effect, ParseResult, Schema as S } from "effect";
 
@@ -63,11 +61,6 @@ export const upsertWalletAction = form(async (data) => {
 		}),
 	);
 
-	const NodeSdkLive = NodeSdk.layer(() => ({
-		resource: { serviceName: "upsertWallet" },
-		spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
-	}));
-
 	return Effect.runPromise(
 		program().pipe(Effect.provide(NodeSdkLive), Effect.catchAllCause(Effect.logError)),
 	);
@@ -96,11 +89,6 @@ export const deleteWalletAction = command(
 				}),
 			),
 		);
-
-		const NodeSdkLive = NodeSdk.layer(() => ({
-			resource: { serviceName: "deleteWalletAction" },
-			spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
-		}));
 
 		return Effect.runPromise(
 			program().pipe(Effect.provide(NodeSdkLive), Effect.catchAllCause(Effect.logError)),
