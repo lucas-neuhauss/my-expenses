@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { env } from "$env/dynamic/private";
+import type { Query } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Data, Effect } from "effect";
 import { Pool } from "pg";
@@ -13,7 +15,13 @@ export const db = drizzle({ client: pool, schema });
 
 export class DbError extends Data.TaggedError("DbError")<{}> {}
 export const exec = <T>(dbCommand: Promise<T>) =>
-	Effect.tryPromise({
-		try: () => dbCommand,
-		catch: () => new DbError(),
-	}).pipe(Effect.withSpan("db.execute"));
+	Effect.gen(function* () {
+		if (typeof (dbCommand as any)?.getSQL === "function") {
+			const sql = (dbCommand as any).toSQL() as Query;
+			yield* Effect.annotateCurrentSpan("sql", sql.sql);
+		}
+		return yield* Effect.tryPromise({
+			try: () => dbCommand,
+			catch: () => new DbError(),
+		});
+	}).pipe(Effect.withSpan("db.execue"));

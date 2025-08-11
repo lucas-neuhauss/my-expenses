@@ -3,9 +3,29 @@ import {
 	getNestedCategories,
 	upsertCategory,
 } from "$lib/server/data/category";
+import type { UserId } from "$lib/types.js";
+import { NodeSdk } from "@effect/opentelemetry";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { error, redirect } from "@sveltejs/kit";
 import { Effect, Either, Schema as S } from "effect";
 import { z } from "zod/v4";
+
+const program = Effect.fn("[load] - /categories")(function* ({
+	userId,
+	searchParamType,
+}: {
+	userId: UserId;
+	searchParamType: string | null;
+}) {
+	const type = yield* S.decodeUnknown(
+		S.Literal("expense", "income").pipe(
+			S.annotations({ decodingFallback: () => Either.right("expense") }),
+		),
+	)(searchParamType);
+	const nestedCategories = yield* getNestedCategories(userId, type);
+	return { type, nestedCategories };
+});
 
 export const load = async (event) => {
 	const user = event.locals.user;
@@ -13,22 +33,16 @@ export const load = async (event) => {
 		return redirect(302, "/login");
 	}
 
-	const program = Effect.fn("[load] - /categories")(function* ({
-		searchParamType,
-	}: {
-		searchParamType: string | null;
-	}) {
-		const type = yield* S.decodeUnknown(
-			S.Literal("expense", "income").pipe(
-				S.annotations({ decodingFallback: () => Either.right("expense") }),
-			),
-		)(searchParamType);
-		const nestedCategories = yield* getNestedCategories(user.id, type);
-		return { type, nestedCategories };
-	});
+	const NodeSdkLive = NodeSdk.layer(() => ({
+		resource: { serviceName: "test" },
+		spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
+	}));
 
 	return await Effect.runPromise(
-		program({ searchParamType: event.url.searchParams.get("type") }),
+		program({
+			userId: user.id,
+			searchParamType: event.url.searchParams.get("type"),
+		}).pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
 	);
 };
 

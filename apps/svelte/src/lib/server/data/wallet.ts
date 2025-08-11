@@ -105,27 +105,28 @@ export const deleteWalletData = Effect.fn("deleteWalletData")(function* ({
 });
 
 export function loadWallets(userId: UserId) {
-	return db
-		.select({
-			id: table.wallet.id,
-			name: table.wallet.name,
-			initialBalance:
-				sql<number>`ROUND(CAST(${table.wallet.initialBalance} AS numeric) / 100, 2)`.as(
-					"initialBalance",
+	return exec(
+		db
+			.select({
+				id: table.wallet.id,
+				name: table.wallet.name,
+				initialBalance:
+					sql<number>`ROUND(CAST(${table.wallet.initialBalance} AS numeric) / 100, 2)`.as(
+						"initialBalance",
+					),
+				balance: sql<number>`cast((COALESCE(SUM(${table.transaction.cents}), 0) + ${table.wallet.initialBalance}) as int)`,
+			})
+			.from(table.transaction)
+			.rightJoin(
+				table.wallet,
+				and(
+					eq(table.transaction.walletId, table.wallet.id),
+					eq(table.transaction.paid, true),
 				),
-			balance: sql<number>`cast((COALESCE(SUM(${table.transaction.cents}), 0) + ${table.wallet.initialBalance}) as int)`,
-		})
-		.from(table.transaction)
-		.rightJoin(
-			table.wallet,
-			and(
-				eq(table.transaction.walletId, table.wallet.id),
-				eq(table.transaction.paid, true),
-			),
-		)
-		.where(eq(table.wallet.userId, userId))
-		.orderBy(table.wallet.name)
-		.groupBy(table.transaction.userId, table.wallet.id);
+			)
+			.where(eq(table.wallet.userId, userId))
+			.orderBy(table.wallet.name)
+			.groupBy(table.transaction.userId, table.wallet.id),
+	);
 }
-
-export type LoadWallet = Awaited<ReturnType<typeof loadWallets>>[number];
+export type LoadWallet = Effect.Effect.Success<ReturnType<typeof loadWallets>>[number];

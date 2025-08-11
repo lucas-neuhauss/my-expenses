@@ -1,5 +1,5 @@
 import { CATEGORY_SPECIAL } from "$lib/categories";
-import { db } from "$lib/server/db";
+import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { DateStringSchema } from "$lib/utils/date-time";
@@ -226,7 +226,7 @@ export const getDashboardTransactions = Effect.fn(
 	const tableTransactionFrom = alias(table.transaction, "from");
 	const tableTransactionTo = alias(table.transaction, "to");
 
-	return yield* Effect.tryPromise(() =>
+	return yield* exec(
 		db
 			.select({
 				id: table.transaction.id,
