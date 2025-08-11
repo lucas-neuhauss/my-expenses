@@ -1,49 +1,51 @@
 import { CATEGORY_ICON_LIST } from "$lib/categories";
-import { db } from "$lib/server/db";
+import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import type { NestedCategory } from "$lib/utils/category";
 import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { Effect } from "effect";
 import { z } from "zod/v4";
 
-export async function getNestedCategories(
-	userId: UserId,
-	type: "income" | "expense" | null = null,
-) {
-	const categories = await db
-		.select({
-			id: table.category.id,
-			name: table.category.name,
-			type: table.category.type,
-			parentId: table.category.parentId,
-			icon: table.category.icon,
-		})
-		.from(table.category)
-		.where(
-			and(
-				eq(table.category.userId, userId),
-				isNull(table.category.unique),
-				type ? eq(table.category.type, type) : undefined,
-			),
-		)
-		.orderBy(desc(table.category.parentId), table.category.name);
+export const getNestedCategories = Effect.fn("data/category/getNestedCategories")(
+	function* (userId: UserId, type: "income" | "expense" | null = null) {
+		const categories = yield* exec(
+			db
+				.select({
+					id: table.category.id,
+					name: table.category.name,
+					type: table.category.type,
+					parentId: table.category.parentId,
+					icon: table.category.icon,
+				})
+				.from(table.category)
+				.where(
+					and(
+						eq(table.category.userId, userId),
+						isNull(table.category.unique),
+						type ? eq(table.category.type, type) : undefined,
+					),
+				)
+				.orderBy(desc(table.category.parentId), table.category.name),
+		);
 
-	const nestedCategories = categories.reduce<NestedCategory[]>((acc, category) => {
-		if (category.parentId === null) {
-			acc.push({ ...category, children: [] });
-		} else {
-			const parent = acc.find((c) => c.id === category.parentId);
-			if (parent) {
-				parent.children.push(category);
+		const nestedCategories = categories.reduce<NestedCategory[]>((acc, category) => {
+			if (category.parentId === null) {
+				acc.push({ ...category, children: [] });
+			} else {
+				const parent = acc.find((c) => c.id === category.parentId);
+				if (parent) {
+					parent.children.push(category);
+				}
 			}
-		}
-		return acc;
-	}, []);
+			return acc;
+		}, []);
 
-	return nestedCategories;
-}
+		return nestedCategories;
+	},
+);
 
 export async function deleteCategory({
 	userId,

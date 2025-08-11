@@ -5,6 +5,7 @@ import type { UserId } from "$lib/types";
 import { DateStringSchema } from "$lib/utils/date-time";
 import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -218,82 +219,78 @@ export const deleteTransaction = async ({
 	return { ok: true, toast: "Transaction deleted" };
 };
 
-export const getDashboardTransactions = async ({
-	userId,
-	start,
-	end,
-}: {
-	userId: UserId;
-	start: string;
-	end: string;
-}) => {
+export const getDashboardTransactions = Effect.fn(
+	"data/transaction/getDashboardTransactions",
+)(function* ({ userId, start, end }: { userId: UserId; start: string; end: string }) {
 	const tableCategoryParent = alias(table.category, "parent");
 	const tableTransactionFrom = alias(table.transaction, "from");
 	const tableTransactionTo = alias(table.transaction, "to");
 
-	return db
-		.select({
-			id: table.transaction.id,
-			cents: table.transaction.cents,
-			type: table.transaction.type,
-			description: table.transaction.description,
-			date: table.transaction.date,
-			transferenceId: table.transaction.transferenceId,
-			paid: table.transaction.paid,
-			wallet: {
-				id: table.wallet.id,
-				name: table.wallet.name,
-			},
-			category: {
-				id: table.category.id,
-				name: table.category.name,
-				icon: table.category.icon,
-			},
-			categoryParent: {
-				id: tableCategoryParent.id,
-				name: tableCategoryParent.name,
-			},
-			transferenceFrom: {
-				id: tableTransactionFrom.id,
-				walletId: tableTransactionFrom.walletId,
-			},
-			transferenceTo: {
-				id: tableTransactionTo.id,
-				walletId: tableTransactionTo.walletId,
-			},
-		})
-		.from(table.transaction)
-		.where(
-			and(
-				eq(table.transaction.userId, userId),
-				gte(table.transaction.date, start),
-				lte(table.transaction.date, end),
-			),
-		)
-		.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
-		.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
-		.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
-		.leftJoin(
-			tableTransactionFrom,
-			and(
-				isNotNull(tableTransactionFrom.transferenceId),
-				eq(tableTransactionFrom.transferenceId, table.transaction.transferenceId),
-				eq(tableTransactionFrom.type, "expense"),
-				eq(tableTransactionFrom.userId, userId),
-			),
-		)
-		.leftJoin(
-			tableTransactionTo,
-			and(
-				isNotNull(tableTransactionTo.transferenceId),
-				eq(tableTransactionTo.transferenceId, table.transaction.transferenceId),
-				eq(tableTransactionTo.type, "income"),
-				eq(tableTransactionTo.userId, userId),
-			),
-		)
-		.orderBy(desc(table.transaction.date), desc(table.transaction.id));
-};
+	return yield* Effect.tryPromise(() =>
+		db
+			.select({
+				id: table.transaction.id,
+				cents: table.transaction.cents,
+				type: table.transaction.type,
+				description: table.transaction.description,
+				date: table.transaction.date,
+				transferenceId: table.transaction.transferenceId,
+				paid: table.transaction.paid,
+				wallet: {
+					id: table.wallet.id,
+					name: table.wallet.name,
+				},
+				category: {
+					id: table.category.id,
+					name: table.category.name,
+					icon: table.category.icon,
+				},
+				categoryParent: {
+					id: tableCategoryParent.id,
+					name: tableCategoryParent.name,
+				},
+				transferenceFrom: {
+					id: tableTransactionFrom.id,
+					walletId: tableTransactionFrom.walletId,
+				},
+				transferenceTo: {
+					id: tableTransactionTo.id,
+					walletId: tableTransactionTo.walletId,
+				},
+			})
+			.from(table.transaction)
+			.where(
+				and(
+					eq(table.transaction.userId, userId),
+					gte(table.transaction.date, start),
+					lte(table.transaction.date, end),
+				),
+			)
+			.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
+			.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
+			.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
+			.leftJoin(
+				tableTransactionFrom,
+				and(
+					isNotNull(tableTransactionFrom.transferenceId),
+					eq(tableTransactionFrom.transferenceId, table.transaction.transferenceId),
+					eq(tableTransactionFrom.type, "expense"),
+					eq(tableTransactionFrom.userId, userId),
+				),
+			)
+			.leftJoin(
+				tableTransactionTo,
+				and(
+					isNotNull(tableTransactionTo.transferenceId),
+					eq(tableTransactionTo.transferenceId, table.transaction.transferenceId),
+					eq(tableTransactionTo.type, "income"),
+					eq(tableTransactionTo.userId, userId),
+				),
+			)
+			.orderBy(desc(table.transaction.date), desc(table.transaction.id)),
+	);
+});
 
-export type DashboardTransaction = Awaited<
+export type DashboardTransaction = Effect.Effect.Success<
 	ReturnType<typeof getDashboardTransactions>
 >[number];

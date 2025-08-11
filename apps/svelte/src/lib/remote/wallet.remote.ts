@@ -1,7 +1,6 @@
 import { command, form, getRequestEvent } from "$app/server";
 import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
-import { Db } from "$lib/server/db";
 import { NodeSdk } from "@effect/opentelemetry";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
@@ -50,7 +49,7 @@ export const upsertWalletAction = form(async (data) => {
 					formErrors,
 				} as const);
 			},
-			SqlError: () =>
+			DbError: () =>
 				Effect.succeed({
 					success: false,
 					errorType: "SqlError",
@@ -62,7 +61,6 @@ export const upsertWalletAction = form(async (data) => {
 					message: `${error.entity} not found`,
 				} as const),
 		}),
-		Effect.provide(Db.Client),
 	);
 
 	const NodeSdkLive = NodeSdk.layer(() => ({
@@ -97,7 +95,6 @@ export const deleteWalletAction = command(
 					message: error.message,
 				}),
 			),
-			Effect.provide(Db.Client),
 		);
 
 		const NodeSdkLive = NodeSdk.layer(() => ({

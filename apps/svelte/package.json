@@ -17,6 +17,7 @@
 		"db:push": "drizzle-kit push",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
+		"grafana": "docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 --rm -it docker.io/grafana/otel-lgtm",
 		"lint": "eslint . && prettier --check .",
 		"format": "prettier --write ."
 	},

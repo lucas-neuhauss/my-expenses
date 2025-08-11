@@ -1,82 +1,100 @@
+import { NonNegativeIntFromString } from "$lib/schema.js";
 import { getNestedCategories } from "$lib/server/data/category";
 import {
 	deleteTransaction,
 	getDashboardTransactions,
 	upsertTransaction,
 } from "$lib/server/data/transaction";
-import { db } from "$lib/server/db";
+import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { calculateDashboardData } from "$lib/utils/transaction";
+import { NodeSdk } from "@effect/opentelemetry";
 import { CalendarDate } from "@internationalized/date";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
+import { Effect, Either, Schema as S } from "effect";
 import { z } from "zod/v4";
 
-const IntSearchParamSchema = z
-	.string()
-	.regex(/\d+/)
-	.transform(Number)
-	.pipe(z.int().positive());
-
-export const load = async (event) => {
-	if (!event.locals.user) {
-		return redirect(302, "/login");
-	}
-	const userId = event.locals.user.id;
-
+const program = Effect.fn("[load] - '/'")(function* ({
+	userId,
+	searchParamsCategory,
+	searchParamsWallet,
+	searchParamsMonth,
+	searchParamsYear,
+}: {
+	userId: string;
+	searchParamsCategory: string | null;
+	searchParamsWallet: string | null;
+	searchParamsMonth: string | null;
+	searchParamsYear: string | null;
+}) {
 	const currentMonth = new Date().getMonth() + 1;
 	const currentYear = new Date().getFullYear();
 
-	const { category, wallet, month, year } = z
-		.object({
-			category: IntSearchParamSchema.catch(-1),
-			wallet: IntSearchParamSchema.catch(-1),
-			month: z.coerce.number().int().gte(1).lte(12).catch(currentMonth),
-			year: z.coerce.number().int().gte(1900).catch(currentYear),
-		})
-		.parse({
-			category: event.url.searchParams.get("category"),
-			wallet: event.url.searchParams.get("wallet"),
-			month: event.url.searchParams.get("month"),
-			year: event.url.searchParams.get("year"),
-		});
+	const schema = S.Struct({
+		category: NonNegativeIntFromString.pipe(
+			S.annotations({ decodingFallback: () => Either.right(-1) }),
+		),
+		wallet: NonNegativeIntFromString.pipe(
+			S.annotations({ decodingFallback: () => Either.right(-1) }),
+		),
+		month: NonNegativeIntFromString.pipe(
+			S.greaterThanOrEqualTo(1),
+			S.lessThanOrEqualTo(12),
+			S.annotations({ decodingFallback: () => Either.right(currentMonth) }),
+		),
+		year: NonNegativeIntFromString.pipe(
+			S.annotations({ decodingFallback: () => Either.right(currentYear) }),
+		),
+	});
+	const { category, wallet, month, year } = yield* S.decodeUnknown(schema)({
+		category: searchParamsCategory,
+		wallet: searchParamsWallet,
+		month: searchParamsMonth,
+		year: searchParamsYear,
+	});
 
 	const date = new CalendarDate(year, month, 1);
 	const dateMonthLater = new CalendarDate(year, month, 1).set({ day: 100 });
 
-	const transactionsPromise = getDashboardTransactions({
-		userId,
-		start: date.toString(),
-		end: dateMonthLater.toString(),
-	});
-	const categoriesPromise = getNestedCategories(userId);
-	const walletsPromise = db.query.wallet.findMany({
-		columns: { id: true, name: true, initialBalance: true },
-		where(fields, { eq }) {
-			return eq(fields.userId, userId);
-		},
-		orderBy(fields, operators) {
-			return [operators.asc(fields.name)];
-		},
-	});
-	const balanceResultPromise = db
-		.select({ balance: sum(table.transaction.cents) })
-		.from(table.transaction)
-		.groupBy(table.transaction.userId)
-		.where(
-			and(
-				eq(table.transaction.userId, userId),
-				lt(table.transaction.date, dateMonthLater.toString()),
-				eq(table.transaction.paid, true),
+	const [allTransactions, categories, wallets, balanceResult] = yield* Effect.all(
+		[
+			getDashboardTransactions({
+				userId,
+				start: date.toString(),
+				end: dateMonthLater.toString(),
+			}),
+			getNestedCategories(userId),
+			exec(
+				db.query.wallet.findMany({
+					columns: { id: true, name: true, initialBalance: true },
+					where(fields, { eq }) {
+						return eq(fields.userId, userId);
+					},
+					orderBy(fields, operators) {
+						return [operators.asc(fields.name)];
+					},
+				}),
 			),
-		);
+			exec(
+				db
+					.select({ balance: sum(table.transaction.cents) })
+					.from(table.transaction)
+					.groupBy(table.transaction.userId)
+					.where(
+						and(
+							eq(table.transaction.userId, userId),
+							lt(table.transaction.date, dateMonthLater.toString()),
+							eq(table.transaction.paid, true),
+						),
+					),
+			),
+		],
+		{ concurrency: "unbounded" },
+	);
 
-	const [allTransactions, categories, wallets, balanceResult] = await Promise.all([
-		transactionsPromise,
-		categoriesPromise,
-		walletsPromise,
-		balanceResultPromise,
-	]);
 	const transactions = allTransactions.filter((t) => {
 		if (wallet !== -1 && wallet !== t.wallet.id) {
 			return false;
@@ -87,11 +105,9 @@ export const load = async (event) => {
 		return true;
 	});
 
-	const [{ balance }] = z
-		.array(z.object({ balance: z.coerce.number().int() }))
-		.length(1)
-		.catch([{ balance: 0 }])
-		.parse(balanceResult);
+	const balance = yield* S.decodeUnknown(S.NumberFromString.pipe(S.int()))(
+		balanceResult[0]?.balance,
+	);
 
 	const { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } =
 		calculateDashboardData(allTransactions, wallet, category);
@@ -111,6 +127,27 @@ export const load = async (event) => {
 		year,
 		charts,
 	};
+});
+
+export const load = async (event) => {
+	if (!event.locals.user) {
+		return redirect(302, "/login");
+	}
+
+	const NodeSdkLive = NodeSdk.layer(() => ({
+		resource: { serviceName: "test" },
+		spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter()),
+	}));
+
+	return await Effect.runPromise(
+		program({
+			userId: event.locals.user.id,
+			searchParamsCategory: event.url.searchParams.get("category"),
+			searchParamsWallet: event.url.searchParams.get("wallet"),
+			searchParamsMonth: event.url.searchParams.get("month"),
+			searchParamsYear: event.url.searchParams.get("year"),
+		}).pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+	);
 };
 
 export const actions = {

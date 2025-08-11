@@ -1,8 +1,6 @@
 import { env } from "$env/dynamic/private";
-import * as Pg from "@effect/sql-drizzle/Pg";
-import { PgClient } from "@effect/sql-pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Effect, Layer, Redacted } from "effect";
+import { Data, Effect } from "effect";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
@@ -13,10 +11,9 @@ const pool = new Pool({
 });
 export const db = drizzle({ client: pool, schema });
 
-export class Db extends Effect.Service<Db>()("Db", {
-	effect: Pg.make({ schema }),
-}) {
-	static Client = this.Default.pipe(
-		Layer.provideMerge(PgClient.layer({ url: Redacted.make(env.DATABASE_URL) })),
-	);
-}
+export class DbError extends Data.TaggedError("DbError")<{}> {}
+export const exec = <T>(dbCommand: Promise<T>) =>
+	Effect.tryPromise({
+		try: () => dbCommand,
+		catch: () => new DbError(),
+	}).pipe(Effect.withSpan("db.execute"));

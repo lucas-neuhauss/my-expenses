@@ -4,6 +4,7 @@ import {
 	upsertCategory,
 } from "$lib/server/data/category";
 import { error, redirect } from "@sveltejs/kit";
+import { Effect, Either, Schema as S } from "effect";
 import { z } from "zod/v4";
 
 export const load = async (event) => {
@@ -12,15 +13,23 @@ export const load = async (event) => {
 		return redirect(302, "/login");
 	}
 
-	const type = z
-		.enum(["expense", "income"])
-		.catch("expense")
-		.parse(event.url.searchParams.get("type"));
-	const nestedCategories = await getNestedCategories(user.id, type);
-	return {
-		type,
-		nestedCategories,
-	};
+	const program = Effect.fn("[load] - /categories")(function* ({
+		searchParamType,
+	}: {
+		searchParamType: string | null;
+	}) {
+		const type = yield* S.decodeUnknown(
+			S.Literal("expense", "income").pipe(
+				S.annotations({ decodingFallback: () => Either.right("expense") }),
+			),
+		)(searchParamType);
+		const nestedCategories = yield* getNestedCategories(user.id, type);
+		return { type, nestedCategories };
+	});
+
+	return await Effect.runPromise(
+		program({ searchParamType: event.url.searchParams.get("type") }),
+	);
 };
 
 export const actions = {

@@ -1,14 +1,5 @@
+import { NonNegativeIntFromString } from "$lib/schema";
 import { Schema as S } from "effect";
-
-const NonNegativeIntFromString = S.transform(
-	S.Union(S.String, S.Number),
-	S.NonNegativeInt,
-	{
-		strict: true,
-		decode: (str) => Number(str),
-		encode: (num) => String(num),
-	},
-);
 
 export const UpsertWalletSchema = S.Struct({
 	id: NonNegativeIntFromString,
