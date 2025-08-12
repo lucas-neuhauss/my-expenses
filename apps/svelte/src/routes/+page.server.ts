@@ -1,13 +1,14 @@
 import { NonNegativeIntFromString } from "$lib/schema.js";
-import { getNestedCategories } from "$lib/server/data/category";
+import { getNestedCategoriesData } from "$lib/server/data/category";
 import {
-	deleteTransaction,
-	getDashboardTransactions,
-	upsertTransaction,
+	deleteTransactionData,
+	getDashboardTransactionsData,
+	upsertTransactionData,
 } from "$lib/server/data/transaction";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { NodeSdkLive } from "$lib/server/observability";
+import type { UserId } from "$lib/types.js";
 import { calculateDashboardData } from "$lib/utils/transaction";
 import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
@@ -59,12 +60,12 @@ const program = Effect.fn("[load] - '/'")(function* ({
 
 	const [allTransactions, categories, wallets, balanceResult] = yield* Effect.all(
 		[
-			getDashboardTransactions({
+			getDashboardTransactionsData({
 				userId,
 				start: date.toString(),
 				end: dateMonthLater.toString(),
 			}),
-			getNestedCategories(userId),
+			getNestedCategoriesData(userId),
 			exec(
 				db.query.wallet.findMany({
 					columns: { id: true, name: true, initialBalance: true },
@@ -153,22 +154,19 @@ export const actions = {
 		const searchParams = event.url.searchParams;
 		const shouldContinue = searchParams.get("continue") === "true";
 
-		const formData = await event.request.formData();
-		try {
-			const result = await upsertTransaction({
+		const program = Effect.fn("[action] - upsert-transaction")(function* () {
+			const formData = yield* Effect.tryPromise(() => event.request.formData());
+			const result = yield* upsertTransactionData({
 				userId: user.id,
 				shouldContinue,
 				formData,
 			});
 			return result;
-		} catch (e) {
-			const errorMessage = z
-				.object({ message: z.string() })
-				.catch({ message: "Something went wrong" })
-				.parse(e).message;
-			console.error(e);
-			return fail(400, { toast: errorMessage });
-		}
+		});
+
+		return await Effect.runPromise(
+			program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+		);
 	},
 	"delete-transaction": async (event) => {
 		const user = event.locals.user;
@@ -176,7 +174,23 @@ export const actions = {
 			return fail(401);
 		}
 		const searchParams = event.url.searchParams;
-		const transactionId = z.coerce.number().int().min(1).parse(searchParams.get("id"));
-		return deleteTransaction({ userId: user.id, transactionId });
+
+		const program = Effect.fn("[action] - delete-transaction")(function* ({
+			userId,
+			searchParamsId,
+		}: {
+			userId: UserId;
+			searchParamsId: string | null;
+		}) {
+			const transactionId = z.coerce.number().int().min(1).parse(searchParamsId);
+			return yield* deleteTransactionData({ userId, transactionId });
+		});
+
+		return await Effect.runPromise(
+			program({
+				userId: user.id,
+				searchParamsId: searchParams.get("id"),
+			}).pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+		);
 	},
 };

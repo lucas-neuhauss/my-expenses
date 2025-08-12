@@ -16,7 +16,7 @@ export const db = drizzle({ client: pool, schema });
 export class DbError extends Data.TaggedError("DbError")<{}> {}
 export const exec = <T>(dbCommand: Promise<T>) =>
 	Effect.gen(function* () {
-		if (typeof (dbCommand as any)?.getSQL === "function") {
+		if (typeof (dbCommand as any)?.toSQL === "function") {
 			const sql = (dbCommand as any).toSQL() as Query;
 			yield* Effect.annotateCurrentSpan("sql", sql.sql);
 		}

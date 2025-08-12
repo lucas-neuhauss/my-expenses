@@ -12,7 +12,7 @@ export class UpsertWalletError extends Data.TaggedError("UpsertWalletError")<{
 	action: "create" | "update";
 }> {}
 
-export const upsertWalletData = Effect.fn("upsertWalletData")(function* ({
+export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(function* ({
 	userId,
 	data,
 }: {
@@ -65,7 +65,7 @@ export const upsertWalletData = Effect.fn("upsertWalletData")(function* ({
 class DeleteWalletError extends Data.TaggedError("DeleteWalletError")<{
 	message: string;
 }> {}
-export const deleteWalletData = Effect.fn("deleteWalletData")(function* ({
+export const deleteWalletData = Effect.fn("data/wallet/deleteWalletData")(function* ({
 	userId,
 	id,
 }: {

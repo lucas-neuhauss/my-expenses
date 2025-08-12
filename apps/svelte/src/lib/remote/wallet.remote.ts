@@ -6,7 +6,7 @@ import { error } from "@sveltejs/kit";
 import { Effect, ParseResult, Schema as S } from "effect";
 
 export const upsertWalletAction = form(async (data) => {
-	const program = Effect.fn("upsertWalletAction")(
+	const program = Effect.fn("[remote] - upsert-wallet")(
 		function* () {
 			const { locals } = getRequestEvent();
 			const user = locals.user;
@@ -69,7 +69,7 @@ export const upsertWalletAction = form(async (data) => {
 export const deleteWalletAction = command(
 	S.standardSchemaV1(S.Int.pipe(S.positive())),
 	async (id) => {
-		const program = Effect.fn("deleteWalletAction")(
+		const program = Effect.fn("[remote] - delete-wallet")(
 			function* () {
 				const {
 					locals: { user },

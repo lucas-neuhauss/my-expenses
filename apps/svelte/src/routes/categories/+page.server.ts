@@ -1,7 +1,7 @@
 import {
-	deleteCategory,
-	getNestedCategories,
-	upsertCategory,
+	deleteCategoryData,
+	getNestedCategoriesData,
+	upsertCategoryData,
 } from "$lib/server/data/category";
 import { NodeSdkLive } from "$lib/server/observability";
 import type { UserId } from "$lib/types.js";
@@ -21,7 +21,7 @@ const program = Effect.fn("[load] - /categories")(function* ({
 			S.annotations({ decodingFallback: () => Either.right("expense") }),
 		),
 	)(searchParamType);
-	const nestedCategories = yield* getNestedCategories(userId, type);
+	const nestedCategories = yield* getNestedCategoriesData(userId, type);
 	return { type, nestedCategories };
 });
 
@@ -47,7 +47,17 @@ export const actions = {
 		}
 
 		const formData = await event.request.formData();
-		return upsertCategory({ userId: user.id, formData });
+		const program = Effect.fn("[action] - upsert-category")(function* ({
+			userId,
+		}: {
+			userId: UserId;
+		}) {
+			yield* upsertCategoryData({ userId, formData });
+		});
+
+		return await Effect.runPromise(
+			program({ userId: user.id }).pipe(Effect.provide(NodeSdkLive)),
+		);
 	},
 	"delete-category": async (event) => {
 		const user = event.locals.user;
@@ -56,10 +66,22 @@ export const actions = {
 		}
 
 		const searchParams = event.url.searchParams;
-		const categoryId = z.coerce.number().int().min(1).parse(searchParams.get("id"));
-		return deleteCategory({
-			userId: user.id,
-			categoryId,
+
+		const program = Effect.fn("[action] - delete-category")(function* ({
+			userId,
+			searchParamsId,
+		}: {
+			userId: UserId;
+			searchParamsId: string | null;
+		}) {
+			const categoryId = z.coerce.number().int().min(1).parse(searchParamsId);
+			return yield* deleteCategoryData({ userId, categoryId });
 		});
+
+		return await Effect.runPromise(
+			program({ userId: user.id, searchParamsId: searchParams.get("id") }).pipe(
+				Effect.provide(NodeSdkLive),
+			),
+		);
 	},
 };

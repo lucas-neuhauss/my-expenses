@@ -1,5 +1,7 @@
-import { loadBackup } from "$lib/server/data/backup.js";
+import { loadBackupData } from "$lib/server/data/backup.js";
+import { NodeSdkLive } from "$lib/server/observability.js";
 import { error, redirect } from "@sveltejs/kit";
+import { Effect } from "effect";
 import { ungzip } from "pako";
 
 export const load = async (event) => {
@@ -17,10 +19,10 @@ export const actions = {
 			return error(401);
 		}
 
-		try {
-			const formData = await event.request.formData();
+		const program = Effect.fn("[action] - load-backup")(function* () {
+			const formData = yield* Effect.tryPromise(() => event.request.formData());
 			const file = formData.get("file");
-			console.log(file);
+			yield* Effect.log(file);
 
 			if (
 				!(file instanceof File) ||
@@ -30,15 +32,17 @@ export const actions = {
 			}
 
 			// Uncompress and prepare the data
-			const fileContent = await file.text();
+			const fileContent = yield* Effect.tryPromise(() => file.text());
 			const binaryData = Buffer.from(fileContent, "base64");
 			const decompressed = ungzip(binaryData, { to: "string" });
 			const jsonData = JSON.parse(decompressed);
 
 			// Load the data with the processed JSON
-			return loadBackup(user.id, jsonData);
-		} catch (error) {
-			console.log(error);
-		}
+			return yield* loadBackupData({ userId: user.id, data: jsonData });
+		});
+
+		return await Effect.runPromise(
+			program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+		);
 	},
 };

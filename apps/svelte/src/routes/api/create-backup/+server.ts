@@ -1,6 +1,8 @@
-import { createBackup } from "$lib/server/data/backup.js";
+import { createBackupData } from "$lib/server/data/backup.js";
+import { NodeSdkLive } from "$lib/server/observability.js";
 import { error, json } from "@sveltejs/kit";
 import dayjs from "dayjs";
+import { Effect } from "effect";
 
 export async function GET({ locals }) {
 	const user = locals.user;
@@ -8,10 +10,17 @@ export async function GET({ locals }) {
 		return error(401);
 	}
 
-	console.log("\n========");
-	console.log("\nCREATING BACKUP\n");
-	const backupData = await createBackup(user.id);
-	console.log("\n========\n");
+	const program = Effect.fn("[api] - create-backup")(function* () {
+		yield* Effect.log("\n========");
+		yield* Effect.log("\nCREATING BACKUP\n");
+		const backupData = yield* createBackupData({ userId: user.id });
+		yield* Effect.log("\n========\n");
+		return backupData;
+	});
+
+	const backupData = await Effect.runPromise(
+		program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+	);
 
 	return json(backupData, {
 		headers: {
