@@ -1,4 +1,5 @@
 import { formatCurrency } from "$lib/currency";
+import { GlobalError } from "$lib/global-errors";
 import type { EChartsOption } from "echarts";
 import type { PieDataItemOption } from "echarts/types/src/chart/pie/PieSeries.js";
 
@@ -18,7 +19,10 @@ export const getOptions = (
 	},
 	tooltip: {
 		trigger: "item",
-		formatter: (params: any) => {
+		formatter: (params) => {
+			if (Array.isArray(params) || typeof params.value !== "number") {
+				throw new GlobalError("INVALID_CHART_TOOLTIP_PARAMS");
+			}
 			return `
             ${params.marker} ${params.name} - <strong>${params.percent}%</strong><br />
             ${formatCurrency(params.value)}

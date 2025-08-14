@@ -7,7 +7,7 @@ import { NodeSdkLive } from "$lib/server/observability";
 import type { UserId } from "$lib/types.js";
 import { error, redirect } from "@sveltejs/kit";
 import { Effect, Either, Schema as S } from "effect";
-import { z } from "zod/v4";
+import * as z from "zod";
 
 const program = Effect.fn("[load] - /categories")(function* ({
 	userId,

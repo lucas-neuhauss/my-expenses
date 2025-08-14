@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import * as z from "zod";
 
 // TODO: Check if valid date string
 export const DateStringSchema = z.string();

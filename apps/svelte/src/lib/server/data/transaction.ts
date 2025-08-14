@@ -7,7 +7,7 @@ import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
+import * as z from "zod";
 
 const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
 

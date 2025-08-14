@@ -13,7 +13,7 @@
 	}: {
 		title: string;
 		description: string;
-		triggerChild: Snippet<[any]>;
+		triggerChild: Snippet<[Record<string, unknown>]>;
 		formProps?: HTMLFormAttributes;
 	} = $props();
 

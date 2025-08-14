@@ -1,7 +1,7 @@
-import { z } from "zod/v4";
+import * as z from "zod";
 
 export function validateEmail(email: unknown): email is string {
-	return z.string().email().safeParse(email).success;
+	return z.email().safeParse(email).success;
 }
 
 export function validatePassword(password: unknown): password is string {

@@ -7,7 +7,7 @@ import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Effect } from "effect";
-import { z } from "zod/v4";
+import * as z from "zod";
 
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(
 	function* (userId: UserId, type: "income" | "expense" | null = null) {

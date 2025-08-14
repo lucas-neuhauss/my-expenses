@@ -14,7 +14,7 @@ import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
 import { Effect, Either, Schema as S } from "effect";
-import { z } from "zod/v4";
+import * as z from "zod";
 
 const program = Effect.fn("[load] - '/'")(function* ({
 	userId,
