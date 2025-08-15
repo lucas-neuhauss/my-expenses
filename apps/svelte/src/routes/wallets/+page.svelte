@@ -1,26 +1,21 @@
 <script lang="ts">
-	import { page } from "$app/state";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
+	import ToastEffect from "$lib/components/toast-effect.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import UpsertWalletDialog from "$lib/components/upsert-wallet/upsert-wallet-dialog.svelte";
 	import { formatCurrency } from "$lib/currency";
+	import { deleteWalletAction } from "$lib/remote/wallet.remote";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
-	import ToastEffect from "$lib/components/toast-effect.svelte";
-	import { deleteWalletAction } from "$lib/remote/wallet.remote";
 	import { toast } from "svelte-sonner";
 
 	let { data } = $props();
-	let updateId = $derived(page.url.searchParams.get("id"));
-	let wallet = $derived.by(() => {
-		const id = updateId;
-		if (id === null || id === "new") return null;
-		return data.wallets.find((w) => w.id === Number(id)) ?? null;
+	let walletToDelete = $state<(typeof data)["wallets"][number] | null>(null);
+	let upsertWalletDialog = $state({
+		open: false,
+		wallet: null as (typeof data)["wallets"][number] | null,
 	});
-	let isDelete = $derived(page.url.searchParams.get("delete") === "true");
-	let upsertDialogOpen = $derived(!isDelete && (!!wallet || updateId === "new"));
-	let deleteConfirmOpen = $derived(isDelete && !!wallet);
 </script>
 
 <svelte:head>
@@ -31,9 +26,38 @@
 
 <div class="container flex flex-col gap-y-4 px-8">
 	<div>
-		<Button autofocus variant="outline" href="/wallets?id=new">Create Wallet</Button>
-		<UpsertWalletDialog bind:open={upsertDialogOpen} {wallet} />
+		<Button
+			onclick={() => (upsertWalletDialog = { open: true, wallet: null })}
+			autofocus
+			variant="outline"
+		>
+			Create Wallet
+		</Button>
+		<UpsertWalletDialog
+			open={upsertWalletDialog.open}
+			onClose={() => (upsertWalletDialog.open = false)}
+			wallet={upsertWalletDialog.wallet}
+		/>
 	</div>
+
+	<ConfirmDialog
+		open={!!walletToDelete}
+		onOpenChange={(o) => {
+			if (!o) walletToDelete = null;
+		}}
+		title="Are you sure?"
+		description="Are you sure you want to delete this wallet?"
+		remoteCommand={async () => {
+			if (!walletToDelete) return;
+			try {
+				const res = await deleteWalletAction(walletToDelete.id);
+				if (!res) throw Error();
+				toast[res.success ? "success" : "error"](res.message);
+			} catch {
+				toast.error("Something went wrong. Please try again later.");
+			}
+		}}
+	/>
 
 	<div
 		class="grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
@@ -47,7 +71,7 @@
 					</div>
 					<div class="flex items-center gap-1 lg:gap-2">
 						<Button
-							href={`/wallets?id=${w.id}`}
+							onclick={() => (upsertWalletDialog = { open: true, wallet: w })}
 							title="Edit wallet"
 							size="icon"
 							variant="ghost"
@@ -55,7 +79,7 @@
 							<Pencil />
 						</Button>
 						<Button
-							href={`/wallets?id=${w.id}&delete=true`}
+							onclick={() => (walletToDelete = w)}
 							title="Delete wallet"
 							aria-label="delete wallet"
 							variant="ghost"
@@ -63,21 +87,6 @@
 						>
 							<Trash />
 						</Button>
-						<ConfirmDialog
-							open={deleteConfirmOpen && w.id === wallet?.id}
-							successRedirect="/wallets"
-							title="Are you sure?"
-							description="Are you sure you want to delete this wallet?"
-							remoteCommand={async () => {
-								try {
-									const res = await deleteWalletAction(w.id);
-									if (!res) throw Error();
-									toast[res.success ? "success" : "error"](res.message);
-								} catch {
-									toast.error("Something went wrong. Please try again later.");
-								}
-							}}
-						/>
 					</div>
 				</Card.Content>
 			</Card.Root>

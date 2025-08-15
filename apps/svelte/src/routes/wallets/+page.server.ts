@@ -13,12 +13,10 @@ const program = Effect.fn("[load] - /wallets")(function* ({
 	return { wallets };
 });
 
-export const load = async ({ locals, url, untrack }) => {
+export const load = async ({ locals }) => {
 	if (!locals.user) {
 		return redirect(302, "/login");
 	}
-	const isDelete = untrack(() => url.searchParams.get("delete") === "true");
-	if (isDelete) return redirect(302, "/wallets");
 
 	return await Effect.runPromise(
 		program({ userId: locals.user.id }).pipe(

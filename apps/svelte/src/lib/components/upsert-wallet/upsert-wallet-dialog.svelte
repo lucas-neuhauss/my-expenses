@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
@@ -10,9 +9,11 @@
 
 	let {
 		open = $bindable(),
+		onClose,
 		wallet,
 	}: {
 		open: boolean;
+		onClose: () => void;
 		wallet: LoadWallet | null;
 	} = $props();
 
@@ -27,7 +28,7 @@
 <Dialog.Root
 	{open}
 	onOpenChange={(o) => {
-		if (!o) goto("/wallets");
+		if (!o) onClose();
 	}}
 >
 	<Dialog.Content class="sm:max-w-[425px]">
@@ -47,8 +48,7 @@
 					if (res.success) {
 						form.reset();
 						toast.success(res.message);
-						open = false;
-						goto("/wallets");
+						onClose();
 					} else {
 						if (res.errorType === "ParseError") {
 							formErrors = res.formErrors;

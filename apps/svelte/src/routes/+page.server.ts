@@ -1,9 +1,9 @@
 import { NonNegativeIntFromString } from "$lib/schema.js";
 import { getNestedCategoriesData } from "$lib/server/data/category";
 import {
-	deleteTransactionData,
-	getDashboardTransactionsData,
-	upsertTransactionData,
+    deleteTransactionData,
+    getDashboardTransactionsData,
+    upsertTransactionData,
 } from "$lib/server/data/transaction";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
@@ -104,9 +104,11 @@ const program = Effect.fn("[load] - '/'")(function* ({
 		return true;
 	});
 
-	const balance = yield* S.decodeUnknown(S.NumberFromString.pipe(S.int()))(
-		balanceResult[0]?.balance,
-	);
+	const balance = yield* S.decodeUnknown(
+		S.NumberFromString.pipe(S.int()).annotations({
+			decodingFallback: () => Either.right(0),
+		}),
+	)(balanceResult[0]?.balance);
 
 	const { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } =
 		calculateDashboardData(allTransactions, wallet, category);
