@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { env } from "$env/dynamic/private";
+import { DATABASE_URL } from "$env/static/private";
 import type { Query } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Data, Effect } from "effect";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-if (!env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
+if (!DATABASE_URL) throw new Error("DATABASE_URL is not set");
 
 const pool = new Pool({
-	connectionString: env.DATABASE_URL,
+	connectionString: DATABASE_URL,
 });
 export const db = drizzle({ client: pool, schema });
 
