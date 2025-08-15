@@ -65,7 +65,8 @@
 				role="combobox"
 				aria-expanded={open}
 				{...props}
-				class="justify-between"
+				class="justify-between font-normal"
+				title="Select category"
 			>
 				<span class="flex items-center gap-2">
 					{#if selectedCategory}

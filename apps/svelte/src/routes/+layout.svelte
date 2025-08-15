@@ -17,6 +17,10 @@
 
 <svelte:head>
 	<title>My Expenses</title>
+	<meta
+		name="description"
+		content="Simple expense tracking app to manage your personal finances. Track income, expenses, and budgets across multiple wallets and categories."
+	/>
 </svelte:head>
 
 <ModeWatcher />
