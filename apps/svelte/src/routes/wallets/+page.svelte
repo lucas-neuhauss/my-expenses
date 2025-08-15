@@ -53,6 +53,7 @@
 				const res = await deleteWalletAction(walletToDelete.id);
 				if (!res) throw Error();
 				toast[res.success ? "success" : "error"](res.message);
+				walletToDelete = null;
 			} catch {
 				toast.error("Something went wrong. Please try again later.");
 			}
