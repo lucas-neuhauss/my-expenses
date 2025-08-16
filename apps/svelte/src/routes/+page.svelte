@@ -260,6 +260,7 @@
 									src={`/images/category/${t.category.icon}`}
 									width="19"
 									height="19"
+									loading="lazy"
 								/>
 								<span class="truncate">
 									{t.category.name}

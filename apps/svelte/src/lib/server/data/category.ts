@@ -91,7 +91,7 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 		if (atLeastTwoArray.length < 2) {
 			return fail(400, {
 				ok: false,
-				message: `Cannot delete the last "${category.type === "income" ? "Income" : "Expense"}" categsory`,
+				message: `Cannot delete the last "${category.type === "income" ? "Income" : "Expense"}" category`,
 			});
 		}
 
