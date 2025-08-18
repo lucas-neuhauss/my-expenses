@@ -9,13 +9,16 @@
 	import type { NestedCategory } from "$lib/utils/category";
 	import { tick } from "svelte";
 	import { upsertCategoryAction } from "$lib/remote/category.remote";
+	import { toast } from "svelte-sonner";
 
 	let {
 		category,
 		type,
+		onSuccess,
 	}: {
 		category: NestedCategory | null;
 		type: "expense" | "income";
+		onSuccess: () => void;
 	} = $props();
 	let categories = $state(
 		category ? [category, ...category.children] : [getEmptyCategory()],
@@ -71,7 +74,23 @@
 	};
 </script>
 
-<form {...upsertCategoryAction}>
+<form
+	{...upsertCategoryAction.enhance(async ({ submit }) => {
+		try {
+			await submit();
+			const res = upsertCategoryAction.result;
+			if (!res) throw Error();
+			if (res.ok) {
+				toast.success(res.message);
+				onSuccess();
+			} else {
+				toast.error(res.message);
+			}
+		} catch {
+			toast.error("Something went wrong. Please try again later.");
+		}
+	})}
+>
 	<div class="mt-3">
 		<p class="font-bold">Category</p>
 

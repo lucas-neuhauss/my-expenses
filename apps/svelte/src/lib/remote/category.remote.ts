@@ -21,7 +21,7 @@ export const upsertCategoryAction = form(async (formData) => {
 export const deleteCategoryAction = command(
 	z.number().int().positive(),
 	async (categoryId) => {
-		const program = Effect.fn("[action] - delete-category")(function* () {
+		const program = Effect.fn("[remote] - delete-category")(function* () {
 			const { locals } = getRequestEvent();
 			const user = locals.user;
 			if (!user) {

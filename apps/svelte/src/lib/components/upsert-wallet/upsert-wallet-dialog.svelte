@@ -9,11 +9,9 @@
 
 	let {
 		open = $bindable(),
-		onClose,
 		wallet,
 	}: {
 		open: boolean;
-		onClose: () => void;
 		wallet: LoadWallet | null;
 	} = $props();
 
@@ -25,12 +23,7 @@
 	let isUpdate = $derived(wallet !== null);
 </script>
 
-<Dialog.Root
-	{open}
-	onOpenChange={(o) => {
-		if (!o) onClose();
-	}}
->
+<Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
 			<Dialog.Title>
@@ -48,7 +41,7 @@
 					if (res.success) {
 						form.reset();
 						toast.success(res.message);
-						onClose();
+						open = false;
 					} else {
 						if (res.errorType === "ParseError") {
 							formErrors = res.formErrors;

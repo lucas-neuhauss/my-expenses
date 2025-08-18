@@ -4,8 +4,6 @@
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertCategoryForm from "./upsert-category-form.svelte";
 	import { page } from "$app/state";
-	import { upsertCategoryAction } from "$lib/remote/category.remote";
-	import { toast } from "svelte-sonner";
 	import { untrack } from "svelte";
 
 	let {
@@ -26,17 +24,9 @@
 		untrack(() => (tab = _tab));
 	});
 
-	$effect(() => {
-		const res = upsertCategoryAction.result;
-		if (res) {
-			if (res.ok) {
-				untrack(() => (open = false));
-				toast.success(res.message);
-			} else {
-				toast.error(res.message);
-			}
-		}
-	});
+	const onSuccess = () => {
+		open = false;
+	};
 </script>
 
 <Dialog.Root bind:open>
@@ -54,14 +44,14 @@
 			<Tabs.Content value="expense">
 				{#snippet child({ props })}
 					<div {...props} tabindex="-1">
-						<UpsertCategoryForm type="expense" {category} />
+						<UpsertCategoryForm type="expense" {category} {onSuccess} />
 					</div>
 				{/snippet}
 			</Tabs.Content>
 			<Tabs.Content value="income">
 				{#snippet child({ props })}
 					<div {...props} tabindex="-1">
-						<UpsertCategoryForm type="income" {category} />
+						<UpsertCategoryForm type="income" {category} {onSuccess} />
 					</div>
 				{/snippet}
 			</Tabs.Content>

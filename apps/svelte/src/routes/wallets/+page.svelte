@@ -35,7 +35,6 @@
 		</Button>
 		<UpsertWalletDialog
 			open={upsertWalletDialog.open}
-			onClose={() => (upsertWalletDialog.open = false)}
 			wallet={upsertWalletDialog.wallet}
 		/>
 	</div>

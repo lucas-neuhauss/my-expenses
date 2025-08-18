@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
+	import { goto, invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import { Button } from "$lib/components/ui/button";
@@ -21,20 +21,13 @@
 		open: false,
 		category: null,
 	});
-
-	const handleClickCreate = () => {
-		upsertDialog = {
-			open: true,
-			category: null,
-		};
-	};
-
-	const handleClickEdit = (category: NestedCategory) => {
-		upsertDialog = {
-			open: true,
-			category,
-		};
-	};
+	let deleteDialog = $state<{
+		open: boolean;
+		category: NestedCategory | null;
+	}>({
+		open: false,
+		category: null,
+	});
 
 	const handleTypeChange = (type: string) => {
 		const url = new URL(page.url.href);
@@ -54,6 +47,29 @@
 
 <UpsertCategory bind:open={upsertDialog.open} bind:category={upsertDialog.category} />
 
+<ConfirmDialog
+	open={deleteDialog.open}
+	title="Are you sure?"
+	description={deleteDialog.category
+		? `Are you sure you want to delete the "${deleteDialog.category.name}" category?`
+		: ""}
+	remoteCommand={async () => {
+		if (!deleteDialog.category) return;
+		try {
+			const res = await deleteCategoryAction(deleteDialog.category.id);
+			if (res.ok) {
+				toast.success(res.message);
+				deleteDialog.open = false;
+				invalidateAll();
+			} else {
+				toast.error(res.message);
+			}
+		} catch {
+			toast.error("Something went wrong. Please try again later.");
+		}
+	}}
+/>
+
 <div class="container flex flex-col gap-y-4 px-8">
 	<Tabs.Root value={data.type} onValueChange={handleTypeChange}>
 		<div class="flex items-center gap-4">
@@ -61,8 +77,10 @@
 				title="Create category"
 				autofocus
 				variant="outline"
-				onclick={handleClickCreate}>Create Category</Button
+				onclick={() => (upsertDialog = { open: true, category: null })}
 			>
+				Create Category
+			</Button>
 			<Tabs.List>
 				<Tabs.Trigger value="expense">Expense</Tabs.Trigger>
 				<Tabs.Trigger value="income">Income</Tabs.Trigger>
@@ -105,38 +123,18 @@
 						title="Edit category"
 						size="icon"
 						variant="ghost"
-						onclick={() => handleClickEdit(category)}
+						onclick={() => (upsertDialog = { open: true, category })}
 					>
 						<Pencil />
 					</Button>
-					<ConfirmDialog
-						title="Are you sure?"
-						description="Are you sure you want to delete this category?"
-						remoteCommand={async () => {
-							if (!category) return;
-							try {
-								const res = await deleteCategoryAction(category.id);
-								if (res.ok) {
-									toast.success(res.message);
-								} else {
-									toast.error(res.message);
-								}
-							} catch {
-								toast.error("Something went wrong. Please try again later.");
-							}
-						}}
+					<Button
+						title="Delete category"
+						variant="ghost"
+						class="size-8 p-0 [&_svg]:size-3.5"
+						onclick={() => (deleteDialog = { open: true, category })}
 					>
-						{#snippet triggerChild({ props })}
-							<Button
-								title="Delete category"
-								variant="ghost"
-								class="size-8 p-0 [&_svg]:size-3.5"
-								{...props}
-							>
-								<Trash />
-							</Button>
-						{/snippet}
-					</ConfirmDialog>
+						<Trash />
+					</Button>
 				</div>
 			</Card.Content>
 		</Card.Root>
