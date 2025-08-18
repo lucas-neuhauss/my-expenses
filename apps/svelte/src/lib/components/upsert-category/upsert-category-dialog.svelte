@@ -4,6 +4,9 @@
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertCategoryForm from "./upsert-category-form.svelte";
 	import { page } from "$app/state";
+	import { upsertCategoryAction } from "$lib/remote/category.remote";
+	import { toast } from "svelte-sonner";
+	import { untrack } from "svelte";
 
 	let {
 		open = $bindable(),
@@ -16,16 +19,24 @@
 	let tab = $state<"expense" | "income">("expense");
 
 	$effect(() => {
+		let _tab: "expense" | "income" = "expense";
 		if (page.url.searchParams.get("type") === "income") {
-			tab = "income";
-		} else {
-			tab = "expense";
+			_tab = "income";
 		}
+		untrack(() => (tab = _tab));
 	});
 
-	const onSuccess = () => {
-		open = false;
-	};
+	$effect(() => {
+		const res = upsertCategoryAction.result;
+		if (res) {
+			if (res.ok) {
+				untrack(() => (open = false));
+				toast.success(res.message);
+			} else {
+				toast.error(res.message);
+			}
+		}
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -43,14 +54,14 @@
 			<Tabs.Content value="expense">
 				{#snippet child({ props })}
 					<div {...props} tabindex="-1">
-						<UpsertCategoryForm type="expense" {category} {onSuccess} />
+						<UpsertCategoryForm type="expense" {category} />
 					</div>
 				{/snippet}
 			</Tabs.Content>
 			<Tabs.Content value="income">
 				{#snippet child({ props })}
 					<div {...props} tabindex="-1">
-						<UpsertCategoryForm type="income" {category} {onSuccess} />
+						<UpsertCategoryForm type="income" {category} />
 					</div>
 				{/snippet}
 			</Tabs.Content>

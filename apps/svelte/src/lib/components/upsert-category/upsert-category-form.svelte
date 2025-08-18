@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from "$app/forms";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
@@ -9,15 +8,14 @@
 	import IconsList from "../icons-list.svelte";
 	import type { NestedCategory } from "$lib/utils/category";
 	import { tick } from "svelte";
+	import { upsertCategoryAction } from "$lib/remote/category.remote";
 
 	let {
 		category,
 		type,
-		onSuccess,
 	}: {
 		category: NestedCategory | null;
 		type: "expense" | "income";
-		onSuccess: () => void;
 	} = $props();
 	let categories = $state(
 		category ? [category, ...category.children] : [getEmptyCategory()],
@@ -73,17 +71,7 @@
 	};
 </script>
 
-<form
-	method="post"
-	action="?/upsert-category"
-	use:enhance={() =>
-		({ result, update }) => {
-			update();
-			if (result.type === "success") {
-				onSuccess();
-			}
-		}}
->
+<form {...upsertCategoryAction}>
 	<div class="mt-3">
 		<p class="font-bold">Category</p>
 

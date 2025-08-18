@@ -1,12 +1,12 @@
 import { CATEGORY_ICON_LIST } from "$lib/categories";
+import { EntityNotFoundError, ForbiddenError } from "$lib/errors/db";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import type { NestedCategory } from "$lib/utils/category";
-import { fail } from "@sveltejs/kit";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 import * as z from "zod";
 
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(
@@ -66,7 +66,11 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 				.groupBy(table.category.id),
 		);
 		if (!category) {
-			return fail(400, { ok: false, message: "Category not found" });
+			return yield* new EntityNotFoundError({
+				entity: "category",
+				id,
+				where: [`userId = ${userId}`],
+			});
 		}
 
 		const childCategoryIds = category.childCategoryIds.filter(
@@ -89,10 +93,10 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 				.limit(2),
 		);
 		if (atLeastTwoArray.length < 2) {
-			return fail(400, {
+			return {
 				ok: false,
 				message: `Cannot delete the last "${category.type === "income" ? "Income" : "Expense"}" category`,
-			});
+			};
 		}
 
 		// Should not be able to delete a category with transactions
@@ -114,17 +118,18 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 				.limit(1),
 		);
 		if (categoryTransaction) {
-			return fail(400, {
+			return {
 				ok: false,
 				message: "Category has one or more transactions, cannot be deleted",
-			});
+			};
 		}
 
 		yield* exec(db.delete(table.category).where(eq(table.category.id, id)));
-		return { ok: true, toast: "Category deleted" };
+		return { ok: true, message: "Category deleted" };
 	},
 );
 
+export class UpsertCategoryError extends Data.TaggedError("UpsertCategoryError")<{}> {}
 export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 	function* ({ userId, formData }: { userId: UserId; formData: FormData }) {
 		const formObj = Object.fromEntries(formData.entries());
@@ -210,7 +215,7 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 			);
 
 			if (results.findIndex((res) => res.userId !== userId) !== -1) {
-				return fail(403, { ok: false, message: "Forbidden" });
+				return yield* new ForbiddenError();
 			}
 
 			const idsToDelete: number[] = [];
@@ -255,10 +260,10 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 						.limit(1),
 				);
 				if (transaction) {
-					return fail(400, {
+					return {
 						ok: false,
 						message: `One of the deleted subcategories has one or more transactions, error updating`,
-					});
+					};
 				} else {
 					// Delete the subcategories
 					yield* exec(
@@ -283,6 +288,6 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 			}
 		}
 
-		return { ok: true, toast: id === "new" ? "Category created" : "Category updated" };
+		return { ok: true, message: id === "new" ? "Category created" : "Category updated" };
 	},
 );

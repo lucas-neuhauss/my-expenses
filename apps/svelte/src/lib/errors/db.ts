@@ -5,3 +5,5 @@ export class EntityNotFoundError extends Data.TaggedError("EntityNotFoundError")
 	id: number;
 	where?: string[];
 }> {}
+
+export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{}> {}

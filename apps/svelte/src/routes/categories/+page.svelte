@@ -1,22 +1,18 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
+	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
+	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { UpsertCategory } from "$lib/components/upsert-category";
+	import { deleteCategoryAction } from "$lib/remote/category.remote.js";
 	import type { NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
-	import * as Tabs from "$lib/components/ui/tabs/index.js";
-	import { goto } from "$app/navigation";
 
-	let { data, form } = $props();
-	$effect(() => {
-		if (typeof form?.toast === "string") {
-			toast.success(form.toast);
-		}
-	});
+	let { data } = $props();
 
 	let upsertDialog = $state<{
 		open: boolean;
@@ -24,12 +20,6 @@
 	}>({
 		open: false,
 		category: null,
-	});
-
-	$effect(() => {
-		if (!!form && !form.ok) {
-			toast.error(form.message ?? "Something went wrong");
-		}
 	});
 
 	const handleClickCreate = () => {
@@ -122,9 +112,18 @@
 					<ConfirmDialog
 						title="Are you sure?"
 						description="Are you sure you want to delete this category?"
-						formProps={{
-							action: `?/delete-category&id=${category.id}`,
-							method: "post",
+						remoteCommand={async () => {
+							if (!category) return;
+							try {
+								const res = await deleteCategoryAction(category.id);
+								if (res.ok) {
+									toast.success(res.message);
+								} else {
+									toast.error(res.message);
+								}
+							} catch {
+								toast.error("Something went wrong. Please try again later.");
+							}
 						}}
 					>
 						{#snippet triggerChild({ props })}
