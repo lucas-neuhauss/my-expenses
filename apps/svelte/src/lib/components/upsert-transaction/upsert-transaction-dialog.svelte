@@ -4,6 +4,12 @@
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertTransactionForm from "./upsert-transaction-form.svelte";
+	import {
+		CalendarDate,
+		getLocalTimeZone,
+		parseDate,
+		today,
+	} from "@internationalized/date";
 
 	let {
 		open = $bindable(),
@@ -24,6 +30,9 @@
 
 	let tab = $state<"expense" | "income" | "transference">("expense");
 	let tabsDisabled = $derived(!!transaction);
+	let date: CalendarDate = $state(
+		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
+	);
 
 	$effect(() => {
 		if (open && !!transaction) {
@@ -58,43 +67,14 @@
 					Transference
 				</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="expense">
-				{#snippet child({ props })}
-					<div {...props} tabindex="-1">
-						<UpsertTransactionForm
-							{transaction}
-							categories={categories.filter((c) => c.type === "expense")}
-							{wallets}
-							{tab}
-							{defaultCategory}
-							{defaultWallet}
-							{onSuccess}
-						/>
-					</div>
-				{/snippet}
-			</Tabs.Content>
-			<Tabs.Content value="income">
-				{#snippet child({ props })}
-					<div {...props} tabindex="-1">
-						<UpsertTransactionForm
-							{transaction}
-							categories={categories.filter((c) => c.type === "income")}
-							{wallets}
-							{tab}
-							{defaultCategory}
-							{defaultWallet}
-							{onSuccess}
-						/>
-					</div>
-				{/snippet}
-			</Tabs.Content>
-			<Tabs.Content value="transference">
-				{#snippet child({ props })}
-					{#if wallets.length >= 2}
+			{#each ["expense", "income", "transference"] as item (item)}
+				<Tabs.Content value={item}>
+					{#snippet child({ props })}
 						<div {...props} tabindex="-1">
 							<UpsertTransactionForm
+								bind:date
 								{transaction}
-								categories={categories.filter((c) => c.type === "income")}
+								categories={categories.filter((c) => c.type === (item === "transference" ? "income" : item))}
 								{wallets}
 								{tab}
 								{defaultCategory}
@@ -102,9 +82,9 @@
 								{onSuccess}
 							/>
 						</div>
-					{/if}
-				{/snippet}
-			</Tabs.Content>
+					{/snippet}
+				</Tabs.Content>
+			{/each}}
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>

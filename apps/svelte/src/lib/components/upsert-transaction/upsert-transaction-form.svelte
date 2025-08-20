@@ -11,8 +11,7 @@
 	import {
 		CalendarDate,
 		getLocalTimeZone,
-		parseDate,
-		today,
+		today
 	} from "@internationalized/date";
 	import DatePicker from "../date-picker.svelte";
 	import ExpenseIncomeSpecificInputs from "./expense-income-specific-inputs.svelte";
@@ -23,6 +22,7 @@
 		wallets,
 		categories,
 		tab,
+    date = $bindable(),
 		defaultWallet,
 		defaultCategory,
 		onSuccess,
@@ -31,6 +31,7 @@
 		wallets: { id: number; name: string }[];
 		categories: NestedCategory[];
 		tab: "expense" | "income" | "transference";
+    date: CalendarDate;
 		defaultWallet: number;
 		defaultCategory: number;
 		onSuccess: (shouldContinue?: boolean) => void;
@@ -42,9 +43,9 @@
 	let calendarOpen = $state(false);
 
 	let description = $state(transaction?.description ?? "");
-	let date: CalendarDate | undefined = $state(
-		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
-	);
+	// let date: CalendarDate | undefined = $state(
+	// 	transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
+	// );
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
 	let paid = $state(transaction?.paid ?? true);
 
