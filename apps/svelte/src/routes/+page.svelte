@@ -291,7 +291,7 @@
 									method: "post",
 								}}
 							>
-								{#snippet triggerChild({ props })}
+								{#snippet triggerChild(props)}
 									<Button
 										title="Delete transaction"
 										aria-label="delete transaction"

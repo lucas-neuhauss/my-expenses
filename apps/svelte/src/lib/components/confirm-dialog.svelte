@@ -30,7 +30,7 @@
 <AlertDialog.Root bind:open>
 	<AlertDialog.Trigger>
 		{#snippet child({ props })}
-			{@render triggerChild({ props })}
+			{@render triggerChild(props)}
 		{/snippet}
 	</AlertDialog.Trigger>
 	<AlertDialog.Content>
