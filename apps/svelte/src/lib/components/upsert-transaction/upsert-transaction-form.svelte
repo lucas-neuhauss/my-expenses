@@ -22,7 +22,7 @@
 		wallets,
 		categories,
 		tab,
-    date = $bindable(),
+		date = $bindable(),
 		defaultWallet,
 		defaultCategory,
 		onSuccess,
@@ -31,7 +31,7 @@
 		wallets: { id: number; name: string }[];
 		categories: NestedCategory[];
 		tab: "expense" | "income" | "transference";
-    date: CalendarDate;
+		date: CalendarDate;
 		defaultWallet: number;
 		defaultCategory: number;
 		onSuccess: (shouldContinue?: boolean) => void;

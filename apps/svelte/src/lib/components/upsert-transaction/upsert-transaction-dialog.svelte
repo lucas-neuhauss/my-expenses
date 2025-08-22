@@ -84,7 +84,7 @@
 						</div>
 					{/snippet}
 				</Tabs.Content>
-			{/each}}
+			{/each}
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>
