@@ -1,20 +1,17 @@
 import { NonNegativeIntFromString } from "$lib/schema.js";
 import { getNestedCategoriesData } from "$lib/server/data/category";
 import {
-    deleteTransactionData,
-    getDashboardTransactionsData,
-    upsertTransactionData,
+	getDashboardTransactionsData,
+	upsertTransactionData,
 } from "$lib/server/data/transaction";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { NodeSdkLive } from "$lib/server/observability";
-import type { UserId } from "$lib/types.js";
 import { calculateDashboardData } from "$lib/utils/transaction";
 import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
 import { Effect, Either, Schema as S } from "effect";
-import * as z from "zod";
 
 const program = Effect.fn("[load] - '/'")(function* ({
 	userId,
@@ -168,31 +165,6 @@ export const actions = {
 
 		return await Effect.runPromise(
 			program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
-		);
-	},
-	"delete-transaction": async (event) => {
-		const user = event.locals.user;
-		if (!user) {
-			return fail(401);
-		}
-		const searchParams = event.url.searchParams;
-
-		const program = Effect.fn("[action] - delete-transaction")(function* ({
-			userId,
-			searchParamsId,
-		}: {
-			userId: UserId;
-			searchParamsId: string | null;
-		}) {
-			const transactionId = z.coerce.number().int().min(1).parse(searchParamsId);
-			return yield* deleteTransactionData({ userId, transactionId });
-		});
-
-		return await Effect.runPromise(
-			program({
-				userId: user.id,
-				searchParamsId: searchParams.get("id"),
-			}).pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
 		);
 	},
 };

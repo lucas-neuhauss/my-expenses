@@ -8,11 +8,7 @@
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import type { NestedCategory } from "$lib/utils/category";
-	import {
-		CalendarDate,
-		getLocalTimeZone,
-		today
-	} from "@internationalized/date";
+	import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 	import DatePicker from "../date-picker.svelte";
 	import ExpenseIncomeSpecificInputs from "./expense-income-specific-inputs.svelte";
 	import TransferenceSpecificInputs from "./transference-specific-inputs.svelte";
@@ -43,9 +39,6 @@
 	let calendarOpen = $state(false);
 
 	let description = $state(transaction?.description ?? "");
-	// let date: CalendarDate | undefined = $state(
-	// 	transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
-	// );
 	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
 	let paid = $state(transaction?.paid ?? true);
 

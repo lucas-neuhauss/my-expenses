@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
+	import { goto, invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
+	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
 	import SavingsIllustration from "$lib/components/illustrations/savings-illustration.svelte";
 	import { Button } from "$lib/components/ui/button";
@@ -11,6 +11,7 @@
 	import * as Table from "$lib/components/ui/table";
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
+	import { deleteTransactionAction } from "$lib/remote/transaction.remote.js";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
@@ -34,6 +35,11 @@
 		open: false,
 		transaction: null,
 	});
+	let deleteDialog = $state<{ open: boolean; transaction: DashboardTransaction | null }>({
+		open: false,
+		transaction: null,
+	});
+
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
 		label: String(new Date().getFullYear() - i + 25),
@@ -117,6 +123,28 @@
 		</Card.Content>
 	</Card.Root>
 {/snippet}
+
+<ConfirmDialog
+	open={deleteDialog.open}
+	title="Are you sure?"
+	description="Are you sure you want to delete this transaction?"
+	remoteCommand={async () => {
+		if (!deleteDialog.transaction) return;
+		try {
+			const res = await deleteTransactionAction(deleteDialog.transaction.id);
+			if (!res) throw Error();
+			if (res.ok) {
+				toast.success(res.toast);
+				deleteDialog.open = false;
+				invalidateAll();
+			} else {
+				toast.error(res.toast);
+			}
+		} catch {
+			toast.error("Something went wrong. Please try again later.");
+		}
+	}}
+/>
 
 <div class="flex flex-col items-start gap-y-3 px-4 pb-4">
 	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
@@ -283,26 +311,15 @@
 								<Pencil />
 							</Button>
 
-							<ConfirmDialog
-								title="Are you sure?"
-								description="Are you sure you want to delete this transaction?"
-								formProps={{
-									action: `?/delete-transaction&id=${t.id}`,
-									method: "post",
-								}}
+							<Button
+								title="Delete transaction"
+								aria-label="delete transaction"
+								variant="ghost"
+								class="size-8 p-0 [&_svg]:size-3.5"
+								onclick={() => (deleteDialog = { open: true, transaction: t })}
 							>
-								{#snippet triggerChild(props)}
-									<Button
-										title="Delete transaction"
-										aria-label="delete transaction"
-										variant="ghost"
-										class="size-8 p-0 [&_svg]:size-3.5"
-										{...props}
-									>
-										<Trash />
-									</Button>
-								{/snippet}
-							</ConfirmDialog>
+								<Trash />
+							</Button>
 						</Table.Cell>
 					</Table.Row>
 				{/each}
