@@ -36,11 +36,14 @@
 
 	$effect(() => {
 		if (open && !!transaction) {
+			date = parseDate(transaction.date);
 			if (transaction.transferenceId !== null) {
 				tab = "transference";
 			} else {
 				tab = transaction.type;
 			}
+		} else if (open && !transaction) {
+			date = today(getLocalTimeZone());
 		}
 	});
 
@@ -74,7 +77,9 @@
 							<UpsertTransactionForm
 								bind:date
 								{transaction}
-								categories={categories.filter((c) => c.type === (item === "transference" ? "income" : item))}
+								categories={categories.filter(
+									(c) => c.type === (item === "transference" ? "income" : item),
+								)}
 								{wallets}
 								{tab}
 								{defaultCategory}

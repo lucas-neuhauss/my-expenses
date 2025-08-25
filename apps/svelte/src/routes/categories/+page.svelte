@@ -70,7 +70,7 @@
 	}}
 />
 
-<div class="container flex flex-col gap-y-4 px-8">
+<div class="container flex flex-col gap-y-4 px-8 pb-10">
 	<Tabs.Root value={data.type} onValueChange={handleTypeChange}>
 		<div class="flex items-center gap-4">
 			<Button

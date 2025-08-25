@@ -146,21 +146,25 @@
 	}}
 />
 
-<div class="flex flex-col items-start gap-y-3 px-4 pb-4">
+<div class="flex flex-col items-start gap-y-3 px-4 pb-10">
 	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
-		{@render MoneyCard("Current balance", data.balance)}
+		{@render MoneyCard("Month-end balance", data.balance)}
 		{@render MoneyCard("Month Income", data.totalIncome)}
 		{@render MoneyCard("Month Expense", data.totalExpense)}
 
-		<div class="text-sm">
-			<p>
-				Out: {formatCurrency(data.filteredExpense)}
-			</p>
-			<p>
-				In: {formatCurrency(data.filteredIncome)}
-			</p>
-			<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
-		</div>
+		<Card.Root class="w-[200px] gap-0 p-0">
+			<Card.Content
+				class="flex h-full flex-col items-start justify-center gap-1 px-5 py-2 text-sm"
+			>
+				<p>
+					Out: {formatCurrency(data.filteredExpense)}
+				</p>
+				<p>
+					In: {formatCurrency(data.filteredIncome)}
+				</p>
+				<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
+			</Card.Content>
+		</Card.Root>
 	</div>
 
 	<div class="flex flex-wrap items-center gap-4">
