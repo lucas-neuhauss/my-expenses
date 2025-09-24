@@ -1,4 +1,4 @@
-import { NonNegativeIntFromString } from "$lib/schema.js";
+import { NonNegativeIntFromStringEffectSchema } from "$lib/schema.js";
 import { getNestedCategoriesData } from "$lib/server/data/category";
 import {
 	getDashboardTransactionsData,
@@ -30,18 +30,18 @@ const program = Effect.fn("[load] - '/'")(function* ({
 	const currentYear = new Date().getFullYear();
 
 	const schema = S.Struct({
-		category: NonNegativeIntFromString.pipe(
+		category: NonNegativeIntFromStringEffectSchema.pipe(
 			S.annotations({ decodingFallback: () => Either.right(-1) }),
 		),
-		wallet: NonNegativeIntFromString.pipe(
+		wallet: NonNegativeIntFromStringEffectSchema.pipe(
 			S.annotations({ decodingFallback: () => Either.right(-1) }),
 		),
-		month: NonNegativeIntFromString.pipe(
+		month: NonNegativeIntFromStringEffectSchema.pipe(
 			S.greaterThanOrEqualTo(1),
 			S.lessThanOrEqualTo(12),
 			S.annotations({ decodingFallback: () => Either.right(currentMonth) }),
 		),
-		year: NonNegativeIntFromString.pipe(
+		year: NonNegativeIntFromStringEffectSchema.pipe(
 			S.annotations({ decodingFallback: () => Either.right(currentYear) }),
 		),
 	});

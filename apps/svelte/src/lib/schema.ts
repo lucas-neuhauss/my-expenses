@@ -1,6 +1,7 @@
 import { Schema as S } from "effect";
+import { z } from "zod";
 
-export const NonNegativeIntFromString = S.transform(
+export const NonNegativeIntFromStringEffectSchema = S.transform(
 	S.Union(S.String, S.Number),
 	S.NonNegativeInt,
 	{
@@ -9,3 +10,8 @@ export const NonNegativeIntFromString = S.transform(
 		encode: (num) => String(num),
 	},
 );
+
+export const NonNegativeIntFromString = z
+	.string()
+	.transform((str) => Number(str))
+	.pipe(z.number().nonnegative());

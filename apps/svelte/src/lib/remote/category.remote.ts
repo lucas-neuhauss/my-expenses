@@ -1,18 +1,19 @@
 import { command, form, getRequestEvent } from "$app/server";
+import { UpsertCategorySchema } from "$lib/components/upsert-category/upsert-category-schema";
 import { deleteCategoryData, upsertCategoryData } from "$lib/server/data/category";
 import { NodeSdkLive } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
 import z from "zod";
 
-export const upsertCategoryAction = form(async (formData) => {
+export const upsertCategoryAction = form(UpsertCategorySchema, async (data) => {
 	const program = Effect.fn("[remote] - upsert-category")(function* () {
 		const { locals } = getRequestEvent();
 		const user = locals.user;
 		if (!user) {
 			return yield* Effect.fail(error(401));
 		}
-		return yield* upsertCategoryData({ userId: user!.id, formData });
+		return yield* upsertCategoryData({ userId: user!.id, data: data });
 	});
 
 	return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));

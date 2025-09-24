@@ -1,10 +1,10 @@
 import { NonNegativeIntFromString } from "$lib/schema";
-import { Schema as S } from "effect";
+import * as z from "zod";
 
-export const UpsertWalletSchema = S.Struct({
+export const UpsertWalletSchema = z.object({
 	id: NonNegativeIntFromString,
-	name: S.NonEmptyString.pipe(S.maxLength(50)),
+	name: z.string().min(2).max(50),
 	initialBalance: NonNegativeIntFromString,
 });
 
-export type UpsertWalletSchema = S.Schema.Type<typeof UpsertWalletSchema>;
+export type UpsertWalletSchema = z.infer<typeof UpsertWalletSchema>;

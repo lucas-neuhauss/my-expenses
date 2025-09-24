@@ -1,4 +1,4 @@
-import { CATEGORY_ICON_LIST } from "$lib/categories";
+import type { UpsertCategorySchema } from "$lib/components/upsert-category/upsert-category-schema";
 import { EntityNotFoundError, ForbiddenError } from "$lib/errors/db";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
@@ -7,7 +7,6 @@ import type { NestedCategory } from "$lib/utils/category";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Data, Effect } from "effect";
-import * as z from "zod";
 
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(
 	function* (userId: UserId, type: "income" | "expense" | null = null) {
@@ -131,51 +130,8 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 
 export class UpsertCategoryError extends Data.TaggedError("UpsertCategoryError")<{}> {}
 export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
-	function* ({ userId, formData }: { userId: UserId; formData: FormData }) {
-		const formObj = Object.fromEntries(formData.entries());
-		const formSchema = z
-			.looseObject({
-				"category.id": z.coerce.number().int().or(z.literal("new")),
-				"category.type": z.enum(["income", "expense"]),
-				"category.name": z.string().min(1).max(255),
-				"category.icon": z.enum(CATEGORY_ICON_LIST),
-			})
-			.transform((values) => {
-				const childrenObj: Record<string, unknown> = {};
-				for (const [key, value] of Object.entries(values)) {
-					if (key.startsWith("category.")) continue;
-					const firstDotIndex = key.indexOf(".");
-					const secondDotIndex = key.indexOf(".", firstDotIndex + 1);
-					const number = key.substring(firstDotIndex + 1, secondDotIndex);
-					childrenObj[number] = {
-						...(childrenObj[number] ? childrenObj[number] : {}),
-						[key.substring(secondDotIndex + 1)]: value,
-					};
-				}
-				return {
-					id: values["category.id"],
-					type: values["category.type"],
-					name: values["category.name"],
-					icon: values["category.icon"],
-					children: Object.values(childrenObj),
-				};
-			})
-			.pipe(
-				z.object({
-					id: z.int().positive().or(z.literal("new")),
-					type: z.enum(["income", "expense"]),
-					name: z.string().min(1).max(255),
-					icon: z.enum(CATEGORY_ICON_LIST),
-					children: z.array(
-						z.object({
-							id: z.coerce.number().int().positive().or(z.literal("new")),
-							name: z.string().min(1).max(255),
-							icon: z.enum(CATEGORY_ICON_LIST),
-						}),
-					),
-				}),
-			);
-		const { id, name, type, icon, children } = formSchema.parse(formObj);
+	function* ({ userId, data }: { userId: UserId; data: UpsertCategorySchema }) {
+		const { id, name, icon, type, subcategories } = data;
 
 		if (id === "new") {
 			// Create parent category
@@ -193,10 +149,10 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 			);
 
 			// Create all subcategories
-			if (children.length > 0) {
+			if (subcategories.length > 0) {
 				yield* exec(
 					db.insert(table.category).values(
-						children.map((c) => ({
+						subcategories.map((c) => ({
 							name: c.name,
 							userId,
 							icon: c.icon,
@@ -230,7 +186,7 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 							.where(eq(table.category.id, id)),
 					);
 				} else {
-					const child = children.find((c) => c.id === res.id);
+					const child = subcategories.find((c) => c.id === res.id);
 
 					if (child) {
 						// Update a category
@@ -273,7 +229,7 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 			}
 
 			// Create new subcategories
-			for (const c of children) {
+			for (const c of subcategories) {
 				if (c.id === "new") {
 					yield* exec(
 						db.insert(table.category).values({

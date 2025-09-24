@@ -3,9 +3,9 @@ import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-
 import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
 import { NodeSdkLive } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
-import { Effect, ParseResult, Schema as S } from "effect";
+import { Effect, Schema as S } from "effect";
 
-export const upsertWalletAction = form(async (data) => {
+export const upsertWalletAction = form(UpsertWalletSchema, async (data) => {
 	const program = Effect.fn("[remote] - upsert-wallet")(
 		function* () {
 			const { locals } = getRequestEvent();
@@ -14,39 +14,11 @@ export const upsertWalletAction = form(async (data) => {
 				return error(401);
 			}
 
-			yield* Effect.logDebug({
-				id: data.get("id"),
-				name: data.get("name"),
-				initialBalance: data.get("initialBalance"),
-			});
-			const parsedData = yield* S.decodeUnknown(UpsertWalletSchema)(
-				{
-					id: data.get("id"),
-					name: data.get("name"),
-					initialBalance: data.get("initialBalance"),
-				},
-				{ errors: "all" },
-			);
-
-			const message = yield* upsertWalletData({ userId: user.id, data: parsedData });
+			const message = yield* upsertWalletData({ userId: user.id, data });
 			return { success: true as const, message };
 		},
 		Effect.tapError((e) => Effect.logError(e)),
 		Effect.catchTags({
-			ParseError: (error) => {
-				const formattedErrors = ParseResult.ArrayFormatter.formatErrorSync(error);
-				const formErrors: Record<string, string> = {};
-				formattedErrors.forEach((err) => {
-					if (err.path && err.path.length > 0) {
-						formErrors[err.path[0] as string] = err.message; // Assuming single-level paths for simplicity
-					}
-				});
-				return Effect.succeed({
-					success: false,
-					errorType: "ParseError",
-					formErrors,
-				} as const);
-			},
 			DbError: () =>
 				Effect.succeed({
 					success: false,

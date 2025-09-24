@@ -3,15 +3,16 @@
 	import * as Card from "$lib/components/ui/card";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
-	import { enhance } from "$app/forms";
+	import { loginAction } from "$lib/remote/auth.remote";
 
-	let { type, error }: { type: "login" | "register"; error: string | undefined } =
-		$props();
+	let { type }: { type: "login" | "register" } = $props();
 </script>
 
 <Card.Root class="mx-auto w-[360px]">
 	<Card.Header>
-		<Card.Title class="text-2xl">{type === "login" ? "Login" : "Register"}</Card.Title>
+		<Card.Title class="text-2xl">
+			<h1>{type === "login" ? "Login" : "Register"}</h1>
+		</Card.Title>
 		<Card.Description
 			>Enter your email below to {type === "login"
 				? "login to your account"
@@ -19,7 +20,7 @@
 		>
 	</Card.Header>
 	<Card.Content>
-		<form method="post" action={type === "login" ? "?/login" : "?/register"} use:enhance>
+		<form {...loginAction}>
 			<div class="grid gap-4">
 				<div class="grid gap-2">
 					<Label for="email">Email</Label>
@@ -40,8 +41,8 @@
 					<!-- </div> -->
 					<Input id="password" type="password" name="password" required />
 				</div>
-				{#if error}
-					<p class="-mt-2.5 text-sm text-red-400">{error}</p>
+				{#if loginAction.result?.ok === false}
+					<p class="-mt-2.5 text-sm text-red-400">{loginAction.result.message}</p>
 				{/if}
 
 				<Button type="submit" class="w-full">

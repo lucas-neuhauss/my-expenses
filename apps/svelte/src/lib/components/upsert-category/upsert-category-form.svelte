@@ -75,10 +75,10 @@
 </script>
 
 <form
-	{...upsertCategoryAction.enhance(async ({ submit }) => {
+	{...upsertCategoryAction.for(type).enhance(async ({ submit }) => {
 		try {
 			await submit();
-			const res = upsertCategoryAction.result;
+			const res = upsertCategoryAction.for(type).result;
 			if (!res) throw Error();
 			if (res.ok) {
 				toast.success(res.message);
@@ -94,9 +94,9 @@
 	<div class="mt-3">
 		<p class="font-bold">Category</p>
 
-		<input hidden name="category.type" value={type} />
-		<input hidden name="category.id" value={categories[0].id} />
-		<input hidden name="category.icon" value={categories[0].icon} />
+		<input hidden name="type" value={type} />
+		<input hidden name="id" value={categories[0].id} />
+		<input hidden name="icon" value={categories[0].icon} />
 		<div class="mt-2.5 flex items-center [&>div]:flex [&>div]:flex-col [&>div]:gap-2.5">
 			<div>
 				<Label>Icon</Label>
@@ -105,7 +105,7 @@
 
 			<div class="ml-5 flex-1">
 				<Label for="name">Name</Label>
-				<Input id="name" name="category.name" required bind:value={categories[0].name} />
+				<Input id="name" name="name" required bind:value={categories[0].name} />
 			</div>
 		</div>
 	</div>
@@ -115,8 +115,8 @@
 
 		{#each categories.slice(1) as c, index (`${c.id}-${index}`)}
 			<div class="mt-2.5 flex items-center [&>div]:flex [&>div]:flex-col [&>div]:gap-2.5">
-				<input type="hidden" name={`subcategory.${index}.id`} value={c.id} />
-				<input type="hidden" name={`subcategory.${index}.icon`} value={c.icon} />
+				<input type="hidden" name="subcategories[{index}].id" value={c.id} />
+				<input type="hidden" name="subcategories[{index}].icon" value={c.icon} />
 				<div>
 					<Label>Icon</Label>
 					<IconsList
@@ -126,10 +126,10 @@
 				</div>
 
 				<div class="ml-5 flex-1">
-					<Label for={`subcategory.${index}.name`}>Name</Label>
+					<Label for={`subcategories.${index}.name`}>Name</Label>
 					<Input
-						id={`subcategory.${index}.name`}
-						name={`subcategory.${index}.name`}
+						id={`subcategories.${index}.name`}
+						name="subcategories[{index}].name"
 						class="subcategory-input"
 						bind:value={c.name}
 						required
