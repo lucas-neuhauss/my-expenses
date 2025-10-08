@@ -1,4 +1,4 @@
-import { NonNegativeIntFromStringEffectSchema } from "$lib/schema.js";
+import { NonNegativeIntFromString } from "$lib/schema.js";
 import { getNestedCategoriesData } from "$lib/server/data/category";
 import {
 	getDashboardTransactionsData,
@@ -11,43 +11,62 @@ import { calculateDashboardData } from "$lib/utils/transaction";
 import { CalendarDate } from "@internationalized/date";
 import { fail, redirect } from "@sveltejs/kit";
 import { and, eq, lt, sum } from "drizzle-orm";
-import { Effect, Either, Schema as S } from "effect";
+import { Effect } from "effect";
+import * as z from "zod";
 
 const program = Effect.fn("[load] - '/'")(function* ({
 	userId,
 	searchParamsCategory,
 	searchParamsWallet,
+	searchParamsPaid,
 	searchParamsMonth,
 	searchParamsYear,
 }: {
 	userId: string;
 	searchParamsCategory: string | null;
 	searchParamsWallet: string | null;
+	searchParamsPaid: string | null;
 	searchParamsMonth: string | null;
 	searchParamsYear: string | null;
 }) {
 	const currentMonth = new Date().getMonth() + 1;
 	const currentYear = new Date().getFullYear();
 
-	const schema = S.Struct({
-		category: NonNegativeIntFromStringEffectSchema.pipe(
-			S.annotations({ decodingFallback: () => Either.right(-1) }),
-		),
-		wallet: NonNegativeIntFromStringEffectSchema.pipe(
-			S.annotations({ decodingFallback: () => Either.right(-1) }),
-		),
-		month: NonNegativeIntFromStringEffectSchema.pipe(
-			S.greaterThanOrEqualTo(1),
-			S.lessThanOrEqualTo(12),
-			S.annotations({ decodingFallback: () => Either.right(currentMonth) }),
-		),
-		year: NonNegativeIntFromStringEffectSchema.pipe(
-			S.annotations({ decodingFallback: () => Either.right(currentYear) }),
-		),
+	const schema = z.object({
+		category: z
+			.string()
+			.nullable()
+			.transform((val) => (val ? NonNegativeIntFromString.parse(val) : -1))
+			.catch(-1),
+		wallet: z
+			.string()
+			.nullable()
+			.transform((val) => (val ? NonNegativeIntFromString.parse(val) : -1))
+			.catch(-1),
+		paid: z
+			.string()
+			.nullable()
+			.transform((val) => (val === null ? null : val === "true"))
+			.catch(null),
+		month: z
+			.string()
+			.nullable()
+			.transform((val) => {
+				if (!val) return currentMonth;
+				const parsed = NonNegativeIntFromString.parse(val);
+				return parsed >= 1 && parsed <= 12 ? parsed : currentMonth;
+			})
+			.catch(currentMonth),
+		year: z
+			.string()
+			.nullable()
+			.transform((val) => (val ? NonNegativeIntFromString.parse(val) : currentYear))
+			.catch(currentYear),
 	});
-	const { category, wallet, month, year } = yield* S.decodeUnknown(schema)({
+	const { category, wallet, paid, month, year } = schema.parse({
 		category: searchParamsCategory,
 		wallet: searchParamsWallet,
+		paid: searchParamsPaid,
 		month: searchParamsMonth,
 		year: searchParamsYear,
 	});
@@ -98,14 +117,18 @@ const program = Effect.fn("[load] - '/'")(function* ({
 		if (category !== -1 && ![t.category.id, t.categoryParent?.id].includes(category)) {
 			return false;
 		}
+		if (paid !== null) {
+			if (paid && !t.paid) return false;
+			if (!paid && t.paid) return false;
+		}
 		return true;
 	});
 
-	const balance = yield* S.decodeUnknown(
-		S.NumberFromString.pipe(S.int()).annotations({
-			decodingFallback: () => Either.right(0),
-		}),
-	)(balanceResult[0]?.balance);
+	const balance = z
+		.string()
+		.transform((val) => parseInt(val))
+		.catch(0)
+		.parse(balanceResult[0]?.balance || "0");
 
 	const { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } =
 		calculateDashboardData(allTransactions, wallet, category);
@@ -137,6 +160,7 @@ export const load = async (event) => {
 			userId: event.locals.user.id,
 			searchParamsCategory: event.url.searchParams.get("category"),
 			searchParamsWallet: event.url.searchParams.get("wallet"),
+			searchParamsPaid: event.url.searchParams.get("paid"),
 			searchParamsMonth: event.url.searchParams.get("month"),
 			searchParamsYear: event.url.searchParams.get("year"),
 		}).pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),

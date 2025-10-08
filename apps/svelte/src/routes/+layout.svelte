@@ -8,6 +8,7 @@
 	import { ModeWatcher } from "mode-watcher";
 	import "../app.css";
 	import { Tooltip } from "bits-ui";
+	import { NuqsAdapter } from "nuqs-svelte/adapters/svelte-kit";
 	dayjs.extend(localizedFormat);
 
 	let { children, data } = $props();
@@ -27,20 +28,22 @@
 
 <Toaster position="top-center" richColors />
 <Tooltip.Provider>
-	{#if data.user}
-		<Sidebar.Provider open={data.sidebarOpen}>
-			<AppSidebar {isAdmin} {email} />
-			<main class="flex min-h-svh w-screen flex-1 flex-col">
-				<header class="flex items-center justify-between p-4">
-					<Sidebar.Trigger />
-					<ThemeToggle />
-				</header>
+	<NuqsAdapter>
+		{#if data.user}
+			<Sidebar.Provider open={data.sidebarOpen}>
+				<AppSidebar {isAdmin} {email} />
+				<main class="flex min-h-svh w-screen flex-1 flex-col">
+					<header class="flex items-center justify-between p-4">
+						<Sidebar.Trigger />
+						<ThemeToggle />
+					</header>
+					{@render children()}
+				</main>
+			</Sidebar.Provider>
+		{:else}
+			<main class="flex h-screen w-screen items-center justify-center px-4">
 				{@render children()}
 			</main>
-		</Sidebar.Provider>
-	{:else}
-		<main class="flex h-screen w-screen items-center justify-center px-4">
-			{@render children()}
-		</main>
-	{/if}
+		{/if}
+	</NuqsAdapter>
 </Tooltip.Provider>

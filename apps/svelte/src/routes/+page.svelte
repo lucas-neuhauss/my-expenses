@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from "$app/navigation";
-	import { page } from "$app/state";
+	import { invalidateAll } from "$app/navigation";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
@@ -20,6 +19,7 @@
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
+	import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs-svelte";
 
 	let { data, form } = $props();
 	$effect(() => {
@@ -40,6 +40,28 @@
 		transaction: null,
 	});
 
+	const currentYear = new Date().getFullYear();
+	const currentMonth = new Date().getMonth() + 1;
+
+	// Search params state
+	const paid = useQueryState("paid", parseAsBoolean.withOptions({ shallow: false }));
+	const wallet = useQueryState(
+		"wallet",
+		parseAsInteger.withDefault(-1).withOptions({ shallow: false }),
+	);
+	const category = useQueryState(
+		"category",
+		parseAsInteger.withDefault(-1).withOptions({ shallow: false }),
+	);
+	const month = useQueryState(
+		"month",
+		parseAsInteger.withDefault(currentMonth).withOptions({ shallow: false }),
+	);
+	const year = useQueryState(
+		"year",
+		parseAsInteger.withDefault(currentYear).withOptions({ shallow: false }),
+	);
+
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
 		label: String(new Date().getFullYear() - i + 25),
@@ -47,23 +69,26 @@
 	}));
 
 	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...data.wallets]);
-	let selectedWallet = $derived(walletOptions.find((w) => w.id === data.wallet)!);
-	let selectedMonth = $derived(monthOptions.find((mo) => mo.value === data.month)!);
-	let selectedYear = $derived(yearOptions.find((y) => y.value === data.year)!);
-
-	const currentYear = new Date().getFullYear();
-	const currentMonth = new Date().getMonth() + 1;
+	let selectedWallet = $derived(walletOptions.find((w) => w.id === wallet.current)!);
+	let selectedMonth = $derived(monthOptions.find((mo) => mo.value === month.current)!);
+	let selectedYear = $derived(yearOptions.find((y) => y.value === year.current)!);
 
 	const onWalletChange = (id: string) => {
-		const url = new URL(page.url.href);
-
 		if (id === "-1") {
-			url.searchParams.delete("wallet");
+			wallet.set(() => null);
 		} else {
-			url.searchParams.set("wallet", id);
+			wallet.set(() => parseInt(id));
 		}
-		goto(url.href);
 	};
+
+	const onStatusChange = (id: string) => {
+		if (id === "all") {
+			paid.set(null);
+		} else {
+			paid.set(id === "paid");
+		}
+	};
+
 	const onDateChanged = (m: number, y: number) => {
 		if (m === 0) {
 			m = 12;
@@ -73,25 +98,24 @@
 			y += 1;
 		}
 
-		const url = new URL(page.url.href);
-		url.searchParams.delete("year");
-		url.searchParams.delete("month");
+		let _year: number | null = null;
+		let _month: number | null = null;
 		if (y !== currentYear) {
-			url.searchParams.set("year", String(y));
+			_year = y;
 		}
 		if (m !== currentMonth || y !== currentYear) {
-			url.searchParams.set("month", String(m));
+			_month = m;
 		}
-		goto(url.href);
+		year.set(() => _year);
+		month.set(() => _month);
 	};
+
 	const onCategoryChanged = (c: number) => {
-		const url = new URL(page.url.href);
 		if (c === -1) {
-			url.searchParams.delete("category");
+			category.set(() => null);
 		} else {
-			url.searchParams.set("category", String(c));
+			category.set(() => parseInt(c));
 		}
-		goto(url.href);
 	};
 
 	const handleClickCreate = () => {
@@ -176,14 +200,14 @@
 			bind:transaction={upsertDialog.transaction}
 			wallets={data.wallets}
 			categories={data.categories}
-			defaultWallet={data.wallet}
-			defaultCategory={data.category}
+			defaultWallet={wallet.current}
+			defaultCategory={category.current}
 		/>
 
 		<Select.Root
 			type="single"
 			name="wallet"
-			value={String(data.wallet)}
+			value={String(wallet)}
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
@@ -199,11 +223,27 @@
 
 		<CategoriesCombobox
 			categories={data.categories}
-			value={data.category}
+			value={category.current}
 			onChange={onCategoryChanged}
 			includeAllCategoriesOption
 			style="width: 224px;"
 		/>
+
+		<Select.Root
+			type="single"
+			name="paid"
+			value={String(paid.current)}
+			onValueChange={onStatusChange}
+		>
+			<Select.Trigger title="Select paid" class="col-span-3 w-[170px]">
+				{paid.current === null ? "All Status" : paid.current ? "Paid" : "Not Paid"}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="all">All</Select.Item>
+				<Select.Item value="paid">Paid</Select.Item>
+				<Select.Item value="not-paid">Not Paid</Select.Item>
+			</Select.Content>
+		</Select.Root>
 
 		<div class="flex items-center gap-2">
 			<Button
@@ -212,7 +252,7 @@
 				class="shrink-0"
 				title="Go to the previous month"
 				aria-label="Go to the previous month"
-				onclick={() => onDateChanged(data.month - 1, data.year)}
+				onclick={() => onDateChanged(month.current - 1, year.current)}
 			>
 				<ChevronLeft />
 			</Button>
@@ -220,8 +260,8 @@
 			<Select.Root
 				type="single"
 				name="month"
-				value={String(data.month)}
-				onValueChange={(m) => onDateChanged(Number(m), data.year)}
+				value={String(month.current)}
+				onValueChange={(m) => onDateChanged(Number(m), year.current)}
 				allowDeselect={false}
 			>
 				<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger
