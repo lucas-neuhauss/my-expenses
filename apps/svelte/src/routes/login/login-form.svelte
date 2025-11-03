@@ -4,6 +4,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
 	import { loginAction } from "$lib/remote/auth.remote";
+	import { resolve } from "$app/paths";
 
 	let { type }: { type: "login" | "register" } = $props();
 </script>
@@ -54,12 +55,12 @@
 			{#if type === "login"}
 				<div class="mt-4 text-center text-sm">
 					Don't have an account?
-					<a href="/register" class="underline"> Sign up </a>
+					<a href={resolve("/register")} class="underline"> Sign up </a>
 				</div>
 			{:else}
 				<div class="mt-4 text-center text-sm">
 					Already have an account?
-					<a href="/login" class="underline"> Login </a>
+					<a href={resolve("/login")} class="underline"> Login </a>
 				</div>
 			{/if}
 		</form>

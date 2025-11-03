@@ -15,9 +15,22 @@
 		wallet: LoadWallet | null;
 	} = $props();
 
-	let formErrors: Record<string, string> = $state({});
 	$effect(() => {
-		if (open) formErrors = {};
+		if (open) {
+			if (wallet) {
+				upsertWalletAction.fields.set({
+					id: wallet.id.toString(),
+					name: wallet.name,
+					initialBalance: wallet.initialBalance.toString(),
+				});
+			} else {
+				upsertWalletAction.fields.set({
+					id: "",
+					name: "",
+					initialBalance: "",
+				});
+			}
+		}
 	});
 
 	let isUpdate = $derived(wallet !== null);
@@ -43,11 +56,7 @@
 						toast.success(res.message);
 						open = false;
 					} else {
-						if (res.errorType === "ParseError") {
-							formErrors = res.formErrors;
-						} else {
-							throw Error();
-						}
+						throw Error();
 					}
 				} catch {
 					toast.error("Something went wrong. Please try again later.");
@@ -55,32 +64,24 @@
 			})}
 			class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 		>
-			<input hidden name="id" value={wallet?.id} />
+			<input {...upsertWalletAction.fields.id.as("text")} hidden />
 
 			<Label for="wallet-name-input">Name</Label>
-			<Input
-				placeholder="Name"
-				name="name"
-				id="wallet-name-input"
-				value={wallet?.name}
-				required
-			/>
-			{#if formErrors.name}
-				<p class="text-sm text-red-400">{formErrors.name}</p>
-			{/if}
+			<Input {...upsertWalletAction.fields.name.as("text")} placeholder="Name" required />
+			{#each upsertWalletAction.fields.name.issues() as issue (issue.message)}
+				<p class="text-sm text-red-400">{issue.message}</p>
+			{/each}
 
 			<Label for="wallet-initialbalance-input">Initial Balance</Label>
 			<Input
-				id="wallet-initialbalance-input"
-				name="initialBalance"
+				{...upsertWalletAction.fields.initialBalance.as("text")}
 				placeholder="R$ 0.00"
 				type="number"
 				step="0.01"
-				value={wallet?.initialBalance}
 			/>
-			{#if formErrors.initialBalance}
-				<p class="text-sm text-red-400">{formErrors.initialBalance}</p>
-			{/if}
+			{#each upsertWalletAction.fields.initialBalance.issues() as issue (issue.message)}
+				<p class="text-sm text-red-400">{issue.message}</p>
+			{/each}
 
 			<Dialog.Footer class="mt-2">
 				<Button type="submit" class="ml-auto">Save</Button>

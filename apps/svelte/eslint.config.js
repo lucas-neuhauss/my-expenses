@@ -36,6 +36,7 @@ export default ts.config(
 			"@typescript-eslint/no-explicit-any": 1,
 			"@typescript-eslint/no-unused-vars": "warn",
 			"@typescript-eslint/no-empty-object-type": "off",
+			"svelte/no-navigation-without-resolve": "off",
 		},
 	},
 );

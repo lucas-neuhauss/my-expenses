@@ -114,7 +114,7 @@
 		if (c === -1) {
 			category.set(() => null);
 		} else {
-			category.set(() => parseInt(c));
+			category.set(() => c);
 		}
 	};
 
