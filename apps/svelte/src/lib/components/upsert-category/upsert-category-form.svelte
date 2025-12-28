@@ -21,7 +21,7 @@
 		onSuccess: () => void;
 	} = $props();
 	let categories = $state(
-		category ? [category, ...category.children] : [getEmptyCategory()],
+		(() => (category ? [category, ...category.children] : [getEmptyCategory()]))(),
 	);
 
 	function getRandomIcon() {

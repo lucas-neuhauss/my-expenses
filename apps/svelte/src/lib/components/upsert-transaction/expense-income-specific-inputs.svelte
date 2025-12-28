@@ -22,14 +22,22 @@
 	} = $props();
 
 	let walletId = $state(
-		transaction?.wallet.id ??
-			(defaultWallet === -1 ? null : defaultWallet) ??
-			wallets[0].id,
+		(() => {
+			return (
+				transaction?.wallet.id ??
+				(defaultWallet === -1 ? null : defaultWallet) ??
+				wallets[0].id
+			);
+		})(),
 	);
 	let categoryId = $state(
-		transaction?.category.id ??
-			(defaultCategory === -1 ? null : defaultCategory) ??
-			categories[0].id,
+		(() => {
+			return (
+				transaction?.category.id ??
+				(defaultCategory === -1 ? null : defaultCategory) ??
+				categories[0].id
+			);
+		})(),
 	);
 
 	let wallet = $derived(wallets.find((w) => w.id === walletId)!);

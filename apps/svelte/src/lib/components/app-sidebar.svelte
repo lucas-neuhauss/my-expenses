@@ -10,26 +10,29 @@
 	let { isAdmin, email }: { isAdmin: boolean; email: string } = $props();
 
 	// Menu items.
-	const items = [
-		{
-			title: "Home",
-			url: "/",
-			icon: House,
-		},
-		{
-			title: "Categories",
-			url: "/categories",
-			icon: Inbox,
-		},
-		{
-			title: "Wallets",
-			url: "/wallets",
-			icon: Calendar,
-		},
-	];
-	if (isAdmin) {
-		items.push({ title: "Backup", url: "/backup", icon: Database });
-	}
+	const items = (() => {
+		const baseItems = [
+			{
+				title: "Home",
+				url: "/",
+				icon: House,
+			},
+			{
+				title: "Categories",
+				url: "/categories",
+				icon: Inbox,
+			},
+			{
+				title: "Wallets",
+				url: "/wallets",
+				icon: Calendar,
+			},
+		];
+		if (isAdmin) {
+			baseItems.push({ title: "Backup", url: "/backup", icon: Database });
+		}
+		return baseItems;
+	})();
 </script>
 
 <Sidebar.Root>

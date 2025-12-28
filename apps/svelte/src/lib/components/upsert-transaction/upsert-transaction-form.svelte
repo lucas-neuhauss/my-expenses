@@ -35,12 +35,14 @@
 
 	let walletTriggerRef = $state<HTMLButtonElement | null>(null);
 	let fromWalletTriggerRef = $state<HTMLButtonElement | null>(null);
-	let id = $state(transaction ? String(transaction.id) : "new");
+	let id = $state((() => (transaction ? String(transaction.id) : "new"))());
 	let calendarOpen = $state(false);
 
-	let description = $state(transaction?.description ?? "");
-	let cents = $state(transaction?.cents ? Math.abs(transaction.cents / 100) : undefined);
-	let paid = $state(transaction?.paid ?? true);
+	let description = $state((() => transaction?.description ?? "")());
+	let cents = $state(
+		(() => (transaction?.cents ? Math.abs(transaction.cents / 100) : undefined))(),
+	);
+	let paid = $state((() => transaction?.paid ?? true)());
 
 	$effect(() => {
 		// If selecting a date in the future, set "paid" to false

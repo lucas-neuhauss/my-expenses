@@ -14,9 +14,11 @@
 	} = $props();
 
 	let fromWalletId = $state(
-		String(transaction?.transferenceFrom?.walletId ?? wallets[0].id),
+		(() => String(transaction?.transferenceFrom?.walletId ?? wallets[0].id))(),
 	);
-	let toWalletId = $state(String(transaction?.transferenceTo?.walletId ?? wallets[1].id));
+	let toWalletId = $state(
+		(() => String(transaction?.transferenceTo?.walletId ?? wallets[1].id))(),
+	);
 
 	let fromWallet = $derived(wallets.find((w) => String(w.id) === fromWalletId)!);
 	let toWallet = $derived(wallets.find((w) => String(w.id) === toWalletId)!);
