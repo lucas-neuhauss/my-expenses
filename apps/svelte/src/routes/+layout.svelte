@@ -9,6 +9,9 @@
 	import "../app.css";
 	import { Tooltip } from "bits-ui";
 	import { NuqsAdapter } from "nuqs-svelte/adapters/svelte-kit";
+	import { QueryClientProvider } from "@tanstack/svelte-query";
+	import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+	import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
 	dayjs.extend(localizedFormat);
 
 	let { children, data } = $props();
@@ -29,21 +32,24 @@
 <Toaster position="top-center" richColors />
 <Tooltip.Provider>
 	<NuqsAdapter>
-		{#if data.user}
-			<Sidebar.Provider open={data.sidebarOpen}>
-				<AppSidebar {isAdmin} {email} />
-				<main class="flex min-h-svh w-screen flex-1 flex-col">
-					<header class="flex items-center justify-between p-4">
-						<Sidebar.Trigger />
-						<ThemeToggle />
-					</header>
+		<QueryClientProvider client={queryClient}>
+			<SvelteQueryDevtools />
+			{#if data.user}
+				<Sidebar.Provider open={data.sidebarOpen}>
+					<AppSidebar {isAdmin} {email} />
+					<main class="flex min-h-svh w-screen flex-1 flex-col">
+						<header class="flex items-center justify-between p-4">
+							<Sidebar.Trigger />
+							<ThemeToggle />
+						</header>
+						{@render children()}
+					</main>
+				</Sidebar.Provider>
+			{:else}
+				<main class="flex h-screen w-screen items-center justify-center px-4">
 					{@render children()}
 				</main>
-			</Sidebar.Provider>
-		{:else}
-			<main class="flex h-screen w-screen items-center justify-center px-4">
-				{@render children()}
-			</main>
-		{/if}
+			{/if}
+		</QueryClientProvider>
 	</NuqsAdapter>
 </Tooltip.Provider>

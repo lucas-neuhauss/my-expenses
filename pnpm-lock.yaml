@@ -53,6 +53,21 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.89.0
         version: 2.89.0
+      '@tanstack/db':
+        specifier: ^0.5.16
+        version: 0.5.16(typescript@5.9.3)
+      '@tanstack/query-db-collection':
+        specifier: ^1.0.12
+        version: 1.0.12(@tanstack/query-core@5.90.16)(typescript@5.9.3)
+      '@tanstack/svelte-db':
+        specifier: ^0.1.59
+        version: 0.1.59(svelte@5.46.1)(typescript@5.9.3)
+      '@tanstack/svelte-query':
+        specifier: ^6.0.14
+        version: 6.0.14(svelte@5.46.1)
+      '@tanstack/svelte-query-devtools':
+        specifier: ^6.0.3
+        version: 6.0.3(@tanstack/svelte-query@6.0.14(svelte@5.46.1))(svelte@5.46.1)
       dayjs:
         specifier: ^1.11.19
         version: 1.11.19
@@ -1711,6 +1726,48 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
 
+  '@tanstack/db-ivm@0.1.14':
+    resolution: {integrity: sha512-GluhFsd/Z1E/MZTf60l9dZpKNpmdxtV4izPRnj1RK6TYrhC9LMndN+ywk1VDFBrjtBq/CTShz4CilECLwVlTGg==}
+    peerDependencies:
+      typescript: '>=4.7'
+
+  '@tanstack/db@0.5.16':
+    resolution: {integrity: sha512-V4oCsGlighwgKGWldw1umaXaVYiDR0sK/1fCWictrx2lqxqmBMUEfmNtWnt0CFJXEbyRA/LF8TyFn1ooXtyZ3w==}
+    peerDependencies:
+      typescript: '>=4.7'
+
+  '@tanstack/pacer-lite@0.1.1':
+    resolution: {integrity: sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w==}
+    engines: {node: '>=18'}
+
+  '@tanstack/query-core@5.90.16':
+    resolution: {integrity: sha512-MvtWckSVufs/ja463/K4PyJeqT+HMlJWtw6PrCpywznd2NSgO3m4KwO9RqbFqGg6iDE8vVMFWMeQI4Io3eEYww==}
+
+  '@tanstack/query-db-collection@1.0.12':
+    resolution: {integrity: sha512-kwE9lfGhbnRbRHut1k4yrshoTSDNqP/uY7Brr0l1HbOJZuW7V8Q1zQ1GN4TMAtsLohKaSsL/XDxZULCi6MGngg==}
+    peerDependencies:
+      '@tanstack/query-core': ^5.0.0
+      typescript: '>=4.7'
+
+  '@tanstack/query-devtools@5.92.0':
+    resolution: {integrity: sha512-N8D27KH1vEpVacvZgJL27xC6yPFUy0Zkezn5gnB3L3gRCxlDeSuiya7fKge8Y91uMTnC8aSxBQhcK6ocY7alpQ==}
+
+  '@tanstack/svelte-db@0.1.59':
+    resolution: {integrity: sha512-NRNT8Ds1oUfCLzXep5ppwyWU0Ikte3tyeywFN9OziF6WZqdQEisvlqASWQ4eeZvhNUDCAnnfuvarSivFxuloPw==}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@tanstack/svelte-query-devtools@6.0.3':
+    resolution: {integrity: sha512-AHc/vPiUWeMFXKvtrlZot7wIlsIm4z5vd0wDeQUKwE5XTfZODu0no1A4UCLzVnY2WpbBpakIEUMH+PmSMwYXKg==}
+    peerDependencies:
+      '@tanstack/svelte-query': ^6.0.12
+      svelte: ^5.25.0
+
+  '@tanstack/svelte-query@6.0.14':
+    resolution: {integrity: sha512-gKuHxbyGP2pCQgE/Px9FtlyFmHTt0OV5xTrKrk7PMKGkv3LPWTTwDb7xlMDe1V7U2K5ci+jq1j3HsuTPqIZxjA==}
+    peerDependencies:
+      svelte: ^5.25.0
+
   '@testing-library/dom@10.4.0':
     resolution: {integrity: sha512-pemlzrSESWbdAloYml3bAJMEfNh1Z7EduzqPKprCH5S341frlpYnUEW0H72dLxa6IsYr+mPno20GiSm+h9dEdQ==}
     engines: {node: '>=18'}
@@ -2478,6 +2535,10 @@ packages:
       svelte: ^5.0.0
       sveltekit-superforms: ^2.19.0
 
+  fractional-indexing@3.2.0:
+    resolution: {integrity: sha512-PcOxmqwYCW7O2ovKRU8OoQQj2yqTfEB/yeTYk4gPid6dN5ODRfU1hXd9tTVZzax/0NkO7AxpHykvZnT1aYp/BQ==}
+    engines: {node: ^14.13.1 || >=16.0.0}
+
   fsevents@2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3228,6 +3289,9 @@ packages:
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
+
+  sorted-btree@1.8.1:
+    resolution: {integrity: sha512-395+XIP+wqNn3USkFSrNz7G3Ss/MXlZEqesxvzCRFwL14h6e8LukDHdLBePn5pwbm5OQ9vGu8mDyz2lLDIqamQ==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -4954,6 +5018,51 @@ snapshots:
       tailwindcss: 4.1.18
       vite: 7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.7.1)
 
+  '@tanstack/db-ivm@0.1.14(typescript@5.9.3)':
+    dependencies:
+      fractional-indexing: 3.2.0
+      sorted-btree: 1.8.1
+      typescript: 5.9.3
+
+  '@tanstack/db@0.5.16(typescript@5.9.3)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/db-ivm': 0.1.14(typescript@5.9.3)
+      '@tanstack/pacer-lite': 0.1.1
+      typescript: 5.9.3
+
+  '@tanstack/pacer-lite@0.1.1': {}
+
+  '@tanstack/query-core@5.90.16': {}
+
+  '@tanstack/query-db-collection@1.0.12(@tanstack/query-core@5.90.16)(typescript@5.9.3)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/db': 0.5.16(typescript@5.9.3)
+      '@tanstack/query-core': 5.90.16
+      typescript: 5.9.3
+
+  '@tanstack/query-devtools@5.92.0': {}
+
+  '@tanstack/svelte-db@0.1.59(svelte@5.46.1)(typescript@5.9.3)':
+    dependencies:
+      '@tanstack/db': 0.5.16(typescript@5.9.3)
+      svelte: 5.46.1
+    transitivePeerDependencies:
+      - typescript
+
+  '@tanstack/svelte-query-devtools@6.0.3(@tanstack/svelte-query@6.0.14(svelte@5.46.1))(svelte@5.46.1)':
+    dependencies:
+      '@tanstack/query-devtools': 5.92.0
+      '@tanstack/svelte-query': 6.0.14(svelte@5.46.1)
+      esm-env: 1.2.2
+      svelte: 5.46.1
+
+  '@tanstack/svelte-query@6.0.14(svelte@5.46.1)':
+    dependencies:
+      '@tanstack/query-core': 5.90.16
+      svelte: 5.46.1
+
   '@testing-library/dom@10.4.0':
     dependencies:
       '@babel/code-frame': 7.27.1
@@ -5769,6 +5878,8 @@ snapshots:
       svelte-toolbelt: 0.5.0(svelte@5.46.1)
       sveltekit-superforms: 2.29.1(@sveltejs/kit@2.49.2(@opentelemetry/api@1.9.0)(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.46.1)(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.7.1)))(svelte@5.46.1)(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.7.1)))(@types/json-schema@7.0.15)(svelte@5.46.1)(typescript@5.9.3)
 
+  fractional-indexing@3.2.0: {}
+
   fsevents@2.3.2:
     optional: true
 
@@ -6423,6 +6534,8 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+
+  sorted-btree@1.8.1: {}
 
   source-map-js@1.2.1: {}
 

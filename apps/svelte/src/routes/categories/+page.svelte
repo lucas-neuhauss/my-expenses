@@ -1,18 +1,46 @@
 <script lang="ts">
-	import { goto, invalidateAll } from "$app/navigation";
-	import { page } from "$app/state";
+	import { invalidateAll } from "$app/navigation";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { UpsertCategory } from "$lib/components/upsert-category";
+	import { categoryCollection } from "$lib/db-collectons/categories.js";
 	import { deleteCategoryAction } from "$lib/remote/category.remote.js";
 	import type { NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
+	import { useLiveQuery } from "@tanstack/svelte-db";
+	import { eq } from "@tanstack/db";
+	import { useQueryState, parseAsStringLiteral } from "nuqs-svelte";
 	import { toast } from "svelte-sonner";
 
-	let { data } = $props();
+	const type = useQueryState(
+		"type",
+		parseAsStringLiteral(["expense", "income"] as const).withDefault("expense"),
+	);
+
+	const query = useLiveQuery((q) =>
+		q
+			.from({ category: categoryCollection })
+			.where(({ category }) => eq(category.type, type.current))
+			.orderBy(({ category }) => category.name, "asc"),
+	);
+
+	// TODO: Move this to a utility function
+	let nestedCategories = $derived(
+		query.data.reduce<NestedCategory[]>((acc, category) => {
+			if (category.parentId === null) {
+				acc.push({ ...category, children: [] });
+			} else {
+				const parent = acc.find((c) => c.id === category.parentId);
+				if (parent) {
+					parent.children.push(category);
+				}
+			}
+			return acc;
+		}, []),
+	);
 
 	let upsertDialog = $state<{
 		open: boolean;
@@ -29,15 +57,8 @@
 		category: null,
 	});
 
-	const handleTypeChange = (type: string) => {
-		const url = new URL(page.url.href);
-
-		if (type === "expense") {
-			url.searchParams.delete("type");
-		} else {
-			url.searchParams.set("type", type);
-		}
-		goto(url.href);
+	const handleTypeChange = (newType: string) => {
+		type.set(() => newType as "expense" | "income");
 	};
 </script>
 
@@ -71,7 +92,7 @@
 />
 
 <div class="container flex flex-col gap-y-4 px-8 pb-10">
-	<Tabs.Root value={data.type} onValueChange={handleTypeChange}>
+	<Tabs.Root value={type.current} onValueChange={handleTypeChange}>
 		<div class="flex items-center gap-4">
 			<Button
 				title="Create category"
@@ -88,7 +109,7 @@
 		</div>
 	</Tabs.Root>
 
-	{#each data.nestedCategories as category (category.id)}
+	{#each nestedCategories as category (category.id)}
 		<Card.Root class="w-full p-0">
 			<Card.Content class="flex items-center justify-between p-5 pt-3">
 				<div class="flex flex-col items-start justify-between gap-3">
