@@ -110,20 +110,6 @@ const program = Effect.fn("[load] - '/'")(function* ({
 		{ concurrency: "unbounded" },
 	);
 
-	const transactions = allTransactions.filter((t) => {
-		if (wallet !== -1 && wallet !== t.wallet.id) {
-			return false;
-		}
-		if (category !== -1 && ![t.category.id, t.categoryParent?.id].includes(category)) {
-			return false;
-		}
-		if (paid !== null) {
-			if (paid && !t.paid) return false;
-			if (!paid && t.paid) return false;
-		}
-		return true;
-	});
-
 	const balance = z
 		.string()
 		.transform((val) => parseInt(val))
@@ -139,7 +125,6 @@ const program = Effect.fn("[load] - '/'")(function* ({
 		wallet,
 		wallets,
 		balance: balance + wallets.reduce((acc, w) => acc + w.initialBalance, 0),
-		transactions,
 		totalIncome,
 		totalExpense,
 		filteredIncome,

@@ -20,8 +20,11 @@
 	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
 	import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs-svelte";
+	import { useLiveQuery } from "@tanstack/svelte-db";
+	import { buildTransactionsQuery } from "./lib";
 
 	let { data, form } = $props();
+
 	$effect(() => {
 		if (typeof form?.toast === "string") {
 			toast.success(form.toast);
@@ -44,22 +47,25 @@
 	const currentMonth = new Date().getMonth() + 1;
 
 	// Search params state
-	const paid = useQueryState("paid", parseAsBoolean.withOptions({ shallow: false }));
-	const wallet = useQueryState(
-		"wallet",
-		parseAsInteger.withDefault(-1).withOptions({ shallow: false }),
-	);
-	const category = useQueryState(
-		"category",
-		parseAsInteger.withDefault(-1).withOptions({ shallow: false }),
-	);
-	const month = useQueryState(
-		"month",
-		parseAsInteger.withDefault(currentMonth).withOptions({ shallow: false }),
-	);
-	const year = useQueryState(
-		"year",
-		parseAsInteger.withDefault(currentYear).withOptions({ shallow: false }),
+	const paid = useQueryState("paid", parseAsBoolean);
+	const wallet = useQueryState("wallet", parseAsInteger.withDefault(-1));
+	const category = useQueryState("category", parseAsInteger.withDefault(-1));
+	const month = useQueryState("month", parseAsInteger.withDefault(currentMonth));
+	const year = useQueryState("year", parseAsInteger.withDefault(currentYear));
+
+	const query = useLiveQuery((q) =>
+		q
+			.from({
+				transaction: buildTransactionsQuery({
+					paid: paid.current,
+					wallet: wallet.current,
+					month: month.current,
+					year: year.current,
+					category: category.current,
+				}),
+			})
+			.orderBy(({ transaction }) => transaction.date, "desc")
+			.orderBy(({ transaction }) => transaction.id, "desc"),
 	);
 
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
@@ -176,7 +182,7 @@
 		{@render MoneyCard("Month Income", data.totalIncome)}
 		{@render MoneyCard("Month Expense", data.totalExpense)}
 
-		<Card.Root class="w-[200px] gap-0 p-0">
+		<Card.Root class="w-50 gap-0 p-0">
 			<Card.Content
 				class="flex h-full flex-col items-start justify-center gap-1 px-5 py-2 text-sm"
 			>
@@ -303,7 +309,13 @@
 
 	<DashboardCharts charts={data.charts} />
 
-	{#if data.transactions.length > 0}
+	{#if query.isReady && query.data.length === 0}
+		<div class="mt-10 flex w-full flex-col items-center justify-center">
+			<SavingsIllustration width={200} height="100%" />
+			<p class="mt-6">You don't have transactions</p>
+			<p>in this month yet</p>
+		</div>
+	{:else}
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
@@ -312,12 +324,12 @@
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
 					<Table.Head>Amount</Table.Head>
-					<Table.Head class="w-[72px]">Paid</Table.Head>
-					<Table.Head class="w-[96px]">Actions</Table.Head>
+					<Table.Head class="w-18">Paid</Table.Head>
+					<Table.Head class="w-24">Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each data.transactions as t (t.id)}
+				{#each query.data as t (t.id)}
 					<Table.Row>
 						<Table.Cell>
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
@@ -369,11 +381,5 @@
 				{/each}
 			</Table.Body>
 		</Table.Root>
-	{:else}
-		<div class="mt-10 flex w-full flex-col items-center justify-center">
-			<SavingsIllustration width={200} height="100%" />
-			<p class="mt-6">You don't have transactions</p>
-			<p>in this month yet</p>
-		</div>
 	{/if}
 </div>

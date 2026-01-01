@@ -2,7 +2,7 @@ import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { error, json } from "@sveltejs/kit";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import type { RequestHandler } from "./$types";
 
@@ -25,13 +25,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 					icon: table.category.icon,
 				})
 				.from(table.category)
-				.where(
-					and(
-						eq(table.category.userId, userId),
-						isNull(table.category.unique),
-						type ? eq(table.category.type, type) : undefined,
-					),
-				)
+				.where(eq(table.category.userId, userId))
 				.orderBy(desc(table.category.parentId), table.category.name),
 		);
 

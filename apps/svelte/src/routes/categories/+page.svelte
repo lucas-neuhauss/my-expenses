@@ -5,7 +5,7 @@
 	import * as Card from "$lib/components/ui/card";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { UpsertCategory } from "$lib/components/upsert-category";
-	import { categoryCollection } from "$lib/db-collectons/categories.js";
+	import { categoryCollection } from "$lib/db-collectons/category-collection";
 	import { deleteCategoryAction } from "$lib/remote/category.remote.js";
 	import type { NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "@lucide/svelte/icons/pencil";
