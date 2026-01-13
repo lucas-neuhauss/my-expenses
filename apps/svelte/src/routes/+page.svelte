@@ -41,9 +41,9 @@
 		open: false,
 		transaction: null,
 	});
-	let deleteDialog = $state<{ open: boolean; transaction: DashboardTransaction | null }>({
+	let deleteDialog = $state<{ open: boolean; transactionId: number | null }>({
 		open: false,
-		transaction: null,
+		transactionId: null,
 	});
 
 	const currentYear = new Date().getFullYear();
@@ -56,17 +56,21 @@
 	const month = useQueryState("month", parseAsInteger.withDefault(currentMonth));
 	const year = useQueryState("year", parseAsInteger.withDefault(currentYear));
 
-	const transactionsQuery = useLiveQuery((q) =>
+	const { allTransactions, filteredTransactions } = $derived(
+		buildTransactionsQuery({
+			paid: paid.current,
+			wallet: wallet.current,
+			month: month.current,
+			year: year.current,
+			category: category.current,
+		}),
+	);
+	const allTransactionsQuery = useLiveQuery((q) =>
+		q.from({ transaction: allTransactions }),
+	);
+	const filteredTransactionsQuery = useLiveQuery((q) =>
 		q
-			.from({
-				transaction: buildTransactionsQuery({
-					paid: paid.current,
-					wallet: wallet.current,
-					month: month.current,
-					year: year.current,
-					category: category.current,
-				}),
-			})
+			.from({ transaction: filteredTransactions })
 			.orderBy(({ transaction }) => transaction.date, "desc")
 			.orderBy(({ transaction }) => transaction.id, "desc"),
 	);
@@ -89,7 +93,7 @@
 			walletsQuery.data.reduce((acc, w) => acc + w.initialBalance, 0),
 	);
 	let { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } = $derived(
-		calculateDashboardData(transactionsQuery.data, wallet.current, category.current),
+		calculateDashboardData(allTransactionsQuery.data, wallet.current, category.current),
 	);
 	let nestedCategories = $derived(nestCategories(categoriesQuery.data));
 
@@ -184,8 +188,8 @@
 	title="Are you sure?"
 	description="Are you sure you want to delete this transaction?"
 	remoteCommand={() => {
-		if (!deleteDialog.transaction) return;
-		const tx = transactionCollection.delete(deleteDialog.transaction.id);
+		if (!deleteDialog.transactionId) return;
+		const tx = transactionCollection.delete(deleteDialog.transactionId);
 		tx.isPersisted.promise.then(() => (deleteDialog.open = false));
 	}}
 />
@@ -322,7 +326,7 @@
 
 	<DashboardCharts {charts} />
 
-	{#if transactionsQuery.isReady && transactionsQuery.data.length === 0}
+	{#if filteredTransactionsQuery.isReady && filteredTransactionsQuery.data.length === 0}
 		<div class="mt-10 flex w-full flex-col items-center justify-center">
 			<SavingsIllustration width={200} height="100%" />
 			<p class="mt-6">You don't have transactions</p>
@@ -342,7 +346,7 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each transactionsQuery.data as t (t.id)}
+				{#each filteredTransactionsQuery.data as t (t.id)}
 					<Table.Row>
 						<Table.Cell>
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
@@ -385,7 +389,7 @@
 								aria-label="delete transaction"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
-								onclick={() => (deleteDialog = { open: true, transaction: t })}
+								onclick={() => (deleteDialog = { open: true, transactionId: t.id })}
 							>
 								<Trash />
 							</Button>

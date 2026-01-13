@@ -1,7 +1,13 @@
 import { upsertTransactionData } from "$lib/server/data/transaction";
 import { NodeSdkLive } from "$lib/server/observability";
-import { fail } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { Effect } from "effect";
+
+export const load = async ({ locals }) => {
+	if (!locals.user) {
+		return redirect(302, "/login");
+	}
+};
 
 export const actions = {
 	"upsert-transaction": async (event) => {

@@ -3,4 +3,6 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+  - msgpackr-extract
+  - protobufjs
   - sharp

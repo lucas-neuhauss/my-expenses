@@ -87,7 +87,7 @@
 		"@supabase/ssr": "^0.7.0",
 		"@supabase/supabase-js": "^2.89.0",
 		"@tanstack/db": "^0.5.19",
-		"@tanstack/query-db-collection": "^1.0.12",
+		"@tanstack/query-db-collection": "^1.0.15",
 		"@tanstack/svelte-db": "^0.1.62",
 		"@tanstack/svelte-query": "^6.0.14",
 		"@tanstack/svelte-query-devtools": "^6.0.3",

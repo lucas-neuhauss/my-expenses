@@ -7,7 +7,7 @@ export function calculateDashboardData(
 	transactions: Array<
 		Pick<Transaction, "id" | "type" | "cents" | "transferenceId" | "paid" | "date"> & {
 			category: { id: number; name: string };
-			categoryParent: { id: number; name: string } | null;
+			categoryParent: { id?: number | undefined; name?: string | undefined };
 			wallet: { id: number; name: string };
 		}
 	>,
@@ -22,14 +22,14 @@ export function calculateDashboardData(
 	let incomePieChartData: PieChartDataItem[] = [];
 
 	transactions.forEach((t) => {
-		const category = t.categoryParent ?? t.category;
+		const category = t.categoryParent.id ? t.categoryParent : t.category;
 		const filteredIn = (() => {
 			if (walletFilter !== -1 && walletFilter !== t.wallet.id) {
 				return false;
 			}
 			if (
 				categoryFilter !== -1 &&
-				![t.category.id, t.categoryParent?.id].includes(categoryFilter)
+				![t.category.id, t.categoryParent.id].includes(categoryFilter)
 			) {
 				return false;
 			}

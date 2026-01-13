@@ -19,7 +19,7 @@ export function buildTransactionsQuery(o: {
 	const nextMonthStr = String(nextMonth).padStart(2, "0");
 	const endDate = `${nextYear}-${nextMonthStr}-01`;
 
-	let query = new Query()
+	const allTransactions = new Query()
 		.from({ transaction: transactionCollection })
 		.innerJoin({ wallet: walletCollection }, ({ transaction, wallet }) =>
 			eq(transaction.walletId, wallet.id),
@@ -47,29 +47,38 @@ export function buildTransactionsQuery(o: {
 				name: category.name,
 				icon: category.icon,
 			},
-			categoryParent: categoryParent
-				? {
-						id: categoryParent.id,
-						name: categoryParent.name,
-					}
-				: null,
+			categoryParent: {
+				id: categoryParent?.id,
+				name: categoryParent?.name,
+			},
+			transferenceFrom: transaction.transferenceFrom,
+			transferenceTo: transaction.transferenceTo,
 		}))
 		.where(({ transaction }) => gte(transaction.date, startDate))
 		.where(({ transaction }) => lt(transaction.date, endDate));
 
+	let filteredTransactions = new Query().from({ transaction: allTransactions });
+
 	if (typeof o.paid === "boolean") {
-		query = query.where(({ transaction }) => eq(transaction.paid, o.paid));
+		filteredTransactions = filteredTransactions.where(({ transaction }) =>
+			eq(transaction.paid, o.paid),
+		);
 	}
 	if (o.wallet > 0) {
-		query = query.where(({ transaction }) => eq(transaction.walletId, o.wallet));
+		filteredTransactions = filteredTransactions.where(({ transaction }) =>
+			eq(transaction.wallet.id, o.wallet),
+		);
 	}
 	if (o.category > 0) {
-		query = query.where(({ transaction, categoryParent }) =>
-			or(eq(transaction.categoryId, o.category), eq(categoryParent?.id, o.category)),
+		filteredTransactions = filteredTransactions.where(({ transaction }) =>
+			or(
+				eq(transaction.category.id, o.category),
+				eq(transaction.categoryParent?.id, o.category),
+			),
 		);
 	}
 
-	return query;
+	return { allTransactions, filteredTransactions };
 }
 
 export function buildBalanceQuery(o: { month: number; year: number }) {

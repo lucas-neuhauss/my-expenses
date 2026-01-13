@@ -9,12 +9,24 @@ const TransactionSchema = z.object({
 	id: z.number(),
 	cents: z.number(),
 	type: z.enum(["income", "expense"]),
-	description: z.number().nullable(),
+	description: z.string().nullable(),
 	categoryId: z.number(),
 	walletId: z.number(),
-	transferenceId: z.string(),
+	transferenceId: z.string().nullable(),
 	paid: z.boolean(),
 	date: z.string(),
+	transferenceFrom: z
+		.object({
+			id: z.number(),
+			walletId: z.number(),
+		})
+		.nullable(),
+	transferenceTo: z
+		.object({
+			id: z.number(),
+			walletId: z.number(),
+		})
+		.nullable(),
 });
 
 export const transactionCollection = createCollection(
