@@ -10,6 +10,7 @@
 	import * as Table from "$lib/components/ui/table";
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
+	import { walletCollection } from "$lib/db-collectons/wallet-collection";
 	import { deleteTransactionAction } from "$lib/remote/transaction.remote.js";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
@@ -18,12 +19,15 @@
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
-	import { toast } from "svelte-sonner";
+	import { isNull, useLiveQuery } from "@tanstack/svelte-db";
 	import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs-svelte";
-	import { useLiveQuery } from "@tanstack/svelte-db";
-	import { buildTransactionsQuery } from "./lib";
+	import { toast } from "svelte-sonner";
+	import { buildBalanceQuery, buildTransactionsQuery } from "./lib";
+	import { categoryCollection } from "$lib/db-collectons/category-collection";
+	import { nestCategories } from "$lib/utils/category";
+	import { calculateDashboardData } from "$lib/utils/transaction";
 
-	let { data, form } = $props();
+	let { form } = $props();
 
 	$effect(() => {
 		if (typeof form?.toast === "string") {
@@ -53,7 +57,7 @@
 	const month = useQueryState("month", parseAsInteger.withDefault(currentMonth));
 	const year = useQueryState("year", parseAsInteger.withDefault(currentYear));
 
-	const query = useLiveQuery((q) =>
+	const transactionsQuery = useLiveQuery((q) =>
 		q
 			.from({
 				transaction: buildTransactionsQuery({
@@ -67,6 +71,23 @@
 			.orderBy(({ transaction }) => transaction.date, "desc")
 			.orderBy(({ transaction }) => transaction.id, "desc"),
 	);
+	const balanceQuery = useLiveQuery((q) =>
+		q.from({ balance: buildBalanceQuery({ month: month.current, year: year.current }) }),
+	);
+	const categoriesQuery = useLiveQuery((q) =>
+		q
+			.from({ c: categoryCollection })
+			.where(({ c }) => isNull(c.unique))
+			.orderBy(({ c }) => c.parentId, "desc")
+			.orderBy(({ c }) => c.name, "asc"),
+	);
+	const walletsQuery = useLiveQuery((q) => q.from({ wallet: walletCollection }));
+
+	let balance = $derived(balanceQuery.data[0]?.sum ?? 0);
+	let { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } = $derived(
+		calculateDashboardData(transactionsQuery.data, wallet.current, category.current),
+	);
+	let nestedCategories = $derived(nestCategories(categoriesQuery.data));
 
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
@@ -74,8 +95,8 @@
 		value: new Date().getFullYear() - i + 25,
 	}));
 
-	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...data.wallets]);
-	let selectedWallet = $derived(walletOptions.find((w) => w.id === wallet.current)!);
+	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...walletsQuery.data]);
+	let selectedWallet = $derived(walletOptions.find((w) => w.id === wallet.current));
 	let selectedMonth = $derived(monthOptions.find((mo) => mo.value === month.current)!);
 	let selectedYear = $derived(yearOptions.find((y) => y.value === year.current)!);
 
@@ -144,7 +165,7 @@
 </svelte:head>
 
 {#snippet MoneyCard(label: string, value: number)}
-	<Card.Root class="w-[200px] gap-0 p-0">
+	<Card.Root class="w-50 gap-0 p-0">
 		<Card.Header class="p-5 pb-0">
 			<Card.Title>{label}</Card.Title>
 		</Card.Header>
@@ -178,21 +199,21 @@
 
 <div class="flex flex-col items-start gap-y-3 px-4 pb-10">
 	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
-		{@render MoneyCard("Month-end balance", data.balance)}
-		{@render MoneyCard("Month Income", data.totalIncome)}
-		{@render MoneyCard("Month Expense", data.totalExpense)}
+		{@render MoneyCard("Month-end balance", balance)}
+		{@render MoneyCard("Month Income", totalIncome)}
+		{@render MoneyCard("Month Expense", totalExpense)}
 
 		<Card.Root class="w-50 gap-0 p-0">
 			<Card.Content
 				class="flex h-full flex-col items-start justify-center gap-1 px-5 py-2 text-sm"
 			>
 				<p>
-					Out: {formatCurrency(data.filteredExpense)}
+					Out: {formatCurrency(filteredExpense)}
 				</p>
 				<p>
-					In: {formatCurrency(data.filteredIncome)}
+					In: {formatCurrency(filteredIncome)}
 				</p>
-				<p>Total: {formatCurrency(data.filteredIncome + data.filteredExpense)}</p>
+				<p>Total: {formatCurrency(filteredIncome + filteredExpense)}</p>
 			</Card.Content>
 		</Card.Root>
 	</div>
@@ -204,8 +225,8 @@
 		<UpsertTransaction
 			bind:open={upsertDialog.open}
 			bind:transaction={upsertDialog.transaction}
-			wallets={data.wallets}
-			categories={data.categories}
+			wallets={walletsQuery.data}
+			categories={nestedCategories}
 			defaultWallet={wallet.current}
 			defaultCategory={category.current}
 		/>
@@ -217,8 +238,8 @@
 			onValueChange={onWalletChange}
 			allowDeselect={false}
 		>
-			<Select.Trigger title="Select wallet" class="col-span-3 w-[170px]">
-				{selectedWallet.name}
+			<Select.Trigger title="Select wallet" class="col-span-3 w-42.5">
+				{selectedWallet ? selectedWallet.name : "..."}
 			</Select.Trigger>
 			<Select.Content>
 				{#each walletOptions as w (w.id)}
@@ -228,7 +249,7 @@
 		</Select.Root>
 
 		<CategoriesCombobox
-			categories={data.categories}
+			categories={nestedCategories}
 			value={category.current}
 			onChange={onCategoryChanged}
 			includeAllCategoriesOption
@@ -241,7 +262,7 @@
 			value={String(paid.current)}
 			onValueChange={onStatusChange}
 		>
-			<Select.Trigger title="Select paid" class="col-span-3 w-[170px]">
+			<Select.Trigger title="Select paid" class="col-span-3 w-42.5">
 				{paid.current === null ? "All Status" : paid.current ? "Paid" : "Not Paid"}
 			</Select.Trigger>
 			<Select.Content>
@@ -270,8 +291,7 @@
 				onValueChange={(m) => onDateChanged(Number(m), year.current)}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3 w-[115px]">{selectedMonth.label}</Select.Trigger
-				>
+				<Select.Trigger class="col-span-3 w-28.5">{selectedMonth.label}</Select.Trigger>
 				<Select.Content>
 					{#each monthOptions as option (option.value)}
 						<Select.Item value={String(option.value)}>{option.label}</Select.Item>
@@ -282,11 +302,11 @@
 			<Select.Root
 				type="single"
 				name="year"
-				value={String(data.year)}
-				onValueChange={(y) => onDateChanged(data.month, Number(y))}
+				value={String(year.current)}
+				onValueChange={(y) => onDateChanged(month.current, Number(y))}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3 w-[115px]">{selectedYear.label}</Select.Trigger>
+				<Select.Trigger class="col-span-3 w-28.5">{selectedYear.label}</Select.Trigger>
 				<Select.Content>
 					{#each yearOptions as option (option.value)}
 						<Select.Item value={String(option.value)}>{option.label}</Select.Item>
@@ -300,16 +320,16 @@
 				class="shrink-0"
 				title="Go to the next month"
 				aria-label="Go to the next month"
-				onclick={() => onDateChanged(data.month + 1, data.year)}
+				onclick={() => onDateChanged(month.current + 1, year.current)}
 			>
 				<ChevronRight />
 			</Button>
 		</div>
 	</div>
 
-	<DashboardCharts charts={data.charts} />
+	<DashboardCharts {charts} />
 
-	{#if query.isReady && query.data.length === 0}
+	{#if transactionsQuery.isReady && transactionsQuery.data.length === 0}
 		<div class="mt-10 flex w-full flex-col items-center justify-center">
 			<SavingsIllustration width={200} height="100%" />
 			<p class="mt-6">You don't have transactions</p>
@@ -319,7 +339,7 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[107px]">Date</Table.Head>
+					<Table.Head class="w-26.5">Date</Table.Head>
 					<Table.Head>Description</Table.Head>
 					<Table.Head>Category</Table.Head>
 					<Table.Head>Wallet</Table.Head>
@@ -329,7 +349,7 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each query.data as t (t.id)}
+				{#each transactionsQuery.data as t (t.id)}
 					<Table.Row>
 						<Table.Cell>
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(

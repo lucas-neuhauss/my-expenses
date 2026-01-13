@@ -1,7 +1,7 @@
 import { categoryCollection } from "$lib/db-collectons/category-collection";
 import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 import { walletCollection } from "$lib/db-collectons/wallet-collection";
-import { eq, gte, lt, or, Query } from "@tanstack/db";
+import { and, eq, gte, lt, or, Query, sum } from "@tanstack/db";
 
 export function buildTransactionsQuery(o: {
 	paid: boolean | null;
@@ -47,10 +47,12 @@ export function buildTransactionsQuery(o: {
 				name: category.name,
 				icon: category.icon,
 			},
-			categoryParent: {
-				id: categoryParent?.id,
-				name: categoryParent?.name,
-			},
+			categoryParent: categoryParent
+				? {
+						id: categoryParent?.id,
+						name: categoryParent?.name,
+					}
+				: null,
 		}))
 		.where(({ transaction }) => gte(transaction.date, startDate))
 		.where(({ transaction }) => lt(transaction.date, endDate));
@@ -66,6 +68,23 @@ export function buildTransactionsQuery(o: {
 			or(eq(transaction.categoryId, o.category), eq(categoryParent?.id, o.category)),
 		);
 	}
+
+	return query;
+}
+
+export function buildBalanceQuery(o: { month: number; year: number }) {
+	// Calculate end date (first day of next month)
+	const nextMonth = o.month === 12 ? 1 : o.month + 1;
+	const nextYear = o.month === 12 ? o.year + 1 : o.year;
+	const nextMonthStr = String(nextMonth).padStart(2, "0");
+	const endDate = `${nextYear}-${nextMonthStr}-01`;
+
+	let query = new Query()
+		.from({ transaction: transactionCollection })
+		.select(({ transaction }) => ({ sum: sum(transaction.cents) }))
+		.where(({ transaction }) =>
+			and(lt(transaction.date, endDate), eq(transaction.paid, true)),
+		);
 
 	return query;
 }

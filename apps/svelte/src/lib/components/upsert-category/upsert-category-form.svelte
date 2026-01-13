@@ -1,15 +1,16 @@
 <script lang="ts">
-	import * as Dialog from "$lib/components/ui/dialog";
-	import { Label } from "$lib/components/ui/label";
-	import { Input } from "$lib/components/ui/input";
-	import { Button } from "$lib/components/ui/button";
-	import Trash from "@lucide/svelte/icons/trash";
 	import { CATEGORY_ICON_LIST } from "$lib/categories";
-	import IconsList from "../icons-list.svelte";
-	import type { NestedCategory } from "$lib/utils/category";
-	import { tick } from "svelte";
+	import { Button } from "$lib/components/ui/button";
+	import * as Dialog from "$lib/components/ui/dialog";
+	import { Input } from "$lib/components/ui/input";
+	import { Label } from "$lib/components/ui/label";
+	import { categoryCollection } from "$lib/db-collectons/category-collection";
 	import { upsertCategoryAction } from "$lib/remote/category.remote";
+	import type { NestedCategory } from "$lib/utils/category";
+	import Trash from "@lucide/svelte/icons/trash";
+	import { tick } from "svelte";
 	import { toast } from "svelte-sonner";
+	import IconsList from "../icons-list.svelte";
 
 	let {
 		category,
@@ -78,6 +79,7 @@
 	{...upsertCategoryAction.for(type).enhance(async ({ submit }) => {
 		try {
 			await submit();
+			categoryCollection.utils.refetch();
 			const res = upsertCategoryAction.for(type).result;
 			if (!res) throw Error();
 			if (res.ok) {

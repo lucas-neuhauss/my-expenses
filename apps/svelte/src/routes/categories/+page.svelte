@@ -1,19 +1,16 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { UpsertCategory } from "$lib/components/upsert-category";
 	import { categoryCollection } from "$lib/db-collectons/category-collection";
-	import { deleteCategoryAction } from "$lib/remote/category.remote.js";
-	import type { NestedCategory } from "$lib/utils/category.js";
+	import { nestCategories, type NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { useLiveQuery } from "@tanstack/svelte-db";
-	import { eq } from "@tanstack/db";
+	import { eq, isNull, and } from "@tanstack/db";
 	import { useQueryState, parseAsStringLiteral } from "nuqs-svelte";
-	import { toast } from "svelte-sonner";
 
 	const type = useQueryState(
 		"type",
@@ -23,24 +20,12 @@
 	const query = useLiveQuery((q) =>
 		q
 			.from({ category: categoryCollection })
-			.where(({ category }) => eq(category.type, type.current))
+			.where(({ category }) =>
+				and(eq(category.type, type.current), isNull(category.unique)),
+			)
 			.orderBy(({ category }) => category.name, "asc"),
 	);
-
-	// TODO: Move this to a utility function
-	let nestedCategories = $derived(
-		query.data.reduce<NestedCategory[]>((acc, category) => {
-			if (category.parentId === null) {
-				acc.push({ ...category, children: [] });
-			} else {
-				const parent = acc.find((c) => c.id === category.parentId);
-				if (parent) {
-					parent.children.push(category);
-				}
-			}
-			return acc;
-		}, []),
-	);
+	let nestedCategories = $derived(nestCategories(query.data));
 
 	let upsertDialog = $state<{
 		open: boolean;
@@ -76,18 +61,10 @@
 		: ""}
 	remoteCommand={async () => {
 		if (!deleteDialog.category) return;
-		try {
-			const res = await deleteCategoryAction(deleteDialog.category.id);
-			if (res.ok) {
-				toast.success(res.message);
-				deleteDialog.open = false;
-				invalidateAll();
-			} else {
-				toast.error(res.message);
-			}
-		} catch {
-			toast.error("Something went wrong. Please try again later.");
-		}
+		const tx = categoryCollection.delete(deleteDialog.category.id);
+		tx.isPersisted.promise.then(() => {
+			deleteDialog.open = false;
+		});
 	}}
 />
 

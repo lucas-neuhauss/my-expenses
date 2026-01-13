@@ -1,6 +1,8 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import { deleteCategoryAction } from "$lib/remote/category.remote.js";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
+import { toast } from "svelte-sonner";
 import * as z from "zod";
 
 const CategorySchema = z.object({
@@ -48,10 +50,18 @@ export const categoryCollection = createCollection(
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];
-			// await orpc.todo.deleteTodo.call({
-			// 	id: original.id,
-			// });
-			categoryCollection.utils.writeDelete(original.id);
+
+			try {
+				const res = await deleteCategoryAction(original.id);
+				if (res.ok) {
+					categoryCollection.utils.writeDelete(original.id);
+					toast.success(res.message);
+				} else {
+					toast.error(res.message);
+				}
+			} catch {
+				toast.error("Something went wrong. Please try again later.");
+			}
 			return { refetch: false };
 		},
 	}),

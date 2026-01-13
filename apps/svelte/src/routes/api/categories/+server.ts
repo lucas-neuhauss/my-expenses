@@ -11,10 +11,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		return error(401);
 	}
 
-	const getCategoriesData = Effect.fn("[GET] api/categories")(function* (
-		userId: UserId,
-		type: "income" | "expense" | null = null,
-	) {
+	const getCategoriesData = Effect.fn("[GET] api/categories")(function* (userId: UserId) {
 		const categories = yield* exec(
 			db
 				.select({
@@ -23,6 +20,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 					type: table.category.type,
 					parentId: table.category.parentId,
 					icon: table.category.icon,
+					unique: table.category.unique,
 				})
 				.from(table.category)
 				.where(eq(table.category.userId, userId))
@@ -32,6 +30,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 		return categories;
 	});
 
-	const categories = await Effect.runPromise(getCategoriesData(locals.user.id, null));
+	const categories = await Effect.runPromise(getCategoriesData(locals.user.id));
 	return json(categories);
 };
