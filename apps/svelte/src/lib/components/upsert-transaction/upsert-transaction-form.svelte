@@ -12,6 +12,7 @@
 	import DatePicker from "../date-picker.svelte";
 	import ExpenseIncomeSpecificInputs from "./expense-income-specific-inputs.svelte";
 	import TransferenceSpecificInputs from "./transference-specific-inputs.svelte";
+	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 
 	let {
 		transaction,
@@ -58,6 +59,7 @@
 	use:enhance={() =>
 		({ result, update }) => {
 			if (result.type === "success") {
+				transactionCollection.utils.refetch();
 				const shouldContinue = result.data?.shouldContinue === true;
 				update({ reset: !shouldContinue });
 				onSuccess(shouldContinue);

@@ -49,8 +49,8 @@ export function buildTransactionsQuery(o: {
 			},
 			categoryParent: categoryParent
 				? {
-						id: categoryParent?.id,
-						name: categoryParent?.name,
+						id: categoryParent.id,
+						name: categoryParent.name,
 					}
 				: null,
 		}))
@@ -79,7 +79,7 @@ export function buildBalanceQuery(o: { month: number; year: number }) {
 	const nextMonthStr = String(nextMonth).padStart(2, "0");
 	const endDate = `${nextYear}-${nextMonthStr}-01`;
 
-	let query = new Query()
+	const query = new Query()
 		.from({ transaction: transactionCollection })
 		.select(({ transaction }) => ({ sum: sum(transaction.cents) }))
 		.where(({ transaction }) =>

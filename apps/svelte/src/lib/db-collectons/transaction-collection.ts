@@ -1,13 +1,8 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
-import {
-	and,
-	createCollection,
-	eq,
-	isNull,
-	liveQueryCollectionOptions,
-	not,
-} from "@tanstack/db";
+import { deleteTransactionAction } from "$lib/remote/transaction.remote";
+import { createCollection } from "@tanstack/db";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
+import { toast } from "svelte-sonner";
 import * as z from "zod";
 
 const TransactionSchema = z.object({
@@ -58,29 +53,22 @@ export const transactionCollection = createCollection(
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];
-			// await orpc.todo.deleteTodo.call({
-			// 	id: original.id,
-			// });
-			transactionCollection.utils.writeDelete(original.id);
-			return { refetch: false };
-		},
-	}),
-);
 
-const transferencesTo = createCollection(
-	liveQueryCollectionOptions({
-		query: (q) =>
-			q
-				.from({ transferenceTo: transactionCollection })
-				.where(({ transferenceTo }) =>
-					and(
-						not(isNull(transferenceTo.transferenceId)),
-						eq(transferenceTo.type, "expense"),
-					),
-				)
-				.select(({ transferenceTo }) => ({
-					id: transferenceTo.id,
-					walletId: transferenceTo.walletId,
-				})),
+			try {
+				const res = await deleteTransactionAction(original.id);
+				if (!res) throw Error();
+				if (res.ok) {
+					toast.success(res.toast);
+					transactionCollection.utils.writeDelete(original.id);
+					return { refetch: false };
+				} else {
+					toast.error(res.toast);
+					throw Error();
+				}
+			} catch {
+				toast.error("Something went wrong. Please try again later.");
+				throw Error();
+			}
+		},
 	}),
 );

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
@@ -10,10 +9,12 @@
 	import * as Table from "$lib/components/ui/table";
 	import { UpsertTransaction } from "$lib/components/upsert-transaction";
 	import { formatCurrency } from "$lib/currency";
+	import { categoryCollection } from "$lib/db-collectons/category-collection";
 	import { walletCollection } from "$lib/db-collectons/wallet-collection";
-	import { deleteTransactionAction } from "$lib/remote/transaction.remote.js";
 	import type { DashboardTransaction } from "$lib/server/data/transaction";
+	import { nestCategories } from "$lib/utils/category";
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
+	import { calculateDashboardData } from "$lib/utils/transaction";
 	import { DateFormatter } from "@internationalized/date";
 	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
@@ -23,9 +24,7 @@
 	import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs-svelte";
 	import { toast } from "svelte-sonner";
 	import { buildBalanceQuery, buildTransactionsQuery } from "./lib";
-	import { categoryCollection } from "$lib/db-collectons/category-collection";
-	import { nestCategories } from "$lib/utils/category";
-	import { calculateDashboardData } from "$lib/utils/transaction";
+	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 
 	let { form } = $props();
 
@@ -72,7 +71,9 @@
 			.orderBy(({ transaction }) => transaction.id, "desc"),
 	);
 	const balanceQuery = useLiveQuery((q) =>
-		q.from({ balance: buildBalanceQuery({ month: month.current, year: year.current }) }),
+		q
+			.from({ balance: buildBalanceQuery({ month: month.current, year: year.current }) })
+			.findOne(),
 	);
 	const categoriesQuery = useLiveQuery((q) =>
 		q
@@ -83,7 +84,10 @@
 	);
 	const walletsQuery = useLiveQuery((q) => q.from({ wallet: walletCollection }));
 
-	let balance = $derived(balanceQuery.data[0]?.sum ?? 0);
+	let balance = $derived(
+		(balanceQuery.data?.sum ?? 0) +
+			walletsQuery.data.reduce((acc, w) => acc + w.initialBalance, 0),
+	);
 	let { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } = $derived(
 		calculateDashboardData(transactionsQuery.data, wallet.current, category.current),
 	);
@@ -179,21 +183,10 @@
 	open={deleteDialog.open}
 	title="Are you sure?"
 	description="Are you sure you want to delete this transaction?"
-	remoteCommand={async () => {
+	remoteCommand={() => {
 		if (!deleteDialog.transaction) return;
-		try {
-			const res = await deleteTransactionAction(deleteDialog.transaction.id);
-			if (!res) throw Error();
-			if (res.ok) {
-				toast.success(res.toast);
-				deleteDialog.open = false;
-				invalidateAll();
-			} else {
-				toast.error(res.toast);
-			}
-		} catch {
-			toast.error("Something went wrong. Please try again later.");
-		}
+		const tx = transactionCollection.delete(deleteDialog.transaction.id);
+		tx.isPersisted.promise.then(() => (deleteDialog.open = false));
 	}}
 />
 
