@@ -153,6 +153,15 @@
 		}
 	};
 
+	const handleChartCategoryClick = (categoryId: number) => {
+		// Toggle category filter: if already selected, clear it; otherwise set it
+		if (category.current === categoryId) {
+			category.set(() => null);
+		} else {
+			category.set(() => categoryId);
+		}
+	};
+
 	const handleClickCreate = () => {
 		upsertDialog = {
 			open: true,
@@ -324,7 +333,7 @@
 		</div>
 	</div>
 
-	<DashboardCharts {charts} />
+	<DashboardCharts {charts} onCategoryClick={handleChartCategoryClick} />
 
 	{#if filteredTransactionsQuery.isReady && filteredTransactionsQuery.data.length === 0}
 		<div class="mt-10 flex w-full flex-col items-center justify-center">

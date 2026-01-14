@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import { page } from "$app/state";
 	import { getOptions, type PieChartDataItem } from "$lib/utils/charts";
 	import { PieChart } from "echarts/charts";
 	import { TitleComponent, TooltipComponent } from "echarts/components";
@@ -12,11 +10,13 @@
 
 	let {
 		charts,
+		onCategoryClick,
 	}: {
 		charts: {
 			expensePieChartData: PieChartDataItem[];
 			incomePieChartData: PieChartDataItem[];
 		};
+		onCategoryClick: (categoryId: number) => void;
 	} = $props();
 
 	// Register the required components
@@ -29,15 +29,9 @@
 	const onClickCategory = (params: { data: unknown }) => {
 		const categoryId = z
 			.object({ id: z.number().int() })
-			.transform((v) => String(v.id))
+			.transform((v) => v.id)
 			.parse(params.data);
-		const url = new URL(page.url.href);
-		if (url.searchParams.get("category") === categoryId) {
-			url.searchParams.delete("category");
-		} else {
-			url.searchParams.set("category", categoryId);
-		}
-		goto(url.href);
+		onCategoryClick(categoryId);
 	};
 
 	$effect(() => {
