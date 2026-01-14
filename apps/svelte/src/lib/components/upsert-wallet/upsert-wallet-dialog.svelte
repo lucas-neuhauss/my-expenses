@@ -3,8 +3,8 @@
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
+	import { walletCollection } from "$lib/db-collectons/wallet-collection";
 	import { upsertWalletAction } from "$lib/remote/wallet.remote";
-	import type { LoadWallet } from "$lib/server/data/wallet";
 	import { toast } from "svelte-sonner";
 
 	let {
@@ -12,7 +12,7 @@
 		wallet,
 	}: {
 		open: boolean;
-		wallet: LoadWallet | null;
+		wallet: { id: number; name: string; initialBalance: number } | null;
 	} = $props();
 
 	$effect(() => {
@@ -21,7 +21,7 @@
 				upsertWalletAction.fields.set({
 					id: wallet.id.toString(),
 					name: wallet.name,
-					initialBalance: wallet.initialBalance.toString(),
+					initialBalance: (wallet.initialBalance / 100).toString(),
 				});
 			} else {
 				upsertWalletAction.fields.set({
@@ -37,7 +37,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-[425px]">
+	<Dialog.Content class="sm:max-w-106">
 		<Dialog.Header>
 			<Dialog.Title>
 				{isUpdate ? "Update Wallet" : "Create Wallet"}
@@ -52,6 +52,7 @@
 					if (!res) throw Error();
 
 					if (res.success) {
+						walletCollection.utils.refetch();
 						form.reset();
 						toast.success(res.message);
 						open = false;

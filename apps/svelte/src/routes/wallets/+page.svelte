@@ -5,16 +5,28 @@
 	import * as Card from "$lib/components/ui/card";
 	import UpsertWalletDialog from "$lib/components/upsert-wallet/upsert-wallet-dialog.svelte";
 	import { formatCurrency } from "$lib/currency";
-	import { deleteWalletAction } from "$lib/remote/wallet.remote";
+	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
+	import { walletCollection } from "$lib/db-collectons/wallet-collection";
+	import { eq, sum } from "@tanstack/db";
+	import { useLiveQuery } from "@tanstack/svelte-db";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
-	import { toast } from "svelte-sonner";
 
-	let { data } = $props();
-	let walletToDelete = $state<(typeof data)["wallets"][number] | null>(null);
+	const balanceQuery = useLiveQuery((q) =>
+		q
+			.from({ t: transactionCollection })
+			.select(({ t }) => ({ walletId: t.walletId, sum: sum(t.cents) }))
+			.where(({ t }) => eq(t.paid, true))
+			.groupBy(({ t }) => t.walletId),
+	);
+	const walletsQuery = useLiveQuery((q) =>
+		q.from({ w: walletCollection }).orderBy(({ w }) => w.name, "asc"),
+	);
+
+	let walletToDelete = $state<number | null>(null);
 	let upsertWalletDialog = $state({
 		open: false,
-		wallet: null as (typeof data)["wallets"][number] | null,
+		wallet: null as { id: number; name: string; initialBalance: number } | null,
 	});
 </script>
 
@@ -48,26 +60,21 @@
 		description="Are you sure you want to delete this wallet?"
 		remoteCommand={async () => {
 			if (!walletToDelete) return;
-			try {
-				const res = await deleteWalletAction(walletToDelete.id);
-				if (!res) throw Error();
-				toast[res.success ? "success" : "error"](res.message);
-				walletToDelete = null;
-			} catch {
-				toast.error("Something went wrong. Please try again later.");
-			}
+			const tx = walletCollection.delete(walletToDelete);
+			tx.isPersisted.promise.then(() => (walletToDelete = null));
 		}}
 	/>
 
 	<div
 		class="grid grid-cols-1 gap-2 pb-10 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
 	>
-		{#each data.wallets as w (w.id)}
+		{#each walletsQuery.data as w (w.id)}
+			{@const sum = balanceQuery.data.find((b) => b.walletId === w.id)?.sum ?? 0}
 			<Card.Root class="py-6">
 				<Card.Content class="flex items-center justify-between">
 					<div>
 						<h3 class="mb-3 font-bold">{w.name}</h3>
-						<p>{formatCurrency(w.balance)}</p>
+						<p>{formatCurrency(w.initialBalance + (sum ?? 0))}</p>
 					</div>
 					<div class="flex items-center gap-1 lg:gap-2">
 						<Button
@@ -79,7 +86,7 @@
 							<Pencil />
 						</Button>
 						<Button
-							onclick={() => (walletToDelete = w)}
+							onclick={() => (walletToDelete = w.id)}
 							title="Delete wallet"
 							aria-label="delete wallet"
 							variant="ghost"

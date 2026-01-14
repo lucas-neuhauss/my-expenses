@@ -1,6 +1,8 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import { deleteWalletAction } from "$lib/remote/wallet.remote";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
+import { toast } from "svelte-sonner";
 import * as z from "zod";
 
 const WalletSchema = z.object({
@@ -45,6 +47,19 @@ export const walletCollection = createCollection(
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];
+
+			try {
+				const res = await deleteWalletAction(original.id);
+				if (!res) throw Error();
+				if (res.success) {
+					walletCollection.utils.refetch();
+				}
+				toast[res.success ? "success" : "error"](res.message);
+				// walletToDelete = null;
+			} catch {
+				toast.error("Something went wrong. Please try again later.");
+			}
+
 			// await orpc.todo.deleteTodo.call({
 			// 	id: original.id,
 			// });
