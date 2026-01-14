@@ -57,11 +57,10 @@
 	method="post"
 	action="?/upsert-transaction"
 	use:enhance={() =>
-		({ result, update }) => {
+		({ result }) => {
 			if (result.type === "success") {
 				transactionCollection.utils.refetch();
 				const shouldContinue = result.data?.shouldContinue === true;
-				update({ reset: !shouldContinue });
 				onSuccess(shouldContinue);
 
 				if (shouldContinue) {
