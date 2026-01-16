@@ -11,6 +11,38 @@ import * as z from "zod";
 
 const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
 
+/**
+ * Split a total amount in cents as equally as possible into N parts.
+ * Distributes remainder among first parts to ensure sum equals total.
+ */
+function splitEqually(totalCents: number, count: number): number[] {
+	const base = Math.floor(totalCents / count);
+	const remainder = totalCents % count;
+	return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+/**
+ * Add N months to a date string (YYYY-MM-DD).
+ * Clamps to last day of month if original day doesn't exist (Jan 31 + 1mo → Feb 28/29).
+ */
+function addMonths(dateStr: string, months: number): string {
+	const [year, month, day] = dateStr.split("-").map(Number);
+	let newYear = year;
+	let newMonth = month + months;
+
+	// Handle year overflow
+	while (newMonth > 12) {
+		newMonth -= 12;
+		newYear++;
+	}
+
+	// Get last day of target month
+	const lastDay = new Date(newYear, newMonth, 0).getDate();
+	const clampedDay = Math.min(day, lastDay);
+
+	return `${newYear}-${String(newMonth).padStart(2, "0")}-${String(clampedDay).padStart(2, "0")}`;
+}
+
 export const upsertTransactionData = Effect.fn("data/transaction/upsertTransactionData")(
 	function* ({
 		userId,
@@ -36,7 +68,14 @@ export const upsertTransactionData = Effect.fn("data/transaction/upsertTransacti
 		const formSchema = z
 			.discriminatedUnion("type", [
 				baseSchema.extend({
-					type: z.enum(["expense", "income"]),
+					type: z.literal("expense"),
+					category: z.coerce.number().int().positive(),
+					installmentsEnabled: BooleanStringSchema.optional().default(false),
+					installmentsCount: z.coerce.number().int().min(2).max(24).optional(),
+					installmentsCents: z.string().optional(),
+				}),
+				baseSchema.extend({
+					type: z.literal("income"),
 					category: z.coerce.number().int().positive(),
 				}),
 				baseSchema.extend({
@@ -51,11 +90,59 @@ export const upsertTransactionData = Effect.fn("data/transaction/upsertTransacti
 						message: "Cannot transfer to the same wallet",
 					});
 				}
+				// Validate installments for expenses
+				if (obj.type === "expense" && obj.installmentsEnabled) {
+					if (!obj.installmentsCount || obj.installmentsCount < 2) {
+						ctx.addIssue({
+							code: "custom",
+							message: "Installments count must be at least 2",
+							path: ["installmentsCount"],
+						});
+						return;
+					}
+					if (obj.installmentsCents) {
+						try {
+							const cents = JSON.parse(obj.installmentsCents) as number[];
+							if (cents.length !== obj.installmentsCount) {
+								ctx.addIssue({
+									code: "custom",
+									message: "Installment cents array length must match count",
+									path: ["installmentsCents"],
+								});
+								return;
+							}
+							const sum = cents.reduce((a, b) => a + b, 0);
+							if (sum !== obj.cents) {
+								ctx.addIssue({
+									code: "custom",
+									message: `Installment sum (${sum}) must equal total (${obj.cents})`,
+									path: ["installmentsCents"],
+								});
+							}
+						} catch {
+							ctx.addIssue({
+								code: "custom",
+								message: "Invalid installmentsCents JSON",
+								path: ["installmentsCents"],
+							});
+						}
+					}
+				}
 			})
-			.transform((obj) => ({
-				...obj,
-				cents: obj.type === "expense" ? -obj.cents : obj.cents,
-			}));
+			.transform((obj) => {
+				const base = {
+					...obj,
+					cents: obj.type === "expense" ? -obj.cents : obj.cents,
+				};
+				// Parse installmentsCents if present
+				if (obj.type === "expense" && obj.installmentsEnabled && obj.installmentsCents) {
+					return {
+						...base,
+						parsedInstallmentsCents: JSON.parse(obj.installmentsCents) as number[],
+					};
+				}
+				return { ...base, parsedInstallmentsCents: undefined };
+			});
 
 		const formValues = formSchema.parse(formObj);
 		const { id, wallet: walletId, cents, date, description, paid } = formValues;
@@ -108,6 +195,30 @@ export const upsertTransactionData = Effect.fn("data/transaction/upsertTransacti
 						},
 					]),
 				);
+			} else if (
+				formValues.type === "expense" &&
+				formValues.installmentsEnabled &&
+				formValues.installmentsCount
+			) {
+				// Create installment transactions
+				const count = formValues.installmentsCount;
+				const installmentCents =
+					formValues.parsedInstallmentsCents ?? splitEqually(Math.abs(cents), count);
+
+				const transactions = Array.from({ length: count }, (_, i) => ({
+					type: "expense" as const,
+					date: addMonths(date, i),
+					userId,
+					categoryId: formValues.category,
+					walletId,
+					cents: -installmentCents[i],
+					paid,
+					description: description
+						? `${description} - [${i + 1}/${count}]`
+						: `[${i + 1}/${count}]`,
+				}));
+
+				yield* exec(db.insert(table.transaction).values(transactions));
 			} else {
 				// Create normal transaction
 				yield* exec(

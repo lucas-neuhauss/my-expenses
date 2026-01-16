@@ -11,6 +11,7 @@
 	import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 	import DatePicker from "../date-picker.svelte";
 	import ExpenseIncomeSpecificInputs from "./expense-income-specific-inputs.svelte";
+	import InstallmentsInput from "./installments-input.svelte";
 	import TransferenceSpecificInputs from "./transference-specific-inputs.svelte";
 	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 
@@ -45,6 +46,14 @@
 	);
 	let paid = $state((() => transaction?.paid ?? true)());
 
+	// Installments state (only for new expenses)
+	let installmentsEnabled = $state(false);
+	let installmentsCount = $state(2);
+	let installmentCents = $state<number[]>([]);
+
+	// Compute totalCents from cents input
+	let totalCents = $derived(cents ? Math.round(cents * 100) : 0);
+
 	$effect(() => {
 		// If selecting a date in the future, set "paid" to false
 		if (!transaction && !!date && date.compare(today(getLocalTimeZone())) > 0) {
@@ -66,8 +75,11 @@
 				if (shouldContinue) {
 					description = "";
 					cents = undefined;
+					installmentsEnabled = false;
+					installmentsCount = 2;
+					installmentCents = [];
 
-					// Focus firs form input if continuing
+					// Focus first form input if continuing
 					walletTriggerRef?.focus();
 					fromWalletTriggerRef?.focus();
 				}
@@ -81,6 +93,15 @@
 		<input type="hidden" name="type" value={tab} />
 		<input type="hidden" name="date" value={date} />
 		<input type="hidden" name="paid" value={paid} />
+		{#if tab === "expense" && id === "new"}
+			<input type="hidden" name="installmentsEnabled" value={installmentsEnabled} />
+			<input type="hidden" name="installmentsCount" value={installmentsCount} />
+			<input
+				type="hidden"
+				name="installmentsCents"
+				value={JSON.stringify(installmentCents)}
+			/>
+		{/if}
 
 		{#if tab === "transference"}
 			<TransferenceSpecificInputs bind:fromWalletTriggerRef {wallets} {transaction} />
@@ -133,6 +154,17 @@
 				</div>
 			</div>
 		</div>
+
+		{#if tab === "expense" && id === "new"}
+			<div>
+				<InstallmentsInput
+					bind:enabled={installmentsEnabled}
+					bind:count={installmentsCount}
+					{totalCents}
+					bind:installmentCents
+				/>
+			</div>
+		{/if}
 	</div>
 	<Dialog.Footer class="gap-2 sm:flex-row-reverse sm:justify-start">
 		<Button type="submit">Save</Button>
