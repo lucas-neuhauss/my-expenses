@@ -37,6 +37,9 @@ export function buildTransactionsQuery(o: {
 			description: transaction.description,
 			date: transaction.date,
 			transferenceId: transaction.transferenceId,
+			installmentGroupId: transaction.installmentGroupId,
+			installmentIndex: transaction.installmentIndex,
+			installmentTotal: transaction.installmentTotal,
 			paid: transaction.paid,
 			wallet: {
 				id: wallet.id,

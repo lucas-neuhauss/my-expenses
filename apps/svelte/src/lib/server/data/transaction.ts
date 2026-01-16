@@ -204,19 +204,25 @@ export const upsertTransactionData = Effect.fn("data/transaction/upsertTransacti
 				const count = formValues.installmentsCount;
 				const installmentCents =
 					formValues.parsedInstallmentsCents ?? splitEqually(Math.abs(cents), count);
+				const installmentGroupId = uuidv4();
 
-				const transactions = Array.from({ length: count }, (_, i) => ({
-					type: "expense" as const,
-					date: addMonths(date, i),
-					userId,
-					categoryId: formValues.category,
-					walletId,
-					cents: -installmentCents[i],
-					paid,
-					description: description
-						? `${description} - [${i + 1}/${count}]`
-						: `[${i + 1}/${count}]`,
-				}));
+				const today = new Date().toISOString().slice(0, 10);
+				const transactions = Array.from({ length: count }, (_, i) => {
+					const installmentDate = addMonths(date, i);
+					return {
+						type: "expense" as const,
+						date: installmentDate,
+						userId,
+						categoryId: formValues.category,
+						walletId,
+						cents: -installmentCents[i],
+						paid: paid && installmentDate <= today,
+						description,
+						installmentGroupId,
+						installmentIndex: i + 1,
+						installmentTotal: count,
+					};
+				});
 
 				yield* exec(db.insert(table.transaction).values(transactions));
 			} else {
@@ -373,6 +379,9 @@ export const getDashboardTransactionsData = Effect.fn(
 				description: table.transaction.description,
 				date: table.transaction.date,
 				transferenceId: table.transaction.transferenceId,
+				installmentGroupId: table.transaction.installmentGroupId,
+				installmentIndex: table.transaction.installmentIndex,
+				installmentTotal: table.transaction.installmentTotal,
 				paid: table.transaction.paid,
 				wallet: {
 					id: table.wallet.id,

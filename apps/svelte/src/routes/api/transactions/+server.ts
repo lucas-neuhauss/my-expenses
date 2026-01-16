@@ -28,6 +28,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 					categoryId: table.transaction.categoryId,
 					walletId: table.transaction.walletId,
 					transferenceId: table.transaction.transferenceId,
+					installmentGroupId: table.transaction.installmentGroupId,
+					installmentIndex: table.transaction.installmentIndex,
+					installmentTotal: table.transaction.installmentTotal,
 					paid: table.transaction.paid,
 					date: table.transaction.date,
 					transferenceFrom: {

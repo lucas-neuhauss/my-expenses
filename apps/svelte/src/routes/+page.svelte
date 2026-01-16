@@ -362,7 +362,14 @@
 								getLocalDate(t.date),
 							)}
 						</Table.Cell>
-						<Table.Cell>{t.description}</Table.Cell>
+						<Table.Cell>
+							{t.description}
+							{#if t.installmentGroupId}
+								<span class="text-muted-foreground ml-1 text-xs">
+									[{t.installmentIndex}/{t.installmentTotal}]
+								</span>
+							{/if}
+						</Table.Cell>
 						<Table.Cell>
 							<div class="flex h-full items-center gap-x-4">
 								<img
@@ -388,7 +395,7 @@
 								aria-label="Edit transaction"
 								variant="ghost"
 								class="size-8 p-0 [&_svg]:size-3.5"
-								onclick={() => handleClickEdit(t)}
+								onclick={() => handleClickEdit(t as DashboardTransaction)}
 							>
 								<Pencil />
 							</Button>

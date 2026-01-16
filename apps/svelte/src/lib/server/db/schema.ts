@@ -49,6 +49,9 @@ export const transaction = pgTable(
 			.references(() => wallet.id)
 			.notNull(),
 		transferenceId: text("transference_id"),
+		installmentGroupId: text("installment_group_id"),
+		installmentIndex: integer("installment_index"),
+		installmentTotal: integer("installment_total"),
 		paid: boolean("paid").default(true).notNull(),
 		date: date("date", { mode: "string" }).notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -58,6 +61,7 @@ export const transaction = pgTable(
 		index("transaction_transference_id_idx").on(table.transferenceId),
 		index("transaction_wallet_id_idx").on(table.walletId),
 		index("transaction_user_id_idx").on(table.userId),
+		index("transaction_installment_group_id_idx").on(table.installmentGroupId),
 	],
 );
 export const transactionsRelations = relations(transaction, ({ one }) => ({

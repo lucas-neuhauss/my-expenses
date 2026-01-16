@@ -164,6 +164,10 @@
 					bind:installmentCents
 				/>
 			</div>
+		{:else if tab === "expense" && transaction?.installmentGroupId}
+			<div class="text-muted-foreground text-sm">
+				Installment {transaction.installmentIndex} of {transaction.installmentTotal}
+			</div>
 		{/if}
 	</div>
 	<Dialog.Footer class="gap-2 sm:flex-row-reverse sm:justify-start">

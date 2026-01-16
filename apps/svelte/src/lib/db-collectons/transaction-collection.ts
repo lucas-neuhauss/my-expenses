@@ -13,6 +13,9 @@ const TransactionSchema = z.object({
 	categoryId: z.number(),
 	walletId: z.number(),
 	transferenceId: z.string().nullable(),
+	installmentGroupId: z.string().nullable(),
+	installmentIndex: z.number().nullable(),
+	installmentTotal: z.number().nullable(),
 	paid: z.boolean(),
 	date: z.string(),
 	transferenceFrom: z
