@@ -51,20 +51,18 @@ export const walletCollection = createCollection(
 			try {
 				const res = await deleteWalletAction(original.id);
 				if (!res) throw Error();
-				if (res.success) {
-					walletCollection.utils.refetch();
+				if (res.ok) {
+					walletCollection.utils.writeDelete(original.id);
+					toast.success(res.message);
+					return { refetch: false };
+				} else {
+					toast.error(res.message);
+					throw Error();
 				}
-				toast[res.success ? "success" : "error"](res.message);
-				// walletToDelete = null;
 			} catch {
 				toast.error("Something went wrong. Please try again later.");
+				throw Error();
 			}
-
-			// await orpc.todo.deleteTodo.call({
-			// 	id: original.id,
-			// });
-			walletCollection.utils.writeDelete(original.id);
-			return { refetch: false };
 		},
 	}),
 );

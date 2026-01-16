@@ -56,13 +56,15 @@ export const categoryCollection = createCollection(
 				if (res.ok) {
 					categoryCollection.utils.writeDelete(original.id);
 					toast.success(res.message);
+					return { refetch: false };
 				} else {
 					toast.error(res.message);
+					throw Error();
 				}
 			} catch {
 				toast.error("Something went wrong. Please try again later.");
+				throw Error();
 			}
-			return { refetch: false };
 		},
 	}),
 );

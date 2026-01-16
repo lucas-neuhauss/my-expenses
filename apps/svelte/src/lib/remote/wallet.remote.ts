@@ -51,11 +51,11 @@ export const deleteWalletAction = command(
 				}
 
 				const message = yield* deleteWalletData({ userId: user.id, id });
-				return { success: true, message };
+				return { ok: true, message };
 			},
 			Effect.catchTag("DeleteWalletError", (error) =>
 				Effect.succeed({
-					success: false,
+					ok: false,
 					errorType: "DeleteWalletError",
 					message: error.message,
 				}),
