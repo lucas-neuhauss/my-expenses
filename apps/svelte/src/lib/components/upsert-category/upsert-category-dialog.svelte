@@ -3,8 +3,7 @@
 	import * as Tabs from "$lib/components/ui/tabs";
 	import type { NestedCategory } from "$lib/utils/category";
 	import UpsertCategoryForm from "./upsert-category-form.svelte";
-	import { page } from "$app/state";
-	import { untrack } from "svelte";
+	import { parseAsStringLiteral, useQueryState } from "nuqs-svelte";
 
 	let {
 		open = $bindable(),
@@ -14,15 +13,18 @@
 		category: NestedCategory | null;
 	} = $props();
 	let isUpdate = $derived(category !== null);
-	let tab = $state<"expense" | "income">("expense");
+	let tab = useQueryState(
+		"type",
+		parseAsStringLiteral(["expense", "income"] as const).withDefault("expense"),
+	);
 
-	$effect(() => {
-		let _tab: "expense" | "income" = "expense";
-		if (page.url.searchParams.get("type") === "income") {
-			_tab = "income";
-		}
-		untrack(() => (tab = _tab));
-	});
+	function getValue() {
+		return tab.current;
+	}
+
+	function setValue(newValue: "expense" | "income") {
+		tab.set(newValue);
+	}
 
 	const onSuccess = () => {
 		open = false;
@@ -36,7 +38,7 @@
 				{isUpdate ? "Update Category" : "Create Category"}
 			</Dialog.Title>
 		</Dialog.Header>
-		<Tabs.Root bind:value={tab}>
+		<Tabs.Root bind:value={getValue, setValue}>
 			<Tabs.List class="w-full [&_button]:w-full">
 				<Tabs.Trigger value="expense" disabled={!!category}>Expense</Tabs.Trigger>
 				<Tabs.Trigger value="income" disabled={!!category}>Income</Tabs.Trigger>
