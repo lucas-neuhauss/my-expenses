@@ -36,6 +36,9 @@ type BackupData = {
 		paid: boolean;
 		created_at: string;
 		updated_at: string;
+		installment_group_id: string | null;
+		installment_index: number | null;
+		installment_total: number | null;
 	}[];
 };
 
@@ -144,6 +147,9 @@ export const loadBackupData = Effect.fn("data/backup/loadBackupData")(function* 
 					categoryId: maps.categoriesMap.get(t.category_id)!,
 					walletId: maps.walletsMap.get(t.wallet_id)!,
 					paid: t.paid,
+					installmentGroupId: t.installment_group_id,
+					installmentIndex: t.installment_index,
+					installmentTotal: t.installment_total,
 				})),
 			)
 			.returning({ id: table.transaction.id }),
