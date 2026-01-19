@@ -59,9 +59,9 @@ export const walletCollection = createCollection(
 					toast.error(res.message);
 					throw Error();
 				}
-			} catch {
+			} catch (e) {
 				toast.error("Something went wrong. Please try again later.");
-				throw Error();
+				throw e;
 			}
 		},
 	}),

@@ -3,6 +3,8 @@
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
 	import DashboardCharts from "$lib/components/dashboard-charts.svelte";
 	import SavingsIllustration from "$lib/components/illustrations/savings-illustration.svelte";
+	import MoneyCardSkeleton from "$lib/components/skeletons/money-card-skeleton.svelte";
+	import TransactionTableSkeleton from "$lib/components/skeletons/transaction-table-skeleton.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Select from "$lib/components/ui/select";
@@ -25,6 +27,7 @@
 	import { toast } from "svelte-sonner";
 	import { buildBalanceQuery, buildTransactionsQuery } from "./lib";
 	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
+	import { isQueryCacheHydrated } from "$lib/integrations/tanstack-query/query-client";
 
 	let { form } = $props();
 
@@ -96,6 +99,14 @@
 		calculateDashboardData(allTransactionsQuery.data, wallet.current, category.current),
 	);
 	let nestedCategories = $derived(nestCategories(categoriesQuery.data));
+
+	let isLoading = $derived(
+		!$isQueryCacheHydrated ||
+			!balanceQuery.isReady ||
+			!walletsQuery.isReady ||
+			!allTransactionsQuery.isReady ||
+			!filteredTransactionsQuery.isReady,
+	);
 
 	const monthOptions = MONTHS.map((month, i) => ({ value: i + 1, label: month }));
 	const yearOptions = Array.from({ length: 50 }, (_, i) => ({
@@ -204,25 +215,29 @@
 />
 
 <div class="flex flex-col items-start gap-y-3 px-4 pb-10">
-	<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
-		{@render MoneyCard("Month-end balance", balance)}
-		{@render MoneyCard("Month Income", totalIncome)}
-		{@render MoneyCard("Month Expense", totalExpense)}
+	{#if isLoading}
+		<MoneyCardSkeleton />
+	{:else}
+		<div class="flex flex-wrap justify-center gap-4 sm:justify-start">
+			{@render MoneyCard("Month-end balance", balance)}
+			{@render MoneyCard("Month Income", totalIncome)}
+			{@render MoneyCard("Month Expense", totalExpense)}
 
-		<Card.Root class="w-50 gap-0 p-0">
-			<Card.Content
-				class="flex h-full flex-col items-start justify-center gap-1 px-5 py-2 text-sm"
-			>
-				<p>
-					Out: {formatCurrency(filteredExpense)}
-				</p>
-				<p>
-					In: {formatCurrency(filteredIncome)}
-				</p>
-				<p>Total: {formatCurrency(filteredIncome + filteredExpense)}</p>
-			</Card.Content>
-		</Card.Root>
-	</div>
+			<Card.Root class="w-50 gap-0 p-0">
+				<Card.Content
+					class="flex h-full flex-col items-start justify-center gap-1 px-5 py-2 text-sm"
+				>
+					<p>
+						Out: {formatCurrency(filteredExpense)}
+					</p>
+					<p>
+						In: {formatCurrency(filteredIncome)}
+					</p>
+					<p>Total: {formatCurrency(filteredIncome + filteredExpense)}</p>
+				</Card.Content>
+			</Card.Root>
+		</div>
+	{/if}
 
 	<div class="flex flex-wrap items-center gap-4">
 		<Button autofocus variant="outline" onclick={handleClickCreate}>
@@ -335,7 +350,9 @@
 
 	<DashboardCharts {charts} onCategoryClick={handleChartCategoryClick} />
 
-	{#if filteredTransactionsQuery.isReady && filteredTransactionsQuery.data.length === 0}
+	{#if isLoading}
+		<TransactionTableSkeleton />
+	{:else if filteredTransactionsQuery.data.length === 0}
 		<div class="mt-10 flex w-full flex-col items-center justify-center">
 			<SavingsIllustration width={200} height="100%" />
 			<p class="mt-6">You don't have transactions</p>

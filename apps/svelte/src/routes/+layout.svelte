@@ -10,9 +10,17 @@
 	import { Tooltip } from "bits-ui";
 	import { NuqsAdapter } from "nuqs-svelte/adapters/svelte-kit";
 	import { QueryClientProvider } from "@tanstack/svelte-query";
-	import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+	import {
+		queryClient,
+		initializeQueryPersistence,
+	} from "$lib/integrations/tanstack-query/query-client";
 	import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
+	import { onMount } from "svelte";
 	dayjs.extend(localizedFormat);
+
+	onMount(() => {
+		initializeQueryPersistence();
+	});
 
 	let { children, data } = $props();
 	let isAdmin = true;

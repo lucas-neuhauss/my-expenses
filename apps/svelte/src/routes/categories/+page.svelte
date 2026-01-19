@@ -1,10 +1,12 @@
 <script lang="ts">
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
+	import CategoryCardSkeleton from "$lib/components/skeletons/category-card-skeleton.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { UpsertCategory } from "$lib/components/upsert-category";
 	import { categoryCollection } from "$lib/db-collectons/category-collection";
+	import { isQueryCacheHydrated } from "$lib/integrations/tanstack-query/query-client";
 	import { nestCategories, type NestedCategory } from "$lib/utils/category.js";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
@@ -26,6 +28,8 @@
 			.orderBy(({ category }) => category.name, "asc"),
 	);
 	let nestedCategories = $derived(nestCategories(query.data));
+
+	let isLoading = $derived(!$isQueryCacheHydrated || !query.isReady);
 
 	let upsertDialog = $state<{
 		open: boolean;
@@ -86,55 +90,61 @@
 		</div>
 	</Tabs.Root>
 
-	{#each nestedCategories as category (category.id)}
-		<Card.Root class="w-full p-0">
-			<Card.Content class="flex items-center justify-between p-5 pt-3">
-				<div class="flex flex-col items-start justify-between gap-3">
-					<div class="mt-0.5 flex items-center justify-start gap-x-3">
-						<div class="flex size-9 items-center justify-center rounded-full bg-gray-800">
-							<img
-								alt="category icon"
-								src={`/images/category/${category.icon}`}
-								class="size-5"
-							/>
+	{#if isLoading}
+		<CategoryCardSkeleton />
+	{:else}
+		{#each nestedCategories as category (category.id)}
+			<Card.Root class="w-full p-0">
+				<Card.Content class="flex items-center justify-between p-5 pt-3">
+					<div class="flex flex-col items-start justify-between gap-3">
+						<div class="mt-0.5 flex items-center justify-start gap-x-3">
+							<div
+								class="flex size-9 items-center justify-center rounded-full bg-gray-800"
+							>
+								<img
+									alt="category icon"
+									src={`/images/category/${category.icon}`}
+									class="size-5"
+								/>
+							</div>
+							<p>{category.name}</p>
 						</div>
-						<p>{category.name}</p>
-					</div>
 
-					{#if category.children.length > 0}
-						<div class="flex flex-wrap gap-2">
-							{#each category.children as subcategory (subcategory.id)}
-								<div class="flex items-center gap-1.5 rounded border px-2 py-1">
-									<img
-										alt="subcategory icon"
-										src={`/images/category/${subcategory.icon}`}
-										class="size-3"
-									/>
-									<span class="text-sm">{subcategory.name}</span>
-								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
-				<div class="shrink-0">
-					<Button
-						title="Edit category"
-						size="icon"
-						variant="ghost"
-						onclick={() => (upsertDialog = { open: true, category })}
-					>
-						<Pencil />
-					</Button>
-					<Button
-						title="Delete category"
-						variant="ghost"
-						class="size-8 p-0 [&_svg]:size-3.5"
-						onclick={() => (deleteDialog = { open: true, category })}
-					>
-						<Trash />
-					</Button>
-				</div>
-			</Card.Content>
-		</Card.Root>
-	{/each}
+						{#if category.children.length > 0}
+							<div class="flex flex-wrap gap-2">
+								{#each category.children as subcategory (subcategory.id)}
+									<div class="flex items-center gap-1.5 rounded border px-2 py-1">
+										<img
+											alt="subcategory icon"
+											src={`/images/category/${subcategory.icon}`}
+											class="size-3"
+										/>
+										<span class="text-sm">{subcategory.name}</span>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+					<div class="shrink-0">
+						<Button
+							title="Edit category"
+							size="icon"
+							variant="ghost"
+							onclick={() => (upsertDialog = { open: true, category })}
+						>
+							<Pencil />
+						</Button>
+						<Button
+							title="Delete category"
+							variant="ghost"
+							class="size-8 p-0 [&_svg]:size-3.5"
+							onclick={() => (deleteDialog = { open: true, category })}
+						>
+							<Trash />
+						</Button>
+					</div>
+				</Card.Content>
+			</Card.Root>
+		{/each}
+	{/if}
 </div>

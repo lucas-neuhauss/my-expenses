@@ -74,15 +74,27 @@ export const transactionCollection = createCollection(
 				if (!res) throw Error();
 				if (res.ok) {
 					toast.success(res.toast);
-					transactionCollection.utils.writeDelete(original.id);
+
+					transactionCollection.utils.writeBatch(() => {
+						// Also delete the linked transaction for transferences
+						const linkedId =
+							original.type === "income"
+								? original.transferenceFrom?.id
+								: original.transferenceTo?.id;
+						transactionCollection.utils.writeDelete(original.id);
+						if (linkedId) {
+							transactionCollection.utils.writeDelete(linkedId);
+						}
+					});
+
 					return { refetch: false };
 				} else {
 					toast.error(res.toast);
 					throw Error();
 				}
-			} catch {
+			} catch (e) {
 				toast.error("Something went wrong. Please try again later.");
-				throw Error();
+				throw e;
 			}
 		},
 	}),

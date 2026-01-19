@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ConfirmDialog from "$lib/components/confirm-dialog-remote.svelte";
+	import WalletCardSkeleton from "$lib/components/skeletons/wallet-card-skeleton.svelte";
 	import ToastEffect from "$lib/components/toast-effect.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
@@ -7,6 +8,7 @@
 	import { formatCurrency } from "$lib/currency";
 	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 	import { walletCollection } from "$lib/db-collectons/wallet-collection";
+	import { isQueryCacheHydrated } from "$lib/integrations/tanstack-query/query-client";
 	import { eq, sum } from "@tanstack/db";
 	import { useLiveQuery } from "@tanstack/svelte-db";
 	import Pencil from "@lucide/svelte/icons/pencil";
@@ -21,6 +23,10 @@
 	);
 	const walletsQuery = useLiveQuery((q) =>
 		q.from({ w: walletCollection }).orderBy(({ w }) => w.name, "asc"),
+	);
+
+	let isLoading = $derived(
+		!$isQueryCacheHydrated || !balanceQuery.isReady || !walletsQuery.isReady,
 	);
 
 	let walletToDelete = $state<number | null>(null);
@@ -65,38 +71,42 @@
 		}}
 	/>
 
-	<div
-		class="grid grid-cols-1 gap-2 pb-10 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
-	>
-		{#each walletsQuery.data as w (w.id)}
-			{@const sum = balanceQuery.data.find((b) => b.walletId === w.id)?.sum ?? 0}
-			<Card.Root class="py-6">
-				<Card.Content class="flex items-center justify-between">
-					<div>
-						<h3 class="mb-3 font-bold">{w.name}</h3>
-						<p>{formatCurrency(w.initialBalance + (sum ?? 0))}</p>
-					</div>
-					<div class="flex items-center gap-1 lg:gap-2">
-						<Button
-							onclick={() => (upsertWalletDialog = { open: true, wallet: w })}
-							title="Edit wallet"
-							size="icon"
-							variant="ghost"
-						>
-							<Pencil />
-						</Button>
-						<Button
-							onclick={() => (walletToDelete = w.id)}
-							title="Delete wallet"
-							aria-label="delete wallet"
-							variant="ghost"
-							class="size-8 p-0 [&_svg]:size-3.5"
-						>
-							<Trash />
-						</Button>
-					</div>
-				</Card.Content>
-			</Card.Root>
-		{/each}
-	</div>
+	{#if isLoading}
+		<WalletCardSkeleton />
+	{:else}
+		<div
+			class="grid grid-cols-1 gap-2 pb-10 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
+		>
+			{#each walletsQuery.data as w (w.id)}
+				{@const sum = balanceQuery.data.find((b) => b.walletId === w.id)?.sum ?? 0}
+				<Card.Root class="py-6">
+					<Card.Content class="flex items-center justify-between">
+						<div>
+							<h3 class="mb-3 font-bold">{w.name}</h3>
+							<p>{formatCurrency(w.initialBalance + (sum ?? 0))}</p>
+						</div>
+						<div class="flex items-center gap-1 lg:gap-2">
+							<Button
+								onclick={() => (upsertWalletDialog = { open: true, wallet: w })}
+								title="Edit wallet"
+								size="icon"
+								variant="ghost"
+							>
+								<Pencil />
+							</Button>
+							<Button
+								onclick={() => (walletToDelete = w.id)}
+								title="Delete wallet"
+								aria-label="delete wallet"
+								variant="ghost"
+								class="size-8 p-0 [&_svg]:size-3.5"
+							>
+								<Trash />
+							</Button>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+	{/if}
 </div>
