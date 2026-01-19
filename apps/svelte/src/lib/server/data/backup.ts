@@ -23,6 +23,19 @@ type BackupData = {
 		icon: string;
 		unique: "transference_in" | "transference_out" | null;
 	}[];
+	subscription?: {
+		id: number;
+		name: string;
+		cents: number;
+		user_id: string;
+		category_id: number;
+		wallet_id: number;
+		day_of_month: number;
+		paused: boolean;
+		start_date: string;
+		end_date: string | null;
+		last_generated: string | null;
+	}[];
 	transaction: {
 		id: number;
 		cents: number;
@@ -39,6 +52,7 @@ type BackupData = {
 		installment_group_id: string | null;
 		installment_index: number | null;
 		installment_total: number | null;
+		subscription_id: number | null;
 	}[];
 };
 
@@ -52,11 +66,13 @@ export const loadBackupData = Effect.fn("data/backup/loadBackupData")(function* 
 	const maps = {
 		walletsMap: new Map<number, number>(),
 		categoriesMap: new Map<number, number>(),
+		subscriptionsMap: new Map<number, number>(),
 		transactionsMap: new Map<number, number>(),
 	};
 
 	// 1. Clear all user's data
 	yield* exec(db.delete(table.transaction).where(eq(table.transaction.userId, userId)));
+	yield* exec(db.delete(table.subscription).where(eq(table.subscription.userId, userId)));
 	yield* exec(db.delete(table.category).where(eq(table.category.userId, userId)));
 	yield* exec(db.delete(table.wallet).where(eq(table.wallet.userId, userId)));
 
@@ -129,7 +145,34 @@ export const loadBackupData = Effect.fn("data/backup/loadBackupData")(function* 
 		}
 	}
 
-	// 4. Create all the transactions, and map the old ids with the new ids
+	// 4. Create subscriptions, and map the old ids with the new ids
+	const subscriptionsData = data.subscription ?? [];
+	if (subscriptionsData.length > 0) {
+		const newSubscriptions = yield* exec(
+			db
+				.insert(table.subscription)
+				.values(
+					subscriptionsData.map((s) => ({
+						userId,
+						name: s.name,
+						cents: s.cents,
+						categoryId: maps.categoriesMap.get(s.category_id)!,
+						walletId: maps.walletsMap.get(s.wallet_id)!,
+						dayOfMonth: s.day_of_month,
+						paused: s.paused,
+						startDate: s.start_date,
+						endDate: s.end_date,
+						lastGenerated: s.last_generated,
+					})),
+				)
+				.returning({ id: table.subscription.id }),
+		);
+		for (let i = 0; i < subscriptionsData.length; i++) {
+			maps.subscriptionsMap.set(subscriptionsData[i].id, newSubscriptions[i].id);
+		}
+	}
+
+	// 5. Create all the transactions, and map the old ids with the new ids
 	const transactionsData = data.transaction;
 	const newTransactions = yield* exec(
 		db
@@ -150,6 +193,9 @@ export const loadBackupData = Effect.fn("data/backup/loadBackupData")(function* 
 					installmentGroupId: t.installment_group_id,
 					installmentIndex: t.installment_index,
 					installmentTotal: t.installment_total,
+					subscriptionId: t.subscription_id
+						? maps.subscriptionsMap.get(t.subscription_id)
+						: null,
 				})),
 			)
 			.returning({ id: table.transaction.id }),
@@ -166,7 +212,7 @@ export const createBackupData = Effect.fn("data/backup/createBackupData")(functi
 }: {
 	userId: UserId;
 }) {
-	const TABLES = ["wallet", "transaction", "category"];
+	const TABLES = ["wallet", "transaction", "category", "subscription"];
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const tables: any = {};
 

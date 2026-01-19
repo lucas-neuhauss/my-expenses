@@ -2,8 +2,11 @@ import { dev } from "$app/environment";
 import { createServerClient } from "@supabase/ssr";
 import { type Handle, redirect } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
+import { Effect } from "effect";
 
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from "$env/static/public";
+import { generatePendingTransactionsData } from "$lib/server/data/subscription";
+import { NodeSdkLive } from "$lib/server/observability";
 
 const supabase: Handle = async ({ event, resolve }) => {
 	/**
@@ -88,4 +91,37 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(supabase, authGuard);
+const SUBSCRIPTION_GEN_COOKIE = "subscription_gen_ts";
+const SUBSCRIPTION_GEN_INTERVAL = 60 * 60 * 1000; // 1 hour in ms
+
+const subscriptionGeneration: Handle = async ({ event, resolve }) => {
+	const user = event.locals.user;
+
+	// Only run for authenticated users
+	if (user) {
+		const lastGenTs = event.cookies.get(SUBSCRIPTION_GEN_COOKIE);
+		const now = Date.now();
+
+		// Check if we need to run generation (not run in the last hour)
+		if (!lastGenTs || now - parseInt(lastGenTs, 10) > SUBSCRIPTION_GEN_INTERVAL) {
+			// Set the cookie first to prevent concurrent runs
+			event.cookies.set(SUBSCRIPTION_GEN_COOKIE, String(now), {
+				path: "/",
+				httpOnly: true,
+				sameSite: dev ? "lax" : "strict",
+				secure: !dev,
+				maxAge: 60 * 60 * 24, // 24 hours
+			});
+
+			// Run generation in background (fire and forget)
+			const program = generatePendingTransactionsData({ userId: user.id });
+			Effect.runPromise(program.pipe(Effect.provide(NodeSdkLive))).catch((err) => {
+				console.error("Failed to generate subscription transactions:", err);
+			});
+		}
+	}
+
+	return resolve(event);
+};
+
+export const handle: Handle = sequence(supabase, authGuard, subscriptionGeneration);

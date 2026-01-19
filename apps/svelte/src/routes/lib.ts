@@ -40,6 +40,7 @@ export function buildTransactionsQuery(o: {
 			installmentGroupId: transaction.installmentGroupId,
 			installmentIndex: transaction.installmentIndex,
 			installmentTotal: transaction.installmentTotal,
+			subscriptionId: transaction.subscriptionId,
 			paid: transaction.paid,
 			wallet: {
 				id: wallet.id,

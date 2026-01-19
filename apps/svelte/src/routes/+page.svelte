@@ -386,6 +386,14 @@
 									[{t.installmentIndex}/{t.installmentTotal}]
 								</span>
 							{/if}
+							{#if t.subscriptionId}
+								<span
+									class="bg-muted text-muted-foreground ml-1 rounded px-1.5 py-0.5 text-xs"
+									title="Recurring subscription"
+								>
+									Recurring
+								</span>
+							{/if}
 						</Table.Cell>
 						<Table.Cell>
 							<div class="flex h-full items-center gap-x-4">

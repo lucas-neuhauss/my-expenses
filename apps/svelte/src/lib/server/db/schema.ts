@@ -52,6 +52,9 @@ export const transaction = pgTable(
 		installmentGroupId: text("installment_group_id"),
 		installmentIndex: integer("installment_index"),
 		installmentTotal: integer("installment_total"),
+		subscriptionId: integer("subscription_id").references(() => subscription.id, {
+			onDelete: "set null",
+		}),
 		paid: boolean("paid").default(true).notNull(),
 		date: date("date", { mode: "string" }).notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -62,6 +65,7 @@ export const transaction = pgTable(
 		index("transaction_wallet_id_idx").on(table.walletId),
 		index("transaction_user_id_idx").on(table.userId),
 		index("transaction_installment_group_id_idx").on(table.installmentGroupId),
+		index("transaction_subscription_id_idx").on(table.subscriptionId),
 	],
 );
 export const transactionsRelations = relations(transaction, ({ one }) => ({
@@ -72,6 +76,10 @@ export const transactionsRelations = relations(transaction, ({ one }) => ({
 	wallet: one(wallet, {
 		fields: [transaction.walletId],
 		references: [wallet.id],
+	}),
+	subscription: one(subscription, {
+		fields: [transaction.subscriptionId],
+		references: [subscription.id],
 	}),
 }));
 
@@ -112,17 +120,27 @@ export const subscription = pgTable(
 		categoryId: integer("category_id")
 			.references(() => category.id)
 			.notNull(),
+		walletId: integer("wallet_id")
+			.references(() => wallet.id)
+			.notNull(),
+		dayOfMonth: integer("day_of_month").notNull(),
+		paused: boolean("paused").default(false).notNull(),
 		startDate: date("start_date", { mode: "string" }).notNull(),
 		endDate: date("end_date", { mode: "string" }),
-		lastGenerated: date("last_generated", { mode: "string" }).notNull(),
+		lastGenerated: date("last_generated", { mode: "string" }),
 	},
 	(table) => [index("subscription_user_id_idx").on(table.userId)],
 );
-export const subscriptionRelations = relations(subscription, ({ one }) => ({
+export const subscriptionRelations = relations(subscription, ({ one, many }) => ({
 	category: one(category, {
 		fields: [subscription.categoryId],
 		references: [category.id],
 	}),
+	wallet: one(wallet, {
+		fields: [subscription.walletId],
+		references: [wallet.id],
+	}),
+	transactions: many(transaction),
 }));
 
 export type Transaction = typeof transaction.$inferSelect;

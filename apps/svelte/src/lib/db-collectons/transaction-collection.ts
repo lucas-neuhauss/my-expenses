@@ -1,3 +1,9 @@
+/**
+ * Transaction Collection
+ *
+ * To refresh transactions from the server (e.g., after subscription changes generate new transactions):
+ *   transactionCollection.utils.refetch();
+ */
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteTransactionAction } from "$lib/remote/transaction.remote";
 import { createCollection } from "@tanstack/db";
@@ -16,6 +22,7 @@ const TransactionSchema = z.object({
 	installmentGroupId: z.string().nullable(),
 	installmentIndex: z.number().nullable(),
 	installmentTotal: z.number().nullable(),
+	subscriptionId: z.number().nullable(),
 	paid: z.boolean(),
 	date: z.string(),
 	transferenceFrom: z
