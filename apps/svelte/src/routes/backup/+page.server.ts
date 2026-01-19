@@ -1,6 +1,6 @@
 import { loadBackupData } from "$lib/server/data/backup.js";
 import { NodeSdkLive } from "$lib/server/observability.js";
-import { error, redirect } from "@sveltejs/kit";
+import { error, fail, redirect } from "@sveltejs/kit";
 import { Effect } from "effect";
 import { ungzip } from "pako";
 
@@ -19,18 +19,19 @@ export const actions = {
 			return error(401);
 		}
 
+		// Validate file before entering Effect context
+		const formData = await event.request.formData();
+		const file = formData.get("file");
+
+		if (!(file instanceof File) || file.size === 0) {
+			return fail(400, { error: "Please select a backup file" });
+		}
+
+		if (!["application/x-gzip", "application/gzip"].includes(file.type)) {
+			return fail(400, { error: "Invalid file type. Please select a .gz file" });
+		}
+
 		const program = Effect.fn("[action] - load-backup")(function* () {
-			const formData = yield* Effect.tryPromise(() => event.request.formData());
-			const file = formData.get("file");
-			yield* Effect.log(file);
-
-			if (
-				!(file instanceof File) ||
-				!["application/x-gzip", "application/gzip"].includes(file.type)
-			) {
-				return error(400, "Invalid file type");
-			}
-
 			// Uncompress and prepare the data
 			const fileContent = yield* Effect.tryPromise(() => file.text());
 			const binaryData = Buffer.from(fileContent, "base64");
