@@ -23,7 +23,7 @@ export const load = async ({ cookies }) => {
 		.parse(cookies.get("sidebar:state"));
 
 	return {
-		user: user ? { email: user.email } : null,
+		user: user ? { id: user.id, email: user.email } : null,
 		sidebarOpen,
 	};
 };

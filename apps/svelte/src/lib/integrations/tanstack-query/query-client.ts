@@ -16,24 +16,57 @@ export const queryClient = new QueryClient({
 	},
 });
 
-const asyncStoragePersister = createAsyncStoragePersister({
+// Create a user-scoped storage persister
+function createUserStoragePersister(userId: string) {
+	const userPrefix = `tanstack-query-${userId}-`;
+
+	return createAsyncStoragePersister({
+		storage: {
+			getItem: (key) => get(userPrefix + key),
+			setItem: (key, value) => set(userPrefix + key, value),
+			removeItem: (key) => del(userPrefix + key),
+		},
+	});
+}
+
+// Store the current persister instance
+let currentPersister = createAsyncStoragePersister({
 	storage: {
-		getItem: (key) => get(key),
-		setItem: (key, value) => set(key, value),
-		removeItem: (key) => del(key),
+		getItem: () => null, // No storage until user is known
+		setItem: () => {},
+		removeItem: () => {},
 	},
 });
 
 export const isQueryCacheHydrated = writable(false);
 
 let persistenceRestored: Promise<void> | null = null;
+let currentUserId: string | null = null;
 
-export function initializeQueryPersistence(): Promise<void> {
-	if (persistenceRestored) return persistenceRestored;
+export function initializeQueryPersistence(userId: string | null): Promise<void> {
+	if (persistenceRestored && currentUserId === userId) return persistenceRestored;
+
+	// Clear previous persistence if user changed
+	if (currentUserId !== userId && persistenceRestored) {
+		queryClient.clear();
+		isQueryCacheHydrated.set(false);
+		persistenceRestored = null;
+	}
+
+	currentUserId = userId;
+	currentPersister = userId
+		? createUserStoragePersister(userId)
+		: createAsyncStoragePersister({
+				storage: {
+					getItem: () => null,
+					setItem: () => {},
+					removeItem: () => {},
+				},
+			});
 
 	const [, restorePromise] = persistQueryClient({
 		queryClient,
-		persister: asyncStoragePersister,
+		persister: currentPersister,
 		maxAge: CACHE_TIME,
 	});
 

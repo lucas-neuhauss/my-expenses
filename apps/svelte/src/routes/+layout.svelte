@@ -15,16 +15,19 @@
 		initializeQueryPersistence,
 	} from "$lib/integrations/tanstack-query/query-client";
 	import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
-	import { onMount } from "svelte";
 	dayjs.extend(localizedFormat);
-
-	onMount(() => {
-		initializeQueryPersistence();
-	});
 
 	let { children, data } = $props();
 	let isAdmin = true;
 	let email = $derived(data.user?.email ?? "");
+	let userId = $derived(data.user?.id ?? null);
+
+	// Initialize query persistence with user ID
+	$effect(() => {
+		if (userId) {
+			initializeQueryPersistence(userId);
+		}
+	});
 </script>
 
 <svelte:head>
