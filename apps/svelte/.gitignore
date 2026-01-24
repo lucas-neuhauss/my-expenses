@@ -1,6 +1,12 @@
 test-results
 node_modules/
 
+# E2E Test Outputs
+e2e/.auth/
+e2e/.results/
+e2e/.report/
+e2e/.debug/
+
 # Output
 .output
 .vercel

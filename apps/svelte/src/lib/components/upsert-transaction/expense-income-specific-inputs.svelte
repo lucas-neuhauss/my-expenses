@@ -26,7 +26,8 @@
 			return (
 				transaction?.wallet.id ??
 				(defaultWallet === -1 ? null : defaultWallet) ??
-				wallets[0].id
+				wallets[0]?.id ??
+				null
 			);
 		})(),
 	);
@@ -35,16 +36,20 @@
 			return (
 				transaction?.category.id ??
 				(defaultCategory === -1 ? null : defaultCategory) ??
-				categories[0].id
+				categories[0]?.id ??
+				null
 			);
 		})(),
 	);
 
-	let wallet = $derived(wallets.find((w) => w.id === walletId)!);
+	let wallet = $derived(wallets.find((w) => w.id === walletId));
 	let flatCategories = $derived(getFlatCategories(categories));
 	let category = $derived(
 		flatCategories.find((item) => item.id === categoryId) ?? categories[0],
 	);
+
+	// Check if we have required data
+	let hasRequiredData = $derived(wallets.length > 0 && categories.length > 0);
 
 	type SelectedCategory = {
 		id: number;
@@ -70,29 +75,35 @@
 	};
 </script>
 
-<input type="hidden" name="category" value={category.id} />
+{#if !hasRequiredData}
+	<p class="text-muted-foreground text-sm">
+		Please create a wallet and category first.
+	</p>
+{:else}
+	<input type="hidden" name="category" value={category?.id} />
 
-<div>
-	<Label>Wallet</Label>
-	<Select.Root
-		type="single"
-		name="wallet"
-		value={String(walletId)}
-		onValueChange={onWalletChange}
-		allowDeselect={false}
-	>
-		<Select.Trigger bind:ref={walletTriggerRef} class="w-full">
-			{wallet.name}
-		</Select.Trigger>
-		<Select.Content>
-			{#each wallets as wallet (wallet.id)}
-				<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
-			{/each}
-		</Select.Content>
-	</Select.Root>
-</div>
+	<div>
+		<Label>Wallet</Label>
+		<Select.Root
+			type="single"
+			name="wallet"
+			value={String(walletId)}
+			onValueChange={onWalletChange}
+			allowDeselect={false}
+		>
+			<Select.Trigger bind:ref={walletTriggerRef} class="w-full">
+				{wallet?.name ?? "Select wallet"}
+			</Select.Trigger>
+			<Select.Content>
+				{#each wallets as wallet (wallet.id)}
+					<Select.Item value={String(wallet.id)}>{wallet.name}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	</div>
 
-<div>
-	<Label>Category</Label>
-	<CategoriesCombobox bind:value={categoryId} {categories} />
-</div>
+	<div>
+		<Label>Category</Label>
+		<CategoriesCombobox bind:value={categoryId} {categories} />
+	</div>
+{/if}
