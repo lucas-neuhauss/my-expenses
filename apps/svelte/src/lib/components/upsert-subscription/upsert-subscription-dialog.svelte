@@ -6,7 +6,7 @@
 
 	let {
 		open = $bindable(),
-		subscription = $bindable(),
+		subscription,
 		wallets,
 		categories,
 	}: {

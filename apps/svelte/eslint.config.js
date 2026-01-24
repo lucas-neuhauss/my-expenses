@@ -34,7 +34,10 @@ export default ts.config(
 	{
 		rules: {
 			"@typescript-eslint/no-explicit-any": 1,
-			"@typescript-eslint/no-unused-vars": "warn",
+			"@typescript-eslint/no-unused-vars": [
+				"warn",
+				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+			],
 			"@typescript-eslint/no-empty-object-type": "off",
 			"svelte/no-navigation-without-resolve": "off",
 		},

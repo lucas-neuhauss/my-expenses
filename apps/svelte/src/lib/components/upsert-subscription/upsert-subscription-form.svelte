@@ -32,22 +32,28 @@
 	} = $props();
 
 	let id = $derived(subscription ? String(subscription.id) : "new");
-	let name = $state(subscription?.name ?? "");
-	let cents = $state(subscription ? Math.abs(subscription.cents / 100) : undefined);
-	let categoryId = $state(subscription?.categoryId ?? -1);
-	let walletId = $state(subscription?.walletId ?? wallets[0]?.id ?? -1);
-	let dayOfMonth = $state(subscription?.dayOfMonth ?? 1);
-	let startDate = $state<CalendarDate>(
-		subscription ? parseDate(subscription.startDate) : today(getLocalTimeZone()),
-	);
-	let endDate = $state<CalendarDate | undefined>(
-		subscription?.endDate ? parseDate(subscription.endDate) : undefined,
+	let form = $state(
+		(() => ({
+			name: subscription?.name ?? "",
+			cents: subscription
+				? Math.abs(subscription.cents / 100)
+				: (undefined as number | undefined),
+			categoryId: subscription?.categoryId ?? -1,
+			walletId: subscription?.walletId ?? wallets[0]?.id ?? -1,
+			dayOfMonth: subscription?.dayOfMonth ?? 1,
+			startDate: (subscription
+				? parseDate(subscription.startDate)
+				: today(getLocalTimeZone())) as CalendarDate,
+			endDate: (subscription?.endDate ? parseDate(subscription.endDate) : undefined) as
+				| CalendarDate
+				| undefined,
+		}))(),
 	);
 
 	let startDateOpen = $state(false);
 	let endDateOpen = $state(false);
 
-	let selectedWallet = $derived(wallets.find((w) => w.id === walletId));
+	let selectedWallet = $derived(wallets.find((w) => w.id === form.walletId));
 	const dayOptions = Array.from({ length: 31 }, (_, i) => ({
 		value: i + 1,
 		label: String(i + 1),
@@ -77,9 +83,9 @@
 		class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"
 	>
 		<input type="hidden" name="id" value={id} />
-		<input type="hidden" name="categoryId" value={categoryId} />
-		<input type="hidden" name="startDate" value={startDate} />
-		<input type="hidden" name="endDate" value={endDate ?? ""} />
+		<input type="hidden" name="categoryId" value={form.categoryId} />
+		<input type="hidden" name="startDate" value={form.startDate} />
+		<input type="hidden" name="endDate" value={form.endDate ?? ""} />
 
 		<div>
 			<Label for="name">Name</Label>
@@ -89,7 +95,7 @@
 				name="name"
 				placeholder="Netflix, Spotify..."
 				class="col-span-3"
-				bind:value={name}
+				bind:value={form.name}
 			/>
 		</div>
 
@@ -104,7 +110,7 @@
 				step="0.01"
 				class="col-span-3"
 				min={0}
-				bind:value={cents}
+				bind:value={form.cents}
 			/>
 		</div>
 
@@ -112,8 +118,8 @@
 			<Label>Category</Label>
 			<CategoriesCombobox
 				{categories}
-				value={categoryId}
-				onChange={(c) => (categoryId = c)}
+				value={form.categoryId}
+				onChange={(c) => (form.categoryId = c)}
 				style="width: 100%;"
 			/>
 		</div>
@@ -123,8 +129,8 @@
 			<Select.Root
 				type="single"
 				name="walletId"
-				value={String(walletId)}
-				onValueChange={(v) => (walletId = Number(v))}
+				value={String(form.walletId)}
+				onValueChange={(v) => (form.walletId = Number(v))}
 				allowDeselect={false}
 			>
 				<Select.Trigger class="col-span-3 w-full">
@@ -143,12 +149,12 @@
 			<Select.Root
 				type="single"
 				name="dayOfMonth"
-				value={String(dayOfMonth)}
-				onValueChange={(v) => (dayOfMonth = Number(v))}
+				value={String(form.dayOfMonth)}
+				onValueChange={(v) => (form.dayOfMonth = Number(v))}
 				allowDeselect={false}
 			>
 				<Select.Trigger class="col-span-3 w-full">
-					{dayOfMonth}
+					{form.dayOfMonth}
 				</Select.Trigger>
 				<Select.Content>
 					{#each dayOptions as opt (opt.value)}
@@ -160,12 +166,12 @@
 
 		<div>
 			<Label>Start Date</Label>
-			<DatePicker bind:open={startDateOpen} bind:date={startDate} />
+			<DatePicker bind:open={startDateOpen} bind:date={form.startDate} />
 		</div>
 
 		<div>
 			<Label>End Date (optional)</Label>
-			<DatePicker bind:open={endDateOpen} bind:date={endDate} />
+			<DatePicker bind:open={endDateOpen} bind:date={form.endDate} />
 		</div>
 	</div>
 	<Dialog.Footer>

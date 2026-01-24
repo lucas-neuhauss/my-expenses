@@ -26,26 +26,10 @@ export const categoryCollection = createCollection(
 		},
 		getKey: (item) => item.id,
 		// Handle all CRUD operations
-		onInsert: async ({ transaction }) => {
-			const { modified: newTodo } = transaction.mutations[0];
-
-			// const serverTodo = await orpc.todo.addTodo.call({ title: newTodo.title });
-
-			// Sync server-computed fields (like server-generated IDs, timestamps, etc.)
-			// to the collection's synced data store
-			// todoCollection.utils.writeInsert(serverTodo);
-
+		onInsert: async () => {
 			return { refetch: false };
 		},
-		onUpdate: async ({ transaction }) => {
-			const { original, modified } = transaction.mutations[0];
-			// const updatedTodo = await orpc.todo.updateTodo.call({
-			// 	id: original.id,
-			// 	completed: modified.completed,
-			// });
-
-			// todoCollection.utils.writeUpdate(updatedTodo);
-
+		onUpdate: async () => {
 			return { refetch: false };
 		},
 		onDelete: async ({ transaction }) => {

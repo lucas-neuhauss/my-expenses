@@ -6,7 +6,7 @@
 <div
 	class="grid grid-cols-1 gap-2 pb-10 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
 >
-	{#each { length: 4 } as _, i (i)}
+	{#each { length: 4 } as _item, i (i)}
 		<Card.Root class="py-6">
 			<Card.Content class="flex items-center justify-between">
 				<div>

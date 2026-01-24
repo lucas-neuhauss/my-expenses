@@ -53,7 +53,11 @@
 			// First generation based on start date
 			const [year, month, day] = sub.startDate.split("-").map(Number);
 			const startDate = new Date(year, month - 1, day);
-			nextDate = getDateWithDay(startDate.getFullYear(), startDate.getMonth(), sub.dayOfMonth);
+			nextDate = getDateWithDay(
+				startDate.getFullYear(),
+				startDate.getMonth(),
+				sub.dayOfMonth,
+			);
 
 			if (nextDate < startDate) {
 				nextDate = getDateWithDay(
@@ -130,7 +134,7 @@
 
 <UpsertSubscription
 	bind:open={upsertDialog.open}
-	bind:subscription={upsertDialog.subscription}
+	subscription={upsertDialog.subscription}
 	wallets={data.wallets}
 	categories={nestedCategories}
 />

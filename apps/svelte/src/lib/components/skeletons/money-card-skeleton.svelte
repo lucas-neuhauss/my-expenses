@@ -4,7 +4,7 @@
 </script>
 
 <div class="flex flex-wrap justify-center gap-4 sm:justify-start">
-	{#each { length: 4 } as _, i (i)}
+	{#each { length: 4 } as _item, i (i)}
 		<Card.Root class="w-50 gap-0 p-0">
 			<Card.Header class="p-5 pb-0">
 				<Skeleton class="h-4 w-24" />

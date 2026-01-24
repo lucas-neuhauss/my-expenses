@@ -1,10 +1,10 @@
 import { getSubscriptionsData } from "$lib/server/data/subscription";
-import { NodeSdkLive } from "$lib/server/observability";
-import { redirect } from "@sveltejs/kit";
-import { Effect } from "effect";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import { NodeSdkLive } from "$lib/server/observability";
+import { redirect } from "@sveltejs/kit";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { Effect } from "effect";
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {

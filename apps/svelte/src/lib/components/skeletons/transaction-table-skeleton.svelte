@@ -16,7 +16,7 @@
 		</Table.Row>
 	</Table.Header>
 	<Table.Body>
-		{#each { length: 6 } as _, i (i)}
+		{#each { length: 6 } as _item, i (i)}
 			<Table.Row>
 				<Table.Cell>
 					<Skeleton class="h-4 w-20" />

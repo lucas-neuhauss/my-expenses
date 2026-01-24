@@ -57,73 +57,34 @@ export type UpsertSubscriptionData = {
 	endDate: string | null;
 };
 
-export const upsertSubscriptionData = Effect.fn("data/subscription/upsertSubscriptionData")(
-	function* ({ userId, data }: { userId: UserId; data: UpsertSubscriptionData }) {
-		const { id, name, cents, categoryId, walletId, dayOfMonth, startDate, endDate } = data;
+export const upsertSubscriptionData = Effect.fn(
+	"data/subscription/upsertSubscriptionData",
+)(function* ({ userId, data }: { userId: UserId; data: UpsertSubscriptionData }) {
+	const { id, name, cents, categoryId, walletId, dayOfMonth, startDate, endDate } = data;
 
-		if (id === "new") {
-			yield* exec(
-				db.insert(table.subscription).values({
-					name,
-					cents,
-					userId,
-					categoryId,
-					walletId,
-					dayOfMonth,
-					startDate,
-					endDate,
-					paused: false,
-					lastGenerated: null,
-				}),
-			);
-			return { ok: true, message: "Subscription created" };
-		} else {
-			// Verify ownership
-			const [existing] = yield* exec(
-				db
-					.select({ id: table.subscription.id })
-					.from(table.subscription)
-					.where(
-						and(eq(table.subscription.id, id), eq(table.subscription.userId, userId)),
-					),
-			);
-
-			if (!existing) {
-				return { ok: false, message: "Subscription not found" };
-			}
-
-			yield* exec(
-				db
-					.update(table.subscription)
-					.set({
-						name,
-						cents,
-						categoryId,
-						walletId,
-						dayOfMonth,
-						startDate,
-						endDate,
-					})
-					.where(eq(table.subscription.id, id)),
-			);
-			return { ok: true, message: "Subscription updated" };
-		}
-	},
-);
-
-export const deleteSubscriptionData = Effect.fn("data/subscription/deleteSubscriptionData")(
-	function* ({ userId, subscriptionId }: { userId: UserId; subscriptionId: number }) {
+	if (id === "new") {
+		yield* exec(
+			db.insert(table.subscription).values({
+				name,
+				cents,
+				userId,
+				categoryId,
+				walletId,
+				dayOfMonth,
+				startDate,
+				endDate,
+				paused: false,
+				lastGenerated: null,
+			}),
+		);
+		return { ok: true, message: "Subscription created" };
+	} else {
 		// Verify ownership
 		const [existing] = yield* exec(
 			db
 				.select({ id: table.subscription.id })
 				.from(table.subscription)
-				.where(
-					and(
-						eq(table.subscription.id, subscriptionId),
-						eq(table.subscription.userId, userId),
-					),
-				),
+				.where(and(eq(table.subscription.id, id), eq(table.subscription.userId, userId))),
 		);
 
 		if (!existing) {
@@ -131,11 +92,48 @@ export const deleteSubscriptionData = Effect.fn("data/subscription/deleteSubscri
 		}
 
 		yield* exec(
-			db.delete(table.subscription).where(eq(table.subscription.id, subscriptionId)),
+			db
+				.update(table.subscription)
+				.set({
+					name,
+					cents,
+					categoryId,
+					walletId,
+					dayOfMonth,
+					startDate,
+					endDate,
+				})
+				.where(eq(table.subscription.id, id)),
 		);
-		return { ok: true, message: "Subscription deleted" };
-	},
-);
+		return { ok: true, message: "Subscription updated" };
+	}
+});
+
+export const deleteSubscriptionData = Effect.fn(
+	"data/subscription/deleteSubscriptionData",
+)(function* ({ userId, subscriptionId }: { userId: UserId; subscriptionId: number }) {
+	// Verify ownership
+	const [existing] = yield* exec(
+		db
+			.select({ id: table.subscription.id })
+			.from(table.subscription)
+			.where(
+				and(
+					eq(table.subscription.id, subscriptionId),
+					eq(table.subscription.userId, userId),
+				),
+			),
+	);
+
+	if (!existing) {
+		return { ok: false, message: "Subscription not found" };
+	}
+
+	yield* exec(
+		db.delete(table.subscription).where(eq(table.subscription.id, subscriptionId)),
+	);
+	return { ok: true, message: "Subscription deleted" };
+});
 
 export const togglePauseSubscriptionData = Effect.fn(
 	"data/subscription/togglePauseSubscriptionData",
@@ -195,7 +193,10 @@ export const generatePendingTransactionsData = Effect.fn(
 					// Start date must be <= today
 					lte(table.subscription.startDate, todayStr),
 					// End date is null or >= today (gte(endDate, todayStr) equivalent to lte(todayStr, endDate))
-					or(isNull(table.subscription.endDate), gte(table.subscription.endDate, todayStr)),
+					or(
+						isNull(table.subscription.endDate),
+						gte(table.subscription.endDate, todayStr),
+					),
 				),
 			),
 	);
@@ -209,7 +210,11 @@ export const generatePendingTransactionsData = Effect.fn(
 		if (sub.lastGenerated === null) {
 			// First generation: use start date but adjust day to dayOfMonth
 			const startDate = parseDate(sub.startDate);
-			nextGenDate = getDateWithDay(startDate.getFullYear(), startDate.getMonth(), sub.dayOfMonth);
+			nextGenDate = getDateWithDay(
+				startDate.getFullYear(),
+				startDate.getMonth(),
+				sub.dayOfMonth,
+			);
 
 			// If the adjusted date is before start date, move to next month
 			if (nextGenDate < startDate) {

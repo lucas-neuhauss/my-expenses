@@ -54,7 +54,10 @@ export const togglePauseSubscriptionAction = command(
 			if (!user) {
 				return yield* Effect.fail(error(401));
 			}
-			const result = yield* togglePauseSubscriptionData({ userId: user.id, subscriptionId });
+			const result = yield* togglePauseSubscriptionData({
+				userId: user.id,
+				subscriptionId,
+			});
 			// Re-generate pending transactions after unpausing
 			if (result.ok && result.message === "Subscription resumed") {
 				yield* generatePendingTransactionsData({ userId: user.id });
@@ -67,14 +70,16 @@ export const togglePauseSubscriptionAction = command(
 );
 
 export const generateSubscriptionTransactionsAction = command(z.void(), async () => {
-	const program = Effect.fn("[remote] - generate-subscription-transactions")(function* () {
-		const { locals } = getRequestEvent();
-		const user = locals.user;
-		if (!user) {
-			return yield* Effect.fail(error(401));
-		}
-		return yield* generatePendingTransactionsData({ userId: user.id });
-	});
+	const program = Effect.fn("[remote] - generate-subscription-transactions")(
+		function* () {
+			const { locals } = getRequestEvent();
+			const user = locals.user;
+			if (!user) {
+				return yield* Effect.fail(error(401));
+			}
+			return yield* generatePendingTransactionsData({ userId: user.id });
+		},
+	);
 
 	return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
 });
