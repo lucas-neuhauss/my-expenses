@@ -5,7 +5,6 @@
 	import * as echarts from "echarts/core";
 	import { CanvasRenderer } from "echarts/renderers";
 	import { mode } from "mode-watcher";
-	import { onDestroy } from "svelte";
 	import * as z from "zod";
 
 	let {
@@ -22,9 +21,10 @@
 	// Register the required components
 	echarts.use([CanvasRenderer, PieChart, TooltipComponent, TitleComponent]);
 
-	let previousMode = mode.current;
-	let expensePieChart: echarts.ECharts;
-	let incomePieChart: echarts.ECharts;
+	let expenseChartContainer: HTMLDivElement;
+	let incomeChartContainer: HTMLDivElement;
+	let expensePieChart: echarts.ECharts | undefined;
+	let incomePieChart: echarts.ECharts | undefined;
 
 	const onClickCategory = (params: { data: unknown }) => {
 		const categoryId = z
@@ -34,57 +34,54 @@
 		onCategoryClick(categoryId);
 	};
 
-	$effect(() => {
-		if (previousMode !== mode.current) {
-			// Set up expense pie chart
-			expensePieChart?.dispose();
-			expensePieChart = echarts.init(
-				document.getElementById("dashboard-expense-chart"),
-				mode.current,
-			);
+	const initCharts = () => {
+		const theme = mode.current;
+
+		// Only initialize if containers exist and have dimensions
+		if (
+			expenseChartContainer &&
+			incomeChartContainer &&
+			expenseChartContainer.clientWidth > 0 &&
+			incomeChartContainer.clientWidth > 0
+		) {
+			// Initialize expense chart
+			if (!expensePieChart) {
+				expensePieChart = echarts.init(expenseChartContainer, theme);
+				expensePieChart.on("click", onClickCategory);
+			}
+
+			// Initialize income chart
+			if (!incomePieChart) {
+				incomePieChart = echarts.init(incomeChartContainer, theme);
+				incomePieChart.on("click", onClickCategory);
+			}
+
+			// Update chart data
 			expensePieChart.setOption(
 				getOptions(charts.expensePieChartData, { name: "Expense" }),
 			);
-			expensePieChart.on("click", onClickCategory);
-
-			// Set up income pie chart
-			incomePieChart?.dispose();
-			incomePieChart = echarts.init(
-				document.getElementById("dashboard-income-chart"),
-				mode.current,
-			);
 			incomePieChart.setOption(getOptions(charts.incomePieChartData, { name: "Income" }));
-			incomePieChart.on("click", onClickCategory);
 		}
-		previousMode = mode.current;
-	});
+	};
 
+	// Initialize charts after DOM is ready and on theme/data changes
 	$effect(() => {
+		// Track dependencies
 		const theme = mode.current;
-		if (!expensePieChart) {
-			expensePieChart = echarts.init(
-				document.getElementById("dashboard-expense-chart"),
-				theme,
-			);
-		}
-		if (!incomePieChart) {
-			incomePieChart = echarts.init(
-				document.getElementById("dashboard-income-chart"),
-				theme,
-			);
-		}
+		const data = charts;
 
-		expensePieChart.setOption(
-			getOptions(charts.expensePieChartData, { name: "Expense" }),
-		);
-		expensePieChart.on("click", onClickCategory);
-		incomePieChart.setOption(getOptions(charts.incomePieChartData, { name: "Income" }));
-		incomePieChart.on("click", onClickCategory);
-	});
+		// Use setTimeout to ensure DOM is fully laid out
+		const timeoutId = setTimeout(() => {
+			initCharts();
+		}, 0);
 
-	onDestroy(() => {
-		expensePieChart?.dispose();
-		incomePieChart?.dispose();
+		return () => {
+			clearTimeout(timeoutId);
+			expensePieChart?.dispose();
+			incomePieChart?.dispose();
+			expensePieChart = undefined;
+			incomePieChart = undefined;
+		};
 	});
 </script>
 
@@ -94,7 +91,7 @@
 		charts.expensePieChartData.length === 0}
 	class="mt-3 -mb-4 flex w-full flex-wrap items-center justify-center"
 >
-	<div id="dashboard-expense-chart" class="h-[300px] w-[400px]"></div>
+	<div bind:this={expenseChartContainer} class="h-[300px] w-[400px]"></div>
 
-	<div id="dashboard-income-chart" class="h-[300px] w-[400px]"></div>
+	<div bind:this={incomeChartContainer} class="h-[300px] w-[400px]"></div>
 </div>
