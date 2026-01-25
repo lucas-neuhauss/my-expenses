@@ -1,5 +1,6 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteCategoryAction } from "$lib/remote/category.remote.js";
+import { getApiUrl } from "$lib/utils/fetch";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
 import { toast } from "svelte-sonner";
@@ -20,7 +21,7 @@ export const categoryCollection = createCollection(
 		schema: CategorySchema,
 		queryKey: ["category"],
 		queryFn: async () => {
-			const res = await fetch("/api/categories");
+			const res = await fetch(getApiUrl("/api/categories"));
 			const json = await res.json();
 			return json;
 		},

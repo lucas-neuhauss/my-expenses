@@ -6,6 +6,7 @@
  */
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteTransactionAction } from "$lib/remote/transaction.remote";
+import { getApiUrl } from "$lib/utils/fetch";
 import { createCollection } from "@tanstack/db";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { toast } from "svelte-sonner";
@@ -45,7 +46,7 @@ export const transactionCollection = createCollection(
 		schema: TransactionSchema,
 		queryKey: ["transaction"],
 		queryFn: async () => {
-			const res = await fetch("/api/transactions");
+			const res = await fetch(getApiUrl("/api/transactions"));
 			const json = await res.json();
 			return json;
 		},

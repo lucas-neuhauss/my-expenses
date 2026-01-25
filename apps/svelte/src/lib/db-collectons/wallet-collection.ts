@@ -1,5 +1,6 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteWalletAction } from "$lib/remote/wallet.remote";
+import { getApiUrl } from "$lib/utils/fetch";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
 import { toast } from "svelte-sonner";
@@ -17,7 +18,7 @@ export const walletCollection = createCollection(
 		schema: WalletSchema,
 		queryKey: ["wallet"],
 		queryFn: async () => {
-			const res = await fetch("/api/wallets");
+			const res = await fetch(getApiUrl("/api/wallets"));
 			const json = await res.json();
 			return json;
 		},
