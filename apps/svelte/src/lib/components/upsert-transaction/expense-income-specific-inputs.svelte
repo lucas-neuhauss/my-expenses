@@ -76,9 +76,7 @@
 </script>
 
 {#if !hasRequiredData}
-	<p class="text-muted-foreground text-sm">
-		Please create a wallet and category first.
-	</p>
+	<p class="text-muted-foreground text-sm">Please create a wallet and category first.</p>
 {:else}
 	<input type="hidden" name="category" value={category?.id} />
 

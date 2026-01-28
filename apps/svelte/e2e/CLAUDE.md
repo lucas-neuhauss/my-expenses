@@ -38,22 +38,22 @@ Each page has its own class in `pages/`:
 
 ```typescript
 export class DashboardPage {
-  constructor(private page: Page) {}
+	constructor(private page: Page) {}
 
-  // Locators (getters)
-  get createTransactionButton() {
-    return this.page.getByRole("button", { name: "Create Transaction" });
-  }
+	// Locators (getters)
+	get createTransactionButton() {
+		return this.page.getByRole("button", { name: "Create Transaction" });
+	}
 
-  // Actions
-  async openCreateTransaction() {
-    await this.createTransactionButton.click();
-  }
+	// Actions
+	async openCreateTransaction() {
+		await this.createTransactionButton.click();
+	}
 
-  // Assertions
-  async expectLoaded() {
-    await expect(this.createTransactionButton).toBeVisible();
-  }
+	// Assertions
+	async expectLoaded() {
+		await expect(this.createTransactionButton).toBeVisible();
+	}
 }
 ```
 
@@ -67,7 +67,7 @@ Use `seedData()` and `cleanupData()` from `utils/helpers.ts`:
 
 ```typescript
 const { wallet } = await seedData(page, {
-  wallet: { name: "Test Wallet", initialBalance: 1000 }
+	wallet: { name: "Test Wallet", initialBalance: 1000 },
 });
 ```
 
@@ -81,9 +81,9 @@ For tests that need full UI flow (category/wallet creation), use page objects:
 
 ```typescript
 async function setupTestData(page: Page) {
-  const walletsPage = new WalletsPage(page);
-  await walletsPage.goto();
-  await walletsPage.createWallet("Test Wallet", 1000);
+	const walletsPage = new WalletsPage(page);
+	await walletsPage.goto();
+	await walletsPage.createWallet("Test Wallet", 1000);
 }
 ```
 
@@ -94,15 +94,15 @@ import { test, expect } from "@playwright/test";
 import { DashboardPage, TransactionDialog } from "../pages";
 
 test("should create expense", async ({ page }) => {
-  const dashboard = new DashboardPage(page);
-  const dialog = new TransactionDialog(page);
+	const dashboard = new DashboardPage(page);
+	const dialog = new TransactionDialog(page);
 
-  await dashboard.goto();
-  await dashboard.openCreateTransaction();
+	await dashboard.goto();
+	await dashboard.openCreateTransaction();
 
-  await dialog.createExpense({ description: "Groceries", value: 50 });
-  await dialog.expectClosed();
-  await dashboard.expectTransactionVisible("Groceries");
+	await dialog.createExpense({ description: "Groceries", value: 50 });
+	await dialog.expectClosed();
+	await dashboard.expectTransactionVisible("Groceries");
 });
 ```
 

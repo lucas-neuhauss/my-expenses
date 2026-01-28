@@ -1,4 +1,10 @@
-/** @type { import('@storybook/svelte').Preview } */
+import { initialize, mswLoader } from "msw-storybook-addon";
+import "../src/app.css";
+
+// Initialize MSW
+initialize();
+
+/** @type { import('@storybook/sveltekit').Preview } */
 const preview = {
 	parameters: {
 		controls: {
@@ -8,6 +14,7 @@ const preview = {
 			},
 		},
 	},
+	loaders: [mswLoader],
 };
 
 export default preview;
