@@ -89,7 +89,9 @@
 			.orderBy(({ c }) => c.parentId, "desc")
 			.orderBy(({ c }) => c.name, "asc"),
 	);
-	const walletsQuery = useLiveQuery((q) => q.from({ wallet: walletCollection }));
+	const walletsQuery = useLiveQuery((q) =>
+		q.from({ wallet: walletCollection }).orderBy(({ wallet }) => wallet.name, "asc"),
+	);
 
 	let balance = $derived(
 		(balanceQuery.data?.sum ?? 0) +

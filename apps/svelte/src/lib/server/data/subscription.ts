@@ -258,7 +258,7 @@ export const generatePendingTransactionsData = Effect.fn(
 			// Create the transaction
 			yield* exec(
 				db.insert(table.transaction).values({
-					cents: sub.cents,
+					cents: categoryResult.type === "expense" ? -sub.cents : sub.cents,
 					type: categoryResult.type,
 					description: sub.name,
 					userId,
