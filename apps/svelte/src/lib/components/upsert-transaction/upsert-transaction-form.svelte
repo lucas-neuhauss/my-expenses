@@ -46,6 +46,9 @@
 	);
 	let paid = $state((() => transaction?.paid ?? true)());
 
+	// Save and create another
+	let saveAndCreateAnother = $state(false);
+
 	// Installments state (only for new expenses)
 	let installmentsEnabled = $state(false);
 	let installmentsCount = $state(2);
@@ -64,7 +67,9 @@
 
 <form
 	method="post"
-	action="?/upsert-transaction"
+	action={saveAndCreateAnother
+		? "?/upsert-transaction&continue=true"
+		: "?/upsert-transaction"}
 	use:enhance={() =>
 		({ result }) => {
 			if (result.type === "success") {
@@ -169,15 +174,20 @@
 				Installment {transaction.installmentIndex} of {transaction.installmentTotal}
 			</div>
 		{/if}
+
 	</div>
-	<Dialog.Footer class="gap-2 sm:flex-row-reverse sm:justify-start">
+
+	{#if id === "new"}
+		<div class="flex items-center gap-3">
+			<Switch
+				id="save-and-create-another"
+				bind:checked={saveAndCreateAnother}
+			/>
+			<Label for="save-and-create-another">Save and create another</Label>
+		</div>
+	{/if}
+
+	<Dialog.Footer>
 		<Button type="submit">Save</Button>
-		<Button
-			variant="secondary"
-			type="submit"
-			formaction="?/upsert-transaction&continue=true"
-		>
-			Save and Create Another
-		</Button>
 	</Dialog.Footer>
 </form>
