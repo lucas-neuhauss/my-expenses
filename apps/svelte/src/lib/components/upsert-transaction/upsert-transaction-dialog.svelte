@@ -33,6 +33,7 @@
 	let date: CalendarDate = $state(
 		transaction ? parseDate(transaction.date) : today(getLocalTimeZone()),
 	);
+	let saveAndCreateAnother = $state(false);
 
 	$effect(() => {
 		if (open && !!transaction) {
@@ -76,6 +77,7 @@
 						<div {...props} tabindex="-1">
 							<UpsertTransactionForm
 								bind:date
+								bind:saveAndCreateAnother
 								{transaction}
 								categories={categories.filter(
 									(c) => c.type === (item === "transference" ? "income" : item),

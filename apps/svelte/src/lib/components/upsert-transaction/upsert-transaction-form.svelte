@@ -21,6 +21,7 @@
 		categories,
 		tab,
 		date = $bindable(),
+		saveAndCreateAnother = $bindable(),
 		defaultWallet,
 		defaultCategory,
 		onSuccess,
@@ -30,6 +31,7 @@
 		categories: NestedCategory[];
 		tab: "expense" | "income" | "transference";
 		date: CalendarDate;
+		saveAndCreateAnother: boolean;
 		defaultWallet: number;
 		defaultCategory: number;
 		onSuccess: (shouldContinue?: boolean) => void;
@@ -46,9 +48,6 @@
 	);
 	let paid = $state((() => transaction?.paid ?? true)());
 
-	// Save and create another
-	let saveAndCreateAnother = $state(false);
-
 	// Installments state (only for new expenses)
 	let installmentsEnabled = $state(false);
 	let installmentsCount = $state(2);
@@ -63,11 +62,12 @@
 			paid = false;
 		}
 	});
+	let isUpdate = $derived(!!transaction);
 </script>
 
 <form
 	method="post"
-	action={saveAndCreateAnother
+	action={!isUpdate && saveAndCreateAnother
 		? "?/upsert-transaction&continue=true"
 		: "?/upsert-transaction"}
 	use:enhance={() =>
