@@ -1,20 +1,8 @@
-import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from "$env/static/public";
-import { createServerClient } from "@supabase/ssr";
 import * as z from "zod";
 
-export const load = async ({ cookies }) => {
-	const supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-		global: { fetch },
-		cookies: {
-			getAll() {
-				return cookies.getAll();
-			},
-		},
-	});
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+export const load = async ({ locals, cookies }) => {
+	const session = await locals.getSession();
+	const user = session?.user ?? null;
 
 	const sidebarOpen = z
 		.union([z.literal("false"), z.literal("true")])

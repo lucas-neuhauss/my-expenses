@@ -17,6 +17,21 @@ export function lower(email: AnyPgColumn): SQL {
 	return sql`lower(${email})`;
 }
 
+export const user = pgTable("user", {
+	id: varchar("id", { length: 50 }).primaryKey(),
+	email: varchar("email", { length: 255 }).notNull().unique(),
+	passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const session = pgTable("session", {
+	id: varchar("id", { length: 50 }).primaryKey(),
+	userId: varchar("user_id", { length: 50 })
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	expiresAt: timestamp("expires_at").notNull(),
+});
+
 const userId = varchar("user_id", { length: 50 }).notNull();
 
 export const wallet = pgTable(
@@ -147,3 +162,5 @@ export type Transaction = typeof transaction.$inferSelect;
 export type Category = typeof category.$inferSelect;
 export type Wallet = typeof wallet.$inferSelect;
 export type Subscription = typeof subscription.$inferSelect;
+export type User = typeof user.$inferSelect;
+export type Session = typeof session.$inferSelect;

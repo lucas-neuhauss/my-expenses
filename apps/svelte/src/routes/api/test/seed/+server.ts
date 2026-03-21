@@ -8,7 +8,8 @@ import { Effect } from "effect";
 import type { RequestHandler } from "./$types";
 
 // Only allow in development/test environments
-const isTestEnvironment = dev || process.env.NODE_ENV === "test" || process.env.E2E_TEST === "true";
+const isTestEnvironment =
+	dev || process.env.NODE_ENV === "test" || process.env.E2E_TEST === "true";
 
 interface SeedData {
 	wallet?: { name: string; initialBalance?: number };

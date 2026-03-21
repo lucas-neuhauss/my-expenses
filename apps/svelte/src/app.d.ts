@@ -1,16 +1,33 @@
-import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
-
 declare global {
 	namespace App {
-		// interface Error {}
 		interface Locals {
-			supabase: SupabaseClient;
-			safeGetSession: () => Promise<{ session: Session | null; user: User | null }>;
-			session: Session | null;
-			user: User | null;
+			session: {
+				user: {
+					id: string;
+					email: string;
+				};
+				expires: string;
+			} | null;
+			user: {
+				id: string;
+				email: string;
+			} | null;
+			getSession: () => Promise<{
+				user: {
+					id: string;
+					email: string;
+				};
+				expires: string;
+			} | null>;
 		}
 		interface PageData {
-			session: Session | null;
+			session?: {
+				user: {
+					id: string;
+					email: string;
+				};
+				expires: string;
+			} | null;
 		}
 		namespace Superforms {
 			type Message = {
@@ -18,9 +35,7 @@ declare global {
 				text: string;
 			};
 		}
-		// interface PageState {}
-		// interface Platform {}
 	}
 }
 
-export {}; // See https://svelte.dev/docs/kit/types#app.d.ts
+export {};

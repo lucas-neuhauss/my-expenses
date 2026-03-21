@@ -12,6 +12,12 @@ export default defineConfig({
 		visualizer({ emitFile: true, filename: "stats.html" }),
 	],
 
+	server: {
+		fs: {
+			strict: false,
+		},
+	},
+
 	test: {
 		include: ["src/**/*.{test,spec}.{js,ts}"],
 	},

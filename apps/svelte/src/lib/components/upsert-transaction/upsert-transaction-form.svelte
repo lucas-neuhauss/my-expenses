@@ -174,15 +174,11 @@
 				Installment {transaction.installmentIndex} of {transaction.installmentTotal}
 			</div>
 		{/if}
-
 	</div>
 
 	{#if id === "new"}
 		<div class="flex items-center gap-3">
-			<Switch
-				id="save-and-create-another"
-				bind:checked={saveAndCreateAnother}
-			/>
+			<Switch id="save-and-create-another" bind:checked={saveAndCreateAnother} />
 			<Label for="save-and-create-another">Save and create another</Label>
 		</div>
 	{/if}

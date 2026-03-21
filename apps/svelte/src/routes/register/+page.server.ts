@@ -1,29 +1,47 @@
 import { CATEGORY_SPECIAL } from "$lib/categories.js";
+import { hashPassword } from "$lib/server/auth/password";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { validateEmail, validatePassword } from "$lib/utils/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
+import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
 
 export const actions = {
-	register: async ({ request, locals: { supabase } }) => {
+	default: async ({ request }) => {
 		const formData = await request.formData();
 		const email = formData.get("email");
 		const password = formData.get("password");
 
 		if (!validateEmail(email)) {
-			return fail(400, { message: "Invalid username" });
+			return fail(400, { message: "Invalid email" });
 		}
 		if (!validatePassword(password)) {
 			return fail(400, { message: "Invalid password" });
 		}
 
-		const { data, error } = await supabase.auth.signUp({ email, password });
+		const emailStr = email as string;
+		const passwordStr = password as string;
 
-		if (error || !data.user) {
-			console.log(error);
-			return fail(400, { message: "Something went wrong" });
+		// Check if user already exists
+		const [existingUser] = await db
+			.select()
+			.from(table.user)
+			.where(eq(table.user.email, emailStr.toLowerCase()))
+			.limit(1);
+
+		if (existingUser) {
+			return fail(400, { message: "User already exists" });
 		}
-		const userId = data.user.id;
+
+		const userId = randomUUID();
+		const passwordHash = await hashPassword(passwordStr);
+
+		await db.insert(table.user).values({
+			id: userId,
+			email: emailStr.toLowerCase(),
+			passwordHash,
+		});
 
 		await db.insert(table.category).values([
 			{
@@ -44,7 +62,7 @@ export const actions = {
 			userId,
 			name: "Bank",
 		});
-		// Create unique categories for user
+
 		await db.insert(table.category).values([
 			{
 				name: "_TRANSACTION-IN",
@@ -62,6 +80,6 @@ export const actions = {
 			},
 		]);
 
-		redirect(302, "/");
+		redirect(302, "/login?registered=true");
 	},
 };

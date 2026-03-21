@@ -1,19 +1,31 @@
 {
-  "name": "@my-expenses",
-  "private": true,
-  "version": "0.0.1",
-  "scripts": {
-    "dev": "pnpm --parallel --recursive --filter '*' dev"
-  },
-  "dependencies": {
-    "@lucide/svelte": "^0.512.0",
-    "bits-ui": "^2.4.1",
-    "clsx": "^2.1.1",
-    "svelte-sonner": "^1.0.4",
-    "tailwind-merge": "^3.3.0",
-    "tailwind-variants": "^1.0.0"
-  },
-  "workspaces": [
-    "apps/*"
-  ]
+	"name": "@my-expenses",
+	"private": true,
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "pnpm --filter @my-expenses/sveltekit dev",
+		"build": "pnpm --filter @my-expenses/sveltekit build",
+		"preview": "pnpm --filter @my-expenses/sveltekit preview",
+		"check": "pnpm --filter @my-expenses/sveltekit check",
+		"lint": "pnpm --filter @my-expenses/sveltekit lint",
+		"format": "pnpm --filter @my-expenses/sveltekit format",
+		"test": "pnpm --filter @my-expenses/sveltekit test",
+		"test:unit": "pnpm --filter @my-expenses/sveltekit test:unit",
+		"test:e2e": "pnpm --filter @my-expenses/sveltekit test:e2e",
+		"db:start": "docker compose -f apps/svelte/docker-compose.yml up -d",
+		"db:stop": "docker compose -f apps/svelte/docker-compose.yml down",
+		"db:push": "pnpm --filter @my-expenses/sveltekit db:push",
+		"db:studio": "pnpm --filter @my-expenses/sveltekit db:studio"
+	},
+	"dependencies": {
+		"@lucide/svelte": "^0.512.0",
+		"bits-ui": "^2.16.3",
+		"clsx": "^2.1.1",
+		"svelte-sonner": "^1.1.0",
+		"tailwind-merge": "^3.5.0",
+		"tailwind-variants": "^3.2.2"
+	},
+	"workspaces": [
+		"apps/*"
+	]
 }
