@@ -1,10 +1,9 @@
 import { command, form, getRequestEvent } from "$app/server";
 import { UpsertCategorySchema } from "$lib/components/upsert-category/upsert-category-schema";
 import { deleteCategoryData, upsertCategoryData } from "$lib/server/data/category";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
-import z from "zod";
 
 export const upsertCategoryAction = form(UpsertCategorySchema, async (data) => {
 	const program = Effect.fn("[remote] - upsert-category")(function* () {
@@ -16,21 +15,27 @@ export const upsertCategoryAction = form(UpsertCategorySchema, async (data) => {
 		return yield* upsertCategoryData({ userId: user!.id, data: data });
 	});
 
-	return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
+	return await Effect.runPromise(withTelemetry(program()));
 });
 
-export const deleteCategoryAction = command(
-	z.number().int().positive(),
-	async (categoryId) => {
-		const program = Effect.fn("[remote] - delete-category")(function* () {
-			const { locals } = getRequestEvent();
-			const user = locals.user;
-			if (!user) {
-				return yield* Effect.fail(error(401));
-			}
-			return yield* deleteCategoryData({ userId: user.id, categoryId });
-		});
+export const deleteCategoryAction = command("unchecked", async (categoryId: unknown) => {
+	const numId =
+		typeof categoryId === "number"
+			? categoryId
+			: typeof categoryId === "string"
+				? parseInt(categoryId, 10)
+				: NaN;
+	if (isNaN(numId) || numId <= 0) {
+		return { ok: false, message: "Invalid category ID" };
+	}
+	const program = Effect.fn("[remote] - delete-category")(function* () {
+		const { locals } = getRequestEvent();
+		const user = locals.user;
+		if (!user) {
+			return yield* Effect.fail(error(401));
+		}
+		return yield* deleteCategoryData({ userId: user.id, categoryId: numId });
+	});
 
-		return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
-	},
-);
+	return await Effect.runPromise(withTelemetry(program()));
+});

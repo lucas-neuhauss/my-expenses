@@ -438,6 +438,6 @@ export const getDashboardTransactionsData = Effect.fn(
 	);
 });
 
-export type DashboardTransaction = Effect.Effect.Success<
+export type DashboardTransaction = Effect.Success<
 	ReturnType<typeof getDashboardTransactionsData>
 >[number];

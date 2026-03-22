@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
 	import CategoriesCombobox from "$lib/components/categories-combobox.svelte";
 	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
+	import { subscriptionCollection } from "$lib/db-collectons/subscription-collection";
 	import DatePicker from "$lib/components/date-picker.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
@@ -9,7 +9,7 @@
 	import { Label } from "$lib/components/ui/label";
 	import * as Select from "$lib/components/ui/select";
 	import { upsertSubscriptionAction } from "$lib/remote/subscription.remote";
-	import type { SubscriptionWithRelations } from "$lib/server/data/subscription";
+	import type { SubscriptionWithRelations } from "$lib/db-collectons/subscription-collection";
 	import type { NestedCategory } from "$lib/utils/category";
 	import {
 		CalendarDate,
@@ -68,7 +68,7 @@
 			if (!res) throw Error();
 			if (res.ok) {
 				toast.success(res.message);
-				invalidateAll();
+				subscriptionCollection.utils.refetch();
 				transactionCollection.utils.refetch();
 				onSuccess();
 			} else {

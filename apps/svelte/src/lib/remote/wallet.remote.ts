@@ -1,9 +1,9 @@
 import { command, form, getRequestEvent } from "$app/server";
 import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
-import { Effect, Schema as S } from "effect";
+import { Effect } from "effect";
 
 export const upsertWalletAction = form(UpsertWalletSchema, async (data) => {
 	const program = Effect.fn("[remote] - upsert-wallet")(
@@ -34,36 +34,38 @@ export const upsertWalletAction = form(UpsertWalletSchema, async (data) => {
 	);
 
 	return Effect.runPromise(
-		program().pipe(Effect.provide(NodeSdkLive), Effect.catchAllCause(Effect.logError)),
+		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
 	);
 });
 
-export const deleteWalletAction = command(
-	S.standardSchemaV1(S.Int.pipe(S.positive())),
-	async (id) => {
-		const program = Effect.fn("[remote] - delete-wallet")(
-			function* () {
-				const {
-					locals: { user },
-				} = getRequestEvent();
-				if (!user) {
-					return error(401);
-				}
+export const deleteWalletAction = command("unchecked", async (id: unknown) => {
+	const numId =
+		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
+	if (isNaN(numId) || numId <= 0) {
+		return { ok: false, message: "Invalid wallet ID" };
+	}
+	const program = Effect.fn("[remote] - delete-wallet")(
+		function* () {
+			const {
+				locals: { user },
+			} = getRequestEvent();
+			if (!user) {
+				return error(401);
+			}
 
-				const message = yield* deleteWalletData({ userId: user.id, id });
-				return { ok: true, message };
-			},
-			Effect.catchTag("DeleteWalletError", (error) =>
-				Effect.succeed({
-					ok: false,
-					errorType: "DeleteWalletError",
-					message: error.message,
-				}),
-			),
-		);
+			const message = yield* deleteWalletData({ userId: user.id, id: numId });
+			return { ok: true, message };
+		},
+		Effect.catchTag("DeleteWalletError", (error) =>
+			Effect.succeed({
+				ok: false,
+				errorType: "DeleteWalletError",
+				message: error.message,
+			}),
+		),
+	);
 
-		return Effect.runPromise(
-			program().pipe(Effect.provide(NodeSdkLive), Effect.catchAllCause(Effect.logError)),
-		);
-	},
-);
+	return Effect.runPromise(
+		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
+	);
+});

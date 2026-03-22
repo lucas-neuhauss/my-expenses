@@ -1,5 +1,5 @@
 import { loadBackupData } from "$lib/server/data/backup.js";
-import { NodeSdkLive } from "$lib/server/observability.js";
+import { withTelemetry } from "$lib/server/observability.js";
 import { error, fail, redirect } from "@sveltejs/kit";
 import { Effect } from "effect";
 import { ungzip } from "pako";
@@ -43,7 +43,7 @@ export const actions = {
 		});
 
 		return await Effect.runPromise(
-			program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+			withTelemetry(program()).pipe(Effect.tapCause(Effect.logError)),
 		);
 	},
 };

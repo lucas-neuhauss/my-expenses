@@ -21,9 +21,29 @@
 		type: "expense" | "income";
 		onSuccess: () => void;
 	} = $props();
+
+	let keyedAction = $derived(upsertCategoryAction.for(type));
+	let wasSubmitted = $state(false);
+
 	let categories = $state(
 		(() => (category ? [category, ...category.children] : [getEmptyCategory()]))(),
 	);
+
+	$effect(() => {
+		if (wasSubmitted && keyedAction.result) {
+			const res = keyedAction.result;
+			if (res && typeof res === "object" && "ok" in res) {
+				if (res.ok) {
+					categoryCollection.utils.refetch();
+					toast.success(res.message);
+					onSuccess();
+				} else {
+					toast.error(res.message);
+				}
+			}
+			wasSubmitted = false;
+		}
+	});
 
 	function getRandomIcon() {
 		const randomIndex = Math.floor(Math.random() * CATEGORY_ICON_LIST.length);
@@ -76,21 +96,9 @@
 </script>
 
 <form
-	{...upsertCategoryAction.for(type).enhance(async ({ submit }) => {
-		try {
-			await submit();
-			categoryCollection.utils.refetch();
-			const res = upsertCategoryAction.for(type).result;
-			if (!res) throw Error();
-			if (res.ok) {
-				toast.success(res.message);
-				onSuccess();
-			} else {
-				toast.error(res.message);
-			}
-		} catch {
-			toast.error("Something went wrong. Please try again later.");
-		}
+	{...keyedAction.enhance(({ submit }) => {
+		submit();
+		wasSubmitted = true;
 	})}
 >
 	<div class="mt-3">

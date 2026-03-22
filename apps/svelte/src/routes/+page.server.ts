@@ -1,5 +1,5 @@
 import { upsertTransactionData } from "$lib/server/data/transaction";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 import { fail, redirect } from "@sveltejs/kit";
 import { Effect } from "effect";
 
@@ -30,7 +30,7 @@ export const actions = {
 		});
 
 		return await Effect.runPromise(
-			program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+			withTelemetry(program()).pipe(Effect.tapCause(Effect.logError)),
 		);
 	},
 };

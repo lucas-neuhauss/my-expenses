@@ -5,27 +5,55 @@
 	import * as Tabs from "$lib/components/ui/tabs";
 	import { UpsertSubscription } from "$lib/components/upsert-subscription";
 	import { formatCurrency } from "$lib/currency";
-	import {
-		deleteSubscriptionAction,
-		togglePauseSubscriptionAction,
-	} from "$lib/remote/subscription.remote";
-	import type { SubscriptionWithRelations } from "$lib/server/data/subscription";
-	import { nestCategories } from "$lib/utils/category";
-	import { invalidateAll } from "$app/navigation";
+	import { subscriptionCollection } from "$lib/db-collectons/subscription-collection";
 	import { transactionCollection } from "$lib/db-collectons/transaction-collection";
+	import { categoryCollection } from "$lib/db-collectons/category-collection";
+	import { walletCollection } from "$lib/db-collectons/wallet-collection";
+	import { isQueryCacheHydrated } from "$lib/integrations/tanstack-query/query-client";
+	import { nestCategories } from "$lib/utils/category";
+	import { eq, useLiveQuery } from "@tanstack/svelte-db";
 	import Pause from "@lucide/svelte/icons/pause";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Play from "@lucide/svelte/icons/play";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { toast } from "svelte-sonner";
+	import type { SubscriptionWithRelations } from "$lib/db-collectons/subscription-collection";
+	import {
+		deleteSubscriptionAction,
+		togglePauseSubscriptionAction,
+	} from "$lib/remote/subscription.remote";
 
-	let { data } = $props();
+	const subscriptionsQuery = useLiveQuery((q) =>
+		q.from({ s: subscriptionCollection }).orderBy(({ s }) => s.name, "asc"),
+	);
 
-	let nestedCategories = $derived(nestCategories(data.categories));
+	const categoriesQuery = useLiveQuery((q) =>
+		q
+			.from({ c: categoryCollection })
+			.where(({ c }) => eq(c.unique, null))
+			.orderBy(({ c }) => c.name, "asc"),
+	);
+
+	const walletsQuery = useLiveQuery((q) =>
+		q.from({ w: walletCollection }).orderBy(({ w }) => w.name, "asc"),
+	);
+
+	let isLoading = $derived(
+		!$isQueryCacheHydrated ||
+			!subscriptionsQuery.isReady ||
+			!categoriesQuery.isReady ||
+			!walletsQuery.isReady,
+	);
+
+	let nestedCategories = $derived(nestCategories(categoriesQuery.data ?? []));
 	let tab = $state<"active" | "paused">("active");
 
-	let activeSubscriptions = $derived(data.subscriptions.filter((s) => !s.paused));
-	let pausedSubscriptions = $derived(data.subscriptions.filter((s) => s.paused));
+	let activeSubscriptions = $derived(
+		(subscriptionsQuery.data ?? []).filter((s) => !s.paused),
+	);
+	let pausedSubscriptions = $derived(
+		(subscriptionsQuery.data ?? []).filter((s) => s.paused),
+	);
 	let displayedSubscriptions = $derived(
 		tab === "active" ? activeSubscriptions : pausedSubscriptions,
 	);
@@ -50,7 +78,6 @@
 		let nextDate: Date;
 
 		if (sub.lastGenerated === null) {
-			// First generation based on start date
 			const [year, month, day] = sub.startDate.split("-").map(Number);
 			const startDate = new Date(year, month - 1, day);
 			nextDate = getDateWithDay(
@@ -71,7 +98,6 @@
 			nextDate = getDateWithDay(year, month, sub.dayOfMonth);
 		}
 
-		// If nextDate is in the past, show "Pending"
 		if (nextDate <= today) {
 			return "Pending";
 		}
@@ -96,15 +122,15 @@
 	async function handleTogglePause(sub: SubscriptionWithRelations) {
 		try {
 			const res = await togglePauseSubscriptionAction(sub.id);
-			if (res?.ok) {
+			if (!res) throw Error();
+			if (res.ok) {
 				toast.success(res.message);
-				invalidateAll();
-				// Refresh transactions when unpausing (may have generated new ones)
+				subscriptionCollection.utils.refetch();
 				if (sub.paused) {
 					transactionCollection.utils.refetch();
 				}
 			} else {
-				toast.error(res?.message ?? "Something went wrong");
+				toast.error(res.message);
 			}
 		} catch {
 			toast.error("Something went wrong. Please try again later.");
@@ -115,12 +141,13 @@
 		if (!deleteDialog.subscription) return;
 		try {
 			const res = await deleteSubscriptionAction(deleteDialog.subscription.id);
-			if (res?.ok) {
+			if (!res) throw Error();
+			if (res.ok) {
 				toast.success(res.message);
+				subscriptionCollection.utils.writeDelete(deleteDialog.subscription.id);
 				deleteDialog.open = false;
-				invalidateAll();
 			} else {
-				toast.error(res?.message ?? "Something went wrong");
+				toast.error(res.message);
 			}
 		} catch {
 			toast.error("Something went wrong. Please try again later.");
@@ -135,7 +162,7 @@
 <UpsertSubscription
 	bind:open={upsertDialog.open}
 	subscription={upsertDialog.subscription}
-	wallets={data.wallets}
+	wallets={walletsQuery.data ?? []}
 	categories={nestedCategories}
 />
 
@@ -166,11 +193,15 @@
 		</div>
 	</Tabs.Root>
 
-	{#if displayedSubscriptions.length === 0}
+	{#if isLoading || displayedSubscriptions.length === 0}
 		<div class="text-muted-foreground mt-10 text-center">
-			{tab === "active"
-				? "No active subscriptions. Create one to get started!"
-				: "No paused subscriptions."}
+			{#if isLoading}
+				Loading...
+			{:else}
+				{tab === "active"
+					? "No active subscriptions. Create one to get started!"
+					: "No paused subscriptions."}
+			{/if}
 		</div>
 	{:else}
 		{#each displayedSubscriptions as subscription (subscription.id)}

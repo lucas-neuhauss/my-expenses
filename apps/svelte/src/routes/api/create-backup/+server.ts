@@ -1,5 +1,5 @@
 import { createBackupData } from "$lib/server/data/backup.js";
-import { NodeSdkLive } from "$lib/server/observability.js";
+import { withTelemetry } from "$lib/server/observability.js";
 import { error, json } from "@sveltejs/kit";
 import dayjs from "dayjs";
 import { Effect } from "effect";
@@ -19,7 +19,7 @@ export async function GET({ locals }) {
 	});
 
 	const backupData = await Effect.runPromise(
-		program().pipe(Effect.provide(NodeSdkLive), Effect.tapErrorCause(Effect.logError)),
+		withTelemetry(program()).pipe(Effect.tapCause(Effect.logError)),
 	);
 
 	return json(backupData, {

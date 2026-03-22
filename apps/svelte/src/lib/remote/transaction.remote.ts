@@ -1,6 +1,6 @@
 import { command, getRequestEvent } from "$app/server";
 import { deleteTransactionData } from "$lib/server/data/transaction";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
 import * as z from "zod";
@@ -18,6 +18,6 @@ export const deleteTransactionAction = command(z.int(), async (transactionId) =>
 	});
 
 	return Effect.runPromise(
-		program().pipe(Effect.provide(NodeSdkLive), Effect.catchAllCause(Effect.logError)),
+		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
 	);
 });

@@ -5,7 +5,7 @@ import { Effect } from "effect";
 
 import { getSessionFromCookies } from "$lib/server/auth";
 import { generatePendingTransactionsData } from "$lib/server/data/subscription";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 
 const sessionHook: Handle = async ({ event, resolve }) => {
 	const session = await getSessionFromCookies(event.cookies);
@@ -62,7 +62,7 @@ const subscriptionGeneration: Handle = async ({ event, resolve }) => {
 
 			// Run generation in background (fire and forget)
 			const program = generatePendingTransactionsData({ userId: user.id });
-			Effect.runPromise(program.pipe(Effect.provide(NodeSdkLive))).catch((err) => {
+			Effect.runPromise(withTelemetry(program)).catch((err) => {
 				console.error("Failed to generate subscription transactions:", err);
 			});
 		}

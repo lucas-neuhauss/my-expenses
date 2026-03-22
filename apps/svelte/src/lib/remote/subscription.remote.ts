@@ -6,7 +6,7 @@ import {
 	togglePauseSubscriptionData,
 	upsertSubscriptionData,
 } from "$lib/server/data/subscription";
-import { NodeSdkLive } from "$lib/server/observability";
+import { withTelemetry } from "$lib/server/observability";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
 import z from "zod";
@@ -26,7 +26,7 @@ export const upsertSubscriptionAction = form(UpsertSubscriptionSchema, async (da
 		return result;
 	});
 
-	return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
+	return await Effect.runPromise(withTelemetry(program()));
 });
 
 export const deleteSubscriptionAction = command(
@@ -41,7 +41,7 @@ export const deleteSubscriptionAction = command(
 			return yield* deleteSubscriptionData({ userId: user.id, subscriptionId });
 		});
 
-		return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
+		return await Effect.runPromise(withTelemetry(program()));
 	},
 );
 
@@ -65,7 +65,7 @@ export const togglePauseSubscriptionAction = command(
 			return result;
 		});
 
-		return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
+		return await Effect.runPromise(withTelemetry(program()));
 	},
 );
 
@@ -81,5 +81,5 @@ export const generateSubscriptionTransactionsAction = command(z.void(), async ()
 		},
 	);
 
-	return await Effect.runPromise(program().pipe(Effect.provide(NodeSdkLive)));
+	return await Effect.runPromise(withTelemetry(program()));
 });

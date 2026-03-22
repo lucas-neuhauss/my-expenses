@@ -129,4 +129,4 @@ export function loadWallets(userId: UserId) {
 			.groupBy(table.transaction.userId, table.wallet.id),
 	);
 }
-export type LoadWallet = Effect.Effect.Success<ReturnType<typeof loadWallets>>[number];
+export type LoadWallet = Effect.Success<ReturnType<typeof loadWallets>>[number];
