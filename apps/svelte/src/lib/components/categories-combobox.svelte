@@ -24,7 +24,7 @@
 	const ALL_CATEGORIES_VALUE = -1;
 
 	let open = $state(false);
-	let triggerRef = $state<HTMLButtonElement>(null!);
+	let triggerRef = $state<HTMLButtonElement | null>(null);
 
 	let flatCategories = $derived(getFlatCategories(categories));
 	let selectedCategory = $derived(flatCategories.find((item) => item.id === value));
@@ -35,7 +35,7 @@
 	function closeAndFocusTrigger() {
 		open = false;
 		tick().then(() => {
-			triggerRef.focus();
+			triggerRef?.focus();
 		});
 	}
 

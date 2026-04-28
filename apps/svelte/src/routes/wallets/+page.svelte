@@ -52,7 +52,7 @@
 			Create Wallet
 		</Button>
 		<UpsertWalletDialog
-			open={upsertWalletDialog.open}
+			bind:open={upsertWalletDialog.open}
 			wallet={upsertWalletDialog.wallet}
 		/>
 	</div>

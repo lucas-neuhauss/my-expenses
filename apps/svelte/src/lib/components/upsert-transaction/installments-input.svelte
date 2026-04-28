@@ -25,7 +25,9 @@
 
 	// Recalculate when count or totalCents changes
 	$effect(() => {
-		if (enabled && totalCents > 0) {
+		if (!enabled) {
+			installmentCents = [];
+		} else if (totalCents > 0) {
 			installmentCents = splitEqually(totalCents, count);
 		}
 	});

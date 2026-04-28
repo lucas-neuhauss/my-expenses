@@ -25,19 +25,19 @@
 	<Popover.Content side="right" class="w-auto p-0">
 		<ScrollArea class={cn("h-[400px] w-[320px]")}>
 			<div class="grid grid-cols-6 gap-2 p-4">
-				{#each CATEGORY_ICON_LIST as icon (icon)}
+				{#each CATEGORY_ICON_LIST as iconName (iconName)}
 					<button
 						class={buttonVariants({
 							variant: "secondary",
 							class: "h-auto w-auto self-center justify-self-center rounded-full p-2",
 						})}
 						onclick={() => {
-							onSelect(icon);
+							onSelect(iconName);
 							open = false;
 						}}
 					>
 						<img
-							src={`/images/category/${icon}`}
+							src={`/images/category/${iconName}`}
 							alt="category icon"
 							width="26"
 							height="26"

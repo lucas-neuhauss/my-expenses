@@ -10,8 +10,7 @@
 
 	let { isAdmin, email }: { isAdmin: boolean; email: string } = $props();
 
-	// Menu items.
-	const items = (() => {
+	let items = $derived.by(() => {
 		const baseItems = [
 			{
 				title: "Home",
@@ -38,7 +37,7 @@
 			baseItems.push({ title: "Backup", url: "/backup", icon: Database });
 		}
 		return baseItems;
-	})();
+	});
 </script>
 
 <Sidebar.Root>

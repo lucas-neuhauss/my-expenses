@@ -21,10 +21,10 @@
 	// Register the required components
 	echarts.use([CanvasRenderer, PieChart, TooltipComponent, TitleComponent]);
 
-	let expenseChartContainer: HTMLDivElement;
-	let incomeChartContainer: HTMLDivElement;
-	let expensePieChart: echarts.ECharts | undefined;
-	let incomePieChart: echarts.ECharts | undefined;
+	let expenseChartContainer = $state<HTMLDivElement | null>(null);
+	let incomeChartContainer = $state<HTMLDivElement | null>(null);
+	let expensePieChart = $state<echarts.ECharts | undefined>(undefined);
+	let incomePieChart = $state<echarts.ECharts | undefined>(undefined);
 
 	const onClickCategory = (params: { data: unknown }) => {
 		const categoryId = z
@@ -39,8 +39,8 @@
 
 		// Only initialize if containers exist and have dimensions
 		if (
-			expenseChartContainer &&
-			incomeChartContainer &&
+			expenseChartContainer != null &&
+			incomeChartContainer != null &&
 			expenseChartContainer.clientWidth > 0 &&
 			incomeChartContainer.clientWidth > 0
 		) {
@@ -66,11 +66,9 @@
 
 	// Initialize charts after DOM is ready and on theme/data changes
 	$effect(() => {
-		// Track dependencies
-		const theme = mode.current;
-		const data = charts;
+		const _theme = mode.current;
+		const _data = charts;
 
-		// Use setTimeout to ensure DOM is fully laid out
 		const timeoutId = setTimeout(() => {
 			initCharts();
 		}, 0);
