@@ -47,8 +47,9 @@ export const transactionCollection = createCollection(
 		queryKey: ["transaction"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/transactions"));
+			if (!res.ok) return [];
 			const json = await res.json();
-			return json;
+			return Array.isArray(json) ? json : [];
 		},
 		getKey: (item) => item.id,
 		// Handle all CRUD operations

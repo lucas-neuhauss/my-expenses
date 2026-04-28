@@ -22,8 +22,9 @@ export const categoryCollection = createCollection(
 		queryKey: ["category"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/categories"));
+			if (!res.ok) return [];
 			const json = await res.json();
-			return json;
+			return Array.isArray(json) ? json : [];
 		},
 		getKey: (item) => item.id,
 		// Handle all CRUD operations

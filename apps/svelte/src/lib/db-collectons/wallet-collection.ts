@@ -19,8 +19,9 @@ export const walletCollection = createCollection(
 		queryKey: ["wallet"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/wallets"));
+			if (!res.ok) return [];
 			const json = await res.json();
-			return json;
+			return Array.isArray(json) ? json : [];
 		},
 		getKey: (item) => item.id,
 		// Handle all CRUD operations

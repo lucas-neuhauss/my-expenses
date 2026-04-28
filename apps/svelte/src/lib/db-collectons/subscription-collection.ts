@@ -36,8 +36,9 @@ export const subscriptionCollection = createCollection(
 		queryKey: ["subscription"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/subscriptions"));
+			if (!res.ok) return [];
 			const json = await res.json();
-			return json;
+			return Array.isArray(json) ? json : [];
 		},
 		getKey: (item) => item.id,
 		onInsert: async () => {
