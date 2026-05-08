@@ -13,6 +13,7 @@
 	import { useLiveQuery } from "@tanstack/svelte-db";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
+	import CreditCard from "@lucide/svelte/icons/credit-card";
 
 	const balanceQuery = useLiveQuery((q) =>
 		q
@@ -27,6 +28,13 @@
 
 	let isLoading = $derived(
 		!$isQueryCacheHydrated || !balanceQuery.isReady || !walletsQuery.isReady,
+	);
+
+	let totalBalance = $derived(
+		walletsQuery.data.reduce((acc, w) => {
+			const bal = balanceQuery.data.find((b) => b.walletId === w.id)?.sum ?? 0;
+			return acc + w.initialBalance + bal;
+		}, 0),
 	);
 
 	let walletToDelete = $state<number | null>(null);
@@ -74,16 +82,44 @@
 	{#if isLoading}
 		<WalletCardSkeleton />
 	{:else}
+		<Card.Root class="py-6">
+			<Card.Content class="flex items-center justify-between">
+				<div>
+					<h3 class="mb-3 font-bold">Total Balance</h3>
+					<p class={totalBalance < 0 ? "text-destructive" : ""}>
+						{formatCurrency(totalBalance)}
+					</p>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
 		<div
 			class="grid grid-cols-1 gap-2 pb-10 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-3 xl:grid-cols-4"
 		>
 			{#each walletsQuery.data as w (w.id)}
 				{@const sum = balanceQuery.data.find((b) => b.walletId === w.id)?.sum ?? 0}
+				{@const balance = w.initialBalance + (sum ?? 0)}
+				{@const isCreditCard = balance < 0}
 				<Card.Root class="py-6">
 					<Card.Content class="flex items-center justify-between">
 						<div>
-							<h3 class="mb-3 font-bold">{w.name}</h3>
-							<p>{formatCurrency(w.initialBalance + (sum ?? 0))}</p>
+							<h3 class="mb-3 flex items-center gap-2 font-bold">
+								{w.name}
+								{#if isCreditCard}
+									<span
+										class="text-muted-foreground [&_svg]:size-4"
+										title="Statement balance"
+									>
+										<CreditCard />
+									</span>
+								{/if}
+							</h3>
+							<p class={isCreditCard ? "text-destructive" : ""}>
+								{formatCurrency(balance)}
+							</p>
+							{#if isCreditCard}
+								<p class="text-muted-foreground mt-1 text-xs">Statement balance</p>
+							{/if}
 						</div>
 						<div class="flex items-center gap-1 lg:gap-2">
 							<Button

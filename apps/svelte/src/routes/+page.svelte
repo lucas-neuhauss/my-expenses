@@ -18,10 +18,13 @@
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { calculateDashboardData } from "$lib/utils/transaction";
 	import { DateFormatter } from "@internationalized/date";
+	import ArrowRightLeft from "@lucide/svelte/icons/arrow-right-left";
+	import Check from "@lucide/svelte/icons/check";
 	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Trash from "@lucide/svelte/icons/trash";
+	import X from "@lucide/svelte/icons/x";
 	import { isNull, useLiveQuery } from "@tanstack/svelte-db";
 	import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs-svelte";
 	import { toast } from "svelte-sonner";
@@ -375,7 +378,8 @@
 			</Table.Header>
 			<Table.Body>
 				{#each filteredTransactionsQuery.data as t (t.id)}
-					<Table.Row>
+					{@const isTransfer = t.transferenceId !== null}
+					<Table.Row class={isTransfer ? "bg-muted/40" : ""}>
 						<Table.Cell>
 							{new DateFormatter("en-US", { dateStyle: "medium" }).format(
 								getLocalDate(t.date),
@@ -384,8 +388,11 @@
 						<Table.Cell>
 							{t.description}
 							{#if t.installmentGroupId}
-								<span class="text-muted-foreground ml-1 text-xs">
-									[{t.installmentIndex}/{t.installmentTotal}]
+								<span
+									class="bg-muted text-muted-foreground ml-1 rounded px-1.5 py-0.5 text-xs"
+									title="Installment {t.installmentIndex} of {t.installmentTotal}"
+								>
+									{t.installmentIndex}/{t.installmentTotal}
 								</span>
 							{/if}
 							{#if t.subscriptionId}
@@ -398,24 +405,65 @@
 							{/if}
 						</Table.Cell>
 						<Table.Cell>
-							<div class="flex h-full items-center gap-x-4">
-								<img
-									alt="category icon"
-									src={`/images/category/${t.category.icon}`}
-									width="19"
-									height="19"
-									loading="lazy"
-								/>
-								<span class="truncate">
-									{t.category.name}
-								</span>
-							</div>
+							{#if isTransfer}
+								<div class="flex h-full items-center gap-x-2">
+									<div class="text-muted-foreground [&_svg]:size-4">
+										<ArrowRightLeft />
+									</div>
+									<span class="text-muted-foreground truncate">Transfer</span>
+								</div>
+							{:else}
+								<div class="flex h-full items-center gap-x-4">
+									<img
+										alt="category icon"
+										src={`/images/category/${t.category.icon}`}
+										width="19"
+										height="19"
+										loading="lazy"
+									/>
+									<span class="truncate">
+										{t.category.name}
+									</span>
+								</div>
+							{/if}
 						</Table.Cell>
 						<Table.Cell>
-							{t.wallet.name}
+							{#if isTransfer}
+								<span class="text-muted-foreground">
+									{#if t.type === "expense"}
+										{t.transferenceTo
+											? (walletsQuery.data.find(
+													(w) => w.id === t.transferenceTo!.walletId,
+												)?.name ?? t.wallet.name)
+											: t.wallet.name}
+										→
+										{t.wallet.name}
+									{:else}
+										{t.wallet.name}
+										←
+										{t.transferenceFrom
+											? (walletsQuery.data.find(
+													(w) => w.id === t.transferenceFrom!.walletId,
+												)?.name ?? t.wallet.name)
+											: t.wallet.name}
+									{/if}
+								</span>
+							{:else}
+								{t.wallet.name}
+							{/if}
 						</Table.Cell>
 						<Table.Cell>{formatCurrency(t.cents)}</Table.Cell>
-						<Table.Cell>{t.paid ? "✔️" : "🚫"}</Table.Cell>
+						<Table.Cell>
+							{#if t.paid}
+								<span class="text-emerald-600 [&_svg]:size-4">
+									<Check />
+								</span>
+							{:else}
+								<span class="text-muted-foreground [&_svg]:size-4">
+									<X />
+								</span>
+							{/if}
+						</Table.Cell>
 						<Table.Cell class="flex items-center gap-2">
 							<Button
 								title="Edit transaction"
