@@ -431,21 +431,21 @@
 							{#if isTransfer}
 								<span class="text-muted-foreground">
 									{#if t.type === "expense"}
+										{t.wallet.name}
+										→
 										{t.transferenceTo
 											? (walletsQuery.data.find(
 													(w) => w.id === t.transferenceTo!.walletId,
 												)?.name ?? t.wallet.name)
 											: t.wallet.name}
-										→
-										{t.wallet.name}
 									{:else}
-										{t.wallet.name}
-										←
 										{t.transferenceFrom
 											? (walletsQuery.data.find(
 													(w) => w.id === t.transferenceFrom!.walletId,
 												)?.name ?? t.wallet.name)
 											: t.wallet.name}
+										→
+										{t.wallet.name}
 									{/if}
 								</span>
 							{:else}
