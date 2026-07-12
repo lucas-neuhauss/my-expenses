@@ -45,7 +45,7 @@
 		</Dialog.Header>
 
 		<form
-			{...upsertWalletAction.enhance(async ({ form, submit }) => {
+			{...upsertWalletAction.enhance(async ({ element, submit }) => {
 				try {
 					await submit();
 					const res = upsertWalletAction.result;
@@ -53,7 +53,7 @@
 
 					if (res.success) {
 						walletCollection.utils.refetch();
-						form.reset();
+						element.reset();
 						toast.success(res.message);
 						open = false;
 					} else {
