@@ -7,6 +7,7 @@
 	import { categoryCollection } from "$lib/db-collectons/category-collection";
 	import { upsertCategoryAction } from "$lib/remote/category.remote";
 	import type { NestedCategory } from "$lib/utils/category";
+	import { isHttpError } from "@sveltejs/kit";
 	import Trash from "@lucide/svelte/icons/trash";
 	import { tick } from "svelte";
 	import { toast } from "svelte-sonner";
@@ -23,27 +24,28 @@
 	} = $props();
 
 	let keyedAction = $derived(upsertCategoryAction.for(type));
-	let wasSubmitted = $state(false);
 
 	let categories = $state(
 		(() => (category ? [category, ...category.children] : [getEmptyCategory()]))(),
 	);
 
-	$effect(() => {
-		if (wasSubmitted && keyedAction.result) {
-			const res = keyedAction.result;
-			if (res && typeof res === "object" && "ok" in res) {
-				if (res.ok) {
-					categoryCollection.utils.refetch();
-					toast.success(res.message);
-					onSuccess();
-				} else {
-					toast.error(res.message);
-				}
-			}
-			wasSubmitted = false;
+	function categoryUpsertErrorToast(e: unknown): void {
+		if (!isHttpError(e)) {
+			toast.error("Something went wrong. Please try again later.");
+			return;
 		}
-	});
+		const body = e.body as { _tag?: string; message?: string } | undefined;
+		switch (body?._tag) {
+			case "ForbiddenError":
+				toast.error("You don't have permission to edit this category");
+				return;
+			case "DeleteCategoryError":
+				toast.error(body.message ?? "Category cannot be modified");
+				return;
+			default:
+				toast.error("Something went wrong. Please try again later.");
+		}
+	}
 
 	function getRandomIcon() {
 		const randomIndex = Math.floor(Math.random() * CATEGORY_ICON_LIST.length);
@@ -96,9 +98,17 @@
 </script>
 
 <form
-	{...keyedAction.enhance(({ submit }) => {
-		submit();
-		wasSubmitted = true;
+	{...keyedAction.enhance(async ({ submit, result }) => {
+		try {
+			const success = await submit();
+			if (success && result) {
+				categoryCollection.utils.refetch();
+				toast.success(result);
+				onSuccess();
+			}
+		} catch (e) {
+			categoryUpsertErrorToast(e);
+		}
 	})}
 >
 	<div class="mt-3">

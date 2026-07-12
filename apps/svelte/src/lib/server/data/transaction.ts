@@ -5,11 +5,19 @@ import type { UserId } from "$lib/types";
 import { DateStringSchema } from "$lib/utils/date-time";
 import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
 import * as z from "zod";
 
 const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
+
+/**
+ * Tagged error for "cannot delete this transaction" conditions.
+ * Yielded by `deleteTransactionData` and mapped to HTTP 409 by `statusFor`.
+ */
+export class DeleteTransactionError extends Data.TaggedError("DeleteTransactionError")<{
+	message: string;
+}> {}
 
 /**
  * Split a total amount in cents as equally as possible into N parts.
@@ -333,7 +341,9 @@ export const deleteTransactionData = Effect.fn("data/transaction/deleteTransacti
 				),
 		);
 		if (!transaction) {
-			throw new Error("Transaction not found");
+			return yield* new DeleteTransactionError({
+				message: "Transaction not found",
+			});
 		}
 
 		if (transaction.transferenceId !== null) {
@@ -343,7 +353,9 @@ export const deleteTransactionData = Effect.fn("data/transaction/deleteTransacti
 				}),
 			);
 			if (transactions.length !== 2) {
-				throw new Error("Transactions from transference not found");
+				return yield* new DeleteTransactionError({
+					message: "Linked transfer transactions not found",
+				});
 			}
 			yield* exec(
 				db.delete(table.transaction).where(
@@ -359,7 +371,7 @@ export const deleteTransactionData = Effect.fn("data/transaction/deleteTransacti
 			);
 		}
 
-		return { ok: true, toast: "Transaction deleted" };
+		return "Transaction deleted" as const;
 	},
 );
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isHttpError } from "@sveltejs/kit";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
@@ -34,6 +35,25 @@
 	});
 
 	let isUpdate = $derived(wallet !== null);
+
+	function toastForUpsertError(e: unknown): void {
+		if (!isHttpError(e)) {
+			toast.error("Something went wrong. Please try again later.");
+			return;
+		}
+		const body = e.body as
+			{ _tag?: string; message?: string; entity?: string } | undefined;
+		switch (body?._tag) {
+			case "EntityNotFoundError":
+				toast.error(`${body.entity ?? "Wallet"} not found`);
+				return;
+			case "InvalidInputError":
+				toast.error(body.message ?? "Invalid input");
+				return;
+			default:
+				toast.error("Something went wrong. Please try again later.");
+		}
+	}
 </script>
 
 <Dialog.Root bind:open>
@@ -45,22 +65,17 @@
 		</Dialog.Header>
 
 		<form
-			{...upsertWalletAction.enhance(async ({ element, submit }) => {
+			{...upsertWalletAction.enhance(async ({ submit, result, element }) => {
 				try {
-					await submit();
-					const res = upsertWalletAction.result;
-					if (!res) throw Error();
-
-					if (res.success) {
+					const success = await submit();
+					if (success && result) {
 						walletCollection.utils.refetch();
+						toast.success(result);
 						element.reset();
-						toast.success(res.message);
 						open = false;
-					} else {
-						throw Error();
 					}
-				} catch {
-					toast.error("Something went wrong. Please try again later.");
+				} catch (e) {
+					toastForUpsertError(e);
 				}
 			})}
 			class="flex flex-col gap-4 py-4 [&>div]:flex [&>div]:flex-col [&>div]:justify-items-end [&>div]:gap-2"

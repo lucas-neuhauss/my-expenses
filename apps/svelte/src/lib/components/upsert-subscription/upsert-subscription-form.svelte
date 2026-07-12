@@ -11,6 +11,7 @@
 	import { upsertSubscriptionAction } from "$lib/remote/subscription.remote";
 	import type { SubscriptionWithRelations } from "$lib/db-collectons/subscription-collection";
 	import type { NestedCategory } from "$lib/utils/category";
+	import { isHttpError } from "@sveltejs/kit";
 	import {
 		CalendarDate,
 		getLocalTimeZone,
@@ -18,6 +19,21 @@
 		today,
 	} from "@internationalized/date";
 	import { toast } from "svelte-sonner";
+
+	function subscriptionUpsertErrorToast(e: unknown): void {
+		if (!isHttpError(e)) {
+			toast.error("Something went wrong. Please try again later.");
+			return;
+		}
+		const body = e.body as { _tag?: string; message?: string } | undefined;
+		switch (body?._tag) {
+			case "SubscriptionNotFoundError":
+				toast.error("Subscription not found");
+				return;
+			default:
+				toast.error("Something went wrong. Please try again later.");
+		}
+	}
 
 	let {
 		subscription,
@@ -45,8 +61,7 @@
 				? parseDate(subscription.startDate)
 				: today(getLocalTimeZone())) as CalendarDate,
 			endDate: (subscription?.endDate ? parseDate(subscription.endDate) : undefined) as
-				| CalendarDate
-				| undefined,
+				CalendarDate | undefined,
 		}))(),
 	);
 
@@ -61,21 +76,17 @@
 </script>
 
 <form
-	{...upsertSubscriptionAction.enhance(async ({ submit }) => {
+	{...upsertSubscriptionAction.enhance(async ({ submit, result }) => {
 		try {
-			await submit();
-			const res = upsertSubscriptionAction.result;
-			if (!res) throw Error();
-			if (res.ok) {
-				toast.success(res.message);
+			const success = await submit();
+			if (success && result) {
+				toast.success(result);
 				subscriptionCollection.utils.refetch();
 				transactionCollection.utils.refetch();
 				onSuccess();
-			} else {
-				toast.error(res.message);
 			}
-		} catch {
-			toast.error("Something went wrong. Please try again later.");
+		} catch (e) {
+			subscriptionUpsertErrorToast(e);
 		}
 	})}
 >

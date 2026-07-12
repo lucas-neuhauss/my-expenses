@@ -1,85 +1,105 @@
 import { command, form, getRequestEvent } from "$app/server";
-import { UpsertSubscriptionSchema } from "$lib/components/upsert-subscription/upsert-subscription-schema";
+import { SubscriptionSchema } from "$lib/schemas/subscription";
 import {
 	deleteSubscriptionData,
 	generatePendingTransactionsData,
+	SubscriptionNotFoundError,
 	togglePauseSubscriptionData,
 	upsertSubscriptionData,
 } from "$lib/server/data/subscription";
-import { withTelemetry } from "$lib/server/observability";
+import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
-import z from "zod";
 
-export const upsertSubscriptionAction = form(UpsertSubscriptionSchema, async (data) => {
-	const program = Effect.fn("[remote] - upsert-subscription")(function* () {
-		const { locals } = getRequestEvent();
-		const user = locals.user;
-		if (!user) {
-			return yield* Effect.fail(error(401));
-		}
-		const result = yield* upsertSubscriptionData({ userId: user.id, data });
-		// Re-generate pending transactions after any subscription change
-		if (result.ok) {
-			yield* generatePendingTransactionsData({ userId: user.id });
-		}
-		return result;
+export const upsertSubscriptionAction = form(SubscriptionSchema, async (data) => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	const program = Effect.gen(function* () {
+		const message = yield* upsertSubscriptionData({ userId: user.id, data });
+		// Re-generate pending transactions after any subscription change.
+		yield* generatePendingTransactionsData({ userId: user.id });
+		return message;
+	}).pipe(Effect.tapError(Effect.logError));
+
+	return runOrThrow(program, {
+		SubscriptionNotFoundError: (e) => e,
 	});
-
-	return await Effect.runPromise(withTelemetry(program()));
 });
 
-export const deleteSubscriptionAction = command(
-	z.number().int().positive(),
-	async (subscriptionId) => {
-		const program = Effect.fn("[remote] - delete-subscription")(function* () {
-			const { locals } = getRequestEvent();
-			const user = locals.user;
-			if (!user) {
-				return yield* Effect.fail(error(401));
-			}
-			return yield* deleteSubscriptionData({ userId: user.id, subscriptionId });
+export const deleteSubscriptionAction = command("unchecked", async (id: unknown) => {
+	const numId =
+		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
+	if (isNaN(numId) || numId <= 0) {
+		throw error(400, {
+			_tag: "InvalidInputError",
+			message: "Invalid subscription ID",
 		});
+	}
 
-		return await Effect.runPromise(withTelemetry(program()));
-	},
-);
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
 
-export const togglePauseSubscriptionAction = command(
-	z.number().int().positive(),
-	async (subscriptionId) => {
-		const program = Effect.fn("[remote] - toggle-pause-subscription")(function* () {
-			const { locals } = getRequestEvent();
-			const user = locals.user;
-			if (!user) {
-				return yield* Effect.fail(error(401));
-			}
-			const result = yield* togglePauseSubscriptionData({
-				userId: user.id,
-				subscriptionId,
-			});
-			// Re-generate pending transactions after unpausing
-			if (result.ok && result.message === "Subscription resumed") {
-				yield* generatePendingTransactionsData({ userId: user.id });
-			}
-			return result;
-		});
-
-		return await Effect.runPromise(withTelemetry(program()));
-	},
-);
-
-export const generateSubscriptionTransactionsAction = command(z.void(), async () => {
-	const program = Effect.fn("[remote] - generate-subscription-transactions")(
-		function* () {
-			const { locals } = getRequestEvent();
-			const user = locals.user;
-			if (!user) {
-				return yield* Effect.fail(error(401));
-			}
-			return yield* generatePendingTransactionsData({ userId: user.id });
-		},
+	const program = deleteSubscriptionData({ userId: user.id, subscriptionId: numId }).pipe(
+		Effect.tapError(Effect.logError),
 	);
 
-	return await Effect.runPromise(withTelemetry(program()));
+	return runOrThrow(program, {
+		SubscriptionNotFoundError: (e) => e,
+	});
 });
+
+export const togglePauseSubscriptionAction = command("unchecked", async (id: unknown) => {
+	const numId =
+		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
+	if (isNaN(numId) || numId <= 0) {
+		throw error(400, {
+			_tag: "InvalidInputError",
+			message: "Invalid subscription ID",
+		});
+	}
+
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	const program = Effect.gen(function* () {
+		const message = yield* togglePauseSubscriptionData({
+			userId: user.id,
+			subscriptionId: numId,
+		});
+		// Re-generate pending transactions after unpausing.
+		if (message === "Subscription resumed") {
+			yield* generatePendingTransactionsData({ userId: user.id });
+		}
+		return message;
+	}).pipe(Effect.tapError(Effect.logError));
+
+	return runOrThrow(program, {
+		SubscriptionNotFoundError: (e) => e,
+	});
+});
+
+export const generateSubscriptionTransactionsAction = command("unchecked", async () => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	const program = generatePendingTransactionsData({ userId: user.id }).pipe(
+		Effect.tapError(Effect.logError),
+	);
+
+	return runOrThrow(program, {});
+});
+
+

@@ -42,8 +42,7 @@
 			e.preventDefault();
 			tick().then(() => {
 				const el = calendarElement?.querySelector("[data-selected] [role='button']") as
-					| HTMLElement
-					| undefined;
+					HTMLElement | undefined;
 				if (el) el.focus();
 			});
 		}}

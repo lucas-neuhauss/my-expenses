@@ -121,16 +121,11 @@
 
 	async function handleTogglePause(sub: SubscriptionWithRelations) {
 		try {
-			const res = await togglePauseSubscriptionAction(sub.id);
-			if (!res) throw Error();
-			if (res.ok) {
-				toast.success(res.message);
-				subscriptionCollection.utils.refetch();
-				if (sub.paused) {
-					transactionCollection.utils.refetch();
-				}
-			} else {
-				toast.error(res.message);
+			const message = await togglePauseSubscriptionAction(sub.id);
+			toast.success(message);
+			subscriptionCollection.utils.refetch();
+			if (sub.paused) {
+				transactionCollection.utils.refetch();
 			}
 		} catch {
 			toast.error("Something went wrong. Please try again later.");
@@ -140,15 +135,10 @@
 	async function handleDelete() {
 		if (!deleteDialog.subscription) return;
 		try {
-			const res = await deleteSubscriptionAction(deleteDialog.subscription.id);
-			if (!res) throw Error();
-			if (res.ok) {
-				toast.success(res.message);
-				subscriptionCollection.utils.writeDelete(deleteDialog.subscription.id);
-				deleteDialog.open = false;
-			} else {
-				toast.error(res.message);
-			}
+			const message = await deleteSubscriptionAction(deleteDialog.subscription.id);
+			toast.success(message);
+			subscriptionCollection.utils.writeDelete(deleteDialog.subscription.id);
+			deleteDialog.open = false;
 		} catch {
 			toast.error("Something went wrong. Please try again later.");
 		}

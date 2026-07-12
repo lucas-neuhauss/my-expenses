@@ -101,7 +101,17 @@
 			walletsQuery.data.reduce((acc, w) => acc + w.initialBalance, 0),
 	);
 	let { totalIncome, totalExpense, filteredIncome, filteredExpense, charts } = $derived(
-		calculateDashboardData(allTransactionsQuery.data, wallet.current, category.current),
+		// `calculateDashboardData` expects a Pick of the Drizzle
+		// `Transaction` row with joined `category` / `categoryParent` /
+		// `wallet` objects. The collection's row shape is a superset
+		// (it has `categoryId` / `walletId` aliases, `transferenceFrom`
+		// / `transferenceTo`, and extra fields); the call site
+		// narrows the slice.
+		calculateDashboardData(
+			allTransactionsQuery.data as Parameters<typeof calculateDashboardData>[0],
+			wallet.current,
+			category.current,
+		),
 	);
 	let nestedCategories = $derived(nestCategories(categoriesQuery.data));
 

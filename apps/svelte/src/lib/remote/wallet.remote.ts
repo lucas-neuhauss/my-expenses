@@ -1,40 +1,28 @@
 import { command, form, getRequestEvent } from "$app/server";
-import { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
-import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
-import { withTelemetry } from "$lib/server/observability";
+import { WalletSchema } from "$lib/schemas/wallet";
+import {
+	deleteWalletData,
+	DeleteWalletError,
+	upsertWalletData,
+} from "$lib/server/data/wallet";
+import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
 
-export const upsertWalletAction = form(UpsertWalletSchema, async (data) => {
-	const program = Effect.fn("[remote] - upsert-wallet")(
-		function* () {
-			const { locals } = getRequestEvent();
-			const user = locals.user;
-			if (!user) {
-				return error(401);
-			}
+export const upsertWalletAction = form(WalletSchema, async (data) => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
 
-			const message = yield* upsertWalletData({ userId: user.id, data });
-			return { success: true as const, message };
+	return runOrThrow(
+		upsertWalletData({ userId: user.id, data }).pipe(
+			Effect.tapError((e) => Effect.logError(e)),
+		),
+		{
+			EntityNotFoundError: (e) => e,
 		},
-		Effect.tapError((e) => Effect.logError(e)),
-		Effect.catchTags({
-			DbError: () =>
-				Effect.succeed({
-					success: false,
-					errorType: "SqlError",
-				} as const),
-			EntityNotFoundError: (error) =>
-				Effect.succeed({
-					success: false,
-					errorType: "EntityNotFoundError",
-					message: `${error.entity} not found`,
-				} as const),
-		}),
-	);
-
-	return Effect.runPromise(
-		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
 	);
 });
 
@@ -42,30 +30,27 @@ export const deleteWalletAction = command("unchecked", async (id: unknown) => {
 	const numId =
 		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
 	if (isNaN(numId) || numId <= 0) {
-		return { ok: false, message: "Invalid wallet ID" };
+		throw error(400, {
+			_tag: "InvalidInputError",
+			message: "Invalid wallet ID",
+		});
 	}
-	const program = Effect.fn("[remote] - delete-wallet")(
-		function* () {
-			const {
-				locals: { user },
-			} = getRequestEvent();
-			if (!user) {
-				return error(401);
-			}
 
-			const message = yield* deleteWalletData({ userId: user.id, id: numId });
-			return { ok: true, message };
-		},
-		Effect.catchTag("DeleteWalletError", (error) =>
-			Effect.succeed({
-				ok: false,
-				errorType: "DeleteWalletError",
-				message: error.message,
-			}),
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	return runOrThrow(
+		deleteWalletData({ userId: user.id, id: numId }).pipe(
+			Effect.tapError((e) => Effect.logError(e)),
 		),
-	);
-
-	return Effect.runPromise(
-		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
+		{
+			EntityNotFoundError: (e) => e,
+			DeleteWalletError: (e) => e,
+		},
 	);
 });
+
+

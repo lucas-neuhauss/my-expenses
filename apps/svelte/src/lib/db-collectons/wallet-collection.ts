@@ -1,16 +1,37 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteWalletAction } from "$lib/remote/wallet.remote";
+import { WalletSchema } from "$lib/schemas/wallet";
 import { getApiUrl } from "$lib/utils/fetch";
+import { isHttpError } from "@sveltejs/kit";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
 import { toast } from "svelte-sonner";
-import * as z from "zod";
 
-const WalletSchema = z.object({
-	id: z.number(),
-	name: z.string(),
-	initialBalance: z.number(),
-});
+/**
+ * Surface a wallet-error toast by dispatching on the tagged error's `_tag`.
+ * Any tag not in the table is treated as a generic failure; the collection
+ * caller re-throws to roll back the optimistic write.
+ */
+function walletErrorToast(e: unknown): void {
+	if (!isHttpError(e)) {
+		toast.error("Something went wrong. Please try again later.");
+		return;
+	}
+	const body = e.body as { _tag?: string; message?: string; entity?: string } | undefined;
+	switch (body?._tag) {
+		case "EntityNotFoundError":
+			toast.error(`${body.entity ?? "Wallet"} not found`);
+			return;
+		case "DeleteWalletError":
+			toast.error(body.message ?? "Wallet cannot be deleted");
+			return;
+		case "InvalidInputError":
+			toast.error(body.message ?? "Invalid input");
+			return;
+		default:
+			toast.error("Something went wrong. Please try again later.");
+	}
+}
 
 export const walletCollection = createCollection(
 	queryCollectionOptions({
@@ -33,20 +54,12 @@ export const walletCollection = createCollection(
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];
-
 			try {
-				const res = await deleteWalletAction(original.id);
-				if (!res) throw Error();
-				if (res.ok) {
-					walletCollection.utils.writeDelete(original.id);
-					toast.success(res.message);
-					return { refetch: false };
-				} else {
-					toast.error(res.message);
-					throw Error();
-				}
+				const message = await deleteWalletAction(original.id);
+				toast.success(message);
+				return { refetch: false };
 			} catch (e) {
-				toast.error("Something went wrong. Please try again later.");
+				walletErrorToast(e);
 				throw e;
 			}
 		},

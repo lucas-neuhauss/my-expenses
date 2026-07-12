@@ -1,5 +1,5 @@
-import type { UpsertCategorySchema } from "$lib/components/upsert-category/upsert-category-schema";
 import { EntityNotFoundError, ForbiddenError } from "$lib/errors/db";
+import type { Category } from "$lib/schemas/category";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
@@ -7,6 +7,14 @@ import type { NestedCategory } from "$lib/utils/category";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Data, Effect } from "effect";
+
+/**
+ * Tagged error for "cannot delete this category" conditions. Yielded by
+ * `deleteCategoryData` and mapped to HTTP 409 by `statusFor`.
+ */
+export class DeleteCategoryError extends Data.TaggedError("DeleteCategoryError")<{
+	message: string;
+}> {}
 
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(
 	function* (userId: UserId, type: "income" | "expense" | null = null) {
@@ -92,10 +100,9 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 				.limit(2),
 		);
 		if (atLeastTwoArray.length < 2) {
-			return {
-				ok: false,
+			return yield* new DeleteCategoryError({
 				message: `Cannot delete the last "${category.type === "income" ? "Income" : "Expense"}" category`,
-			};
+			});
 		}
 
 		// Should not be able to delete a category with transactions
@@ -117,21 +124,25 @@ export const deleteCategoryData = Effect.fn("data/category/deleteCategoryData")(
 				.limit(1),
 		);
 		if (categoryTransaction) {
-			return {
-				ok: false,
+			return yield* new DeleteCategoryError({
 				message: "Category has one or more transactions, cannot be deleted",
-			};
+			});
 		}
 
 		yield* exec(db.delete(table.category).where(eq(table.category.id, id)));
-		return { ok: true, message: "Category deleted" };
+		return "Category deleted" as const;
 	},
 );
 
-export class UpsertCategoryError extends Data.TaggedError("UpsertCategoryError")<{}> {}
 export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
-	function* ({ userId, data }: { userId: UserId; data: UpsertCategorySchema }) {
-		const { id, name, icon, type, subcategories } = data;
+	function* ({ userId, data }: { userId: UserId; data: Category }) {
+		// `subcategories` is optional in the canonical schema's encoded
+		// form, but the decode default fills it in. After the schema has
+		// been applied (the form helper runs the validator before this
+		// function), the value is always an array; the `?? []` is a
+		// belt-and-braces fallback for direct callers.
+		const { id, name, icon, type, subcategories: subcats } = data;
+		const subcategories = subcats ?? [];
 
 		if (id === "new") {
 			// Create parent category
@@ -216,10 +227,9 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 						.limit(1),
 				);
 				if (transaction) {
-					return {
-						ok: false,
+					return yield* new DeleteCategoryError({
 						message: `One of the deleted subcategories has one or more transactions, error updating`,
-					};
+					});
 				} else {
 					// Delete the subcategories
 					yield* exec(
@@ -244,6 +254,6 @@ export const upsertCategoryData = Effect.fn("data/category/upsertCategoryData")(
 			}
 		}
 
-		return { ok: true, message: id === "new" ? "Category created" : "Category updated" };
+		return id === "new" ? ("Category created" as const) : ("Category updated" as const);
 	},
 );

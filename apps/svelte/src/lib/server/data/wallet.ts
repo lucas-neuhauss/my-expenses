@@ -1,15 +1,17 @@
-import type { UpsertWalletSchema } from "$lib/components/upsert-wallet/upsert-wallet-schema";
 import { EntityNotFoundError } from "$lib/errors/db";
+import type { Wallet } from "$lib/schemas/wallet";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, sql } from "drizzle-orm";
 import { Data, Effect } from "effect";
 
-export class UpsertWalletError extends Data.TaggedError("UpsertWalletError")<{
-	cause?: unknown;
+/**
+ * Tagged error for "cannot delete this wallet" conditions. Yielded by
+ * `deleteWalletData` and mapped to HTTP 409 by `statusFor`.
+ */
+export class DeleteWalletError extends Data.TaggedError("DeleteWalletError")<{
 	message: string;
-	action: "create" | "update";
 }> {}
 
 export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(function* ({
@@ -17,7 +19,7 @@ export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(functi
 	data,
 }: {
 	userId: UserId;
-	data: UpsertWalletSchema;
+	data: Wallet;
 }) {
 	yield* Effect.annotateCurrentSpan("args", { userId, data });
 	const { id, name } = data;
@@ -37,14 +39,14 @@ export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(functi
 		}
 		case "update": {
 			// Check if the wallet is owned by the user
-			const wallet = yield* exec(
+			const [wallet] = yield* exec(
 				db
 					.select({ id: table.wallet.id })
 					.from(table.wallet)
 					.where(and(eq(table.wallet.id, id), eq(table.wallet.userId, userId))),
 			);
 			if (!wallet) {
-				yield* new EntityNotFoundError({
+				return yield* new EntityNotFoundError({
 					entity: "wallet",
 					id,
 					where: [`wallet.userId = ${userId}`],
@@ -62,9 +64,6 @@ export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(functi
 	}
 });
 
-class DeleteWalletError extends Data.TaggedError("DeleteWalletError")<{
-	message: string;
-}> {}
 export const deleteWalletData = Effect.fn("data/wallet/deleteWalletData")(function* ({
 	userId,
 	id,
@@ -88,14 +87,14 @@ export const deleteWalletData = Effect.fn("data/wallet/deleteWalletData")(functi
 
 	if (!wallet) {
 		return yield* new EntityNotFoundError({
-			entity: "category",
+			entity: "wallet",
 			id,
-			where: [`category.userId = ${userId}`],
+			where: [`wallet.userId = ${userId}`],
 		});
 	}
 	// Should not be able to delete a wallet with transactions
 	if (wallet.hasTransactions) {
-		yield* new DeleteWalletError({
+		return yield* new DeleteWalletError({
 			message: "Wallet has one or more transactions, cannot be deleted",
 		});
 	}

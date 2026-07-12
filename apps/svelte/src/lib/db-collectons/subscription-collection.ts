@@ -1,38 +1,46 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import { deleteSubscriptionAction } from "$lib/remote/subscription.remote";
+import { SubscriptionRowSchema, type SubscriptionRow } from "$lib/schemas/subscription";
 import { getApiUrl } from "$lib/utils/fetch";
+import { isHttpError } from "@sveltejs/kit";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
-import * as z from "zod";
+import { toast } from "svelte-sonner";
 
-const SubscriptionSchema = z.object({
-	id: z.number(),
-	name: z.string(),
-	cents: z.number(),
-	userId: z.string(),
-	categoryId: z.number(),
-	walletId: z.number(),
-	dayOfMonth: z.number(),
-	paused: z.boolean(),
-	startDate: z.string(),
-	endDate: z.string().nullable(),
-	lastGenerated: z.string().nullable(),
-	category: z.object({
-		id: z.number(),
-		name: z.string(),
-		icon: z.string(),
-	}),
-	wallet: z.object({
-		id: z.number(),
-		name: z.string(),
-	}),
-});
+/** Re-exported for callers that need the row shape (e.g. dialogs). */
+export type SubscriptionWithRelations = SubscriptionRow;
 
-export type SubscriptionWithRelations = z.infer<typeof SubscriptionSchema>;
+/**
+ * Surface a subscription-error toast by dispatching on the tagged
+ * error's `_tag`. Any tag not in the table is treated as a generic
+ * failure; the collection caller re-throws to roll back the optimistic
+ * write.
+ */
+function subscriptionErrorToast(e: unknown): void {
+	if (!isHttpError(e)) {
+		toast.error("Something went wrong. Please try again later.");
+		return;
+	}
+	const body = e.body as { _tag?: string; message?: string } | undefined;
+	switch (body?._tag) {
+		case "SubscriptionNotFoundError":
+			toast.error("Subscription not found");
+			return;
+		case "InvalidInputError":
+			toast.error(body.message ?? "Invalid input");
+			return;
+		default:
+			toast.error("Something went wrong. Please try again later.");
+	}
+}
 
 export const subscriptionCollection = createCollection(
 	queryCollectionOptions({
 		queryClient: queryClient,
-		schema: SubscriptionSchema,
+		// `SubscriptionRowSchema` is the documented read-side projection
+		// of the canonical `Subscription` schema; see
+		// `src/lib/schemas/subscription.ts`.
+		schema: SubscriptionRowSchema,
 		queryKey: ["subscription"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/subscriptions"));
@@ -47,8 +55,16 @@ export const subscriptionCollection = createCollection(
 		onUpdate: async () => {
 			return { refetch: true };
 		},
-		onDelete: async () => {
-			return { refetch: true };
+		onDelete: async ({ transaction }) => {
+			const { original } = transaction.mutations[0];
+			try {
+				const message = await deleteSubscriptionAction(original.id);
+				toast.success(message);
+				return { refetch: true };
+			} catch (e) {
+				subscriptionErrorToast(e);
+				throw e;
+			}
 		},
 	}),
 );

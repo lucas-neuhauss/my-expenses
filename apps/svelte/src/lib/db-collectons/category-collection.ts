@@ -1,24 +1,44 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
-import { deleteCategoryAction } from "$lib/remote/category.remote.js";
+import { deleteCategoryAction } from "$lib/remote/category.remote";
+import { CategoryRowSchema } from "$lib/schemas/category";
 import { getApiUrl } from "$lib/utils/fetch";
+import { isHttpError } from "@sveltejs/kit";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
 import { toast } from "svelte-sonner";
-import * as z from "zod";
 
-const CategorySchema = z.object({
-	id: z.number(),
-	name: z.string(),
-	type: z.enum(["income", "expense"]),
-	parentId: z.int().nullable(),
-	icon: z.string(),
-	unique: z.enum(["transference_in", "transference_out"]).nullable(),
-});
+/**
+ * Surface a category-error toast by dispatching on the tagged error's
+ * `_tag`. Any tag not in the table is treated as a generic failure; the
+ * collection caller re-throws to roll back the optimistic write.
+ */
+function categoryErrorToast(e: unknown): void {
+	if (!isHttpError(e)) {
+		toast.error("Something went wrong. Please try again later.");
+		return;
+	}
+	const body = e.body as { _tag?: string; message?: string; entity?: string } | undefined;
+	switch (body?._tag) {
+		case "EntityNotFoundError":
+			toast.error(`${body.entity ?? "Category"} not found`);
+			return;
+		case "DeleteCategoryError":
+			toast.error(body.message ?? "Category cannot be deleted");
+			return;
+		case "InvalidInputError":
+			toast.error(body.message ?? "Invalid input");
+			return;
+		default:
+			toast.error("Something went wrong. Please try again later.");
+	}
+}
 
 export const categoryCollection = createCollection(
 	queryCollectionOptions({
 		queryClient: queryClient,
-		schema: CategorySchema,
+		// `CategoryRowSchema` is the documented read-side projection of the
+		// canonical `Category` schema; see `src/lib/schemas/category.ts`.
+		schema: CategoryRowSchema,
 		queryKey: ["category"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/categories"));
@@ -36,19 +56,12 @@ export const categoryCollection = createCollection(
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];
-
 			try {
-				const res = await deleteCategoryAction(original.id);
-				if (res.ok) {
-					categoryCollection.utils.writeDelete(original.id);
-					toast.success(res.message);
-					return { refetch: false };
-				} else {
-					toast.error(res.message);
-					throw Error();
-				}
+				const message = await deleteCategoryAction(original.id);
+				toast.success(message);
+				return { refetch: false };
 			} catch (e) {
-				toast.error("Something went wrong. Please try again later.");
+				categoryErrorToast(e);
 				throw e;
 			}
 		},

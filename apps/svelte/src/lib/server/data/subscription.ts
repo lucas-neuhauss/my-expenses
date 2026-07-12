@@ -1,8 +1,20 @@
+import type { Subscription } from "$lib/schemas/subscription";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
+
+/**
+ * Tagged error for "subscription not found / not owned by user" conditions.
+ * Yielded by `upsertSubscriptionData`, `deleteSubscriptionData`, and
+ * `togglePauseSubscriptionData`; mapped to HTTP 404 by `statusFor`.
+ */
+export class SubscriptionNotFoundError extends Data.TaggedError(
+	"SubscriptionNotFoundError",
+)<{
+	id: number;
+}> {}
 
 export type SubscriptionWithRelations = typeof table.subscription.$inferSelect & {
 	category: { id: number; name: string; icon: string };
@@ -46,20 +58,9 @@ export const getSubscriptionsData = Effect.fn("data/subscription/getSubscription
 	},
 );
 
-export type UpsertSubscriptionData = {
-	id: number | "new";
-	name: string;
-	cents: number;
-	categoryId: number;
-	walletId: number;
-	dayOfMonth: number;
-	startDate: string;
-	endDate: string | null;
-};
-
 export const upsertSubscriptionData = Effect.fn(
 	"data/subscription/upsertSubscriptionData",
-)(function* ({ userId, data }: { userId: UserId; data: UpsertSubscriptionData }) {
+)(function* ({ userId, data }: { userId: UserId; data: Subscription }) {
 	const { id, name, cents, categoryId, walletId, dayOfMonth, startDate, endDate } = data;
 
 	if (id === "new") {
@@ -77,7 +78,7 @@ export const upsertSubscriptionData = Effect.fn(
 				lastGenerated: null,
 			}),
 		);
-		return { ok: true, message: "Subscription created" };
+		return "Subscription created" as const;
 	} else {
 		// Verify ownership
 		const [existing] = yield* exec(
@@ -88,7 +89,7 @@ export const upsertSubscriptionData = Effect.fn(
 		);
 
 		if (!existing) {
-			return { ok: false, message: "Subscription not found" };
+			return yield* new SubscriptionNotFoundError({ id });
 		}
 
 		yield* exec(
@@ -105,7 +106,7 @@ export const upsertSubscriptionData = Effect.fn(
 				})
 				.where(eq(table.subscription.id, id)),
 		);
-		return { ok: true, message: "Subscription updated" };
+		return "Subscription updated" as const;
 	}
 });
 
@@ -126,13 +127,13 @@ export const deleteSubscriptionData = Effect.fn(
 	);
 
 	if (!existing) {
-		return { ok: false, message: "Subscription not found" };
+		return yield* new SubscriptionNotFoundError({ id: subscriptionId });
 	}
 
 	yield* exec(
 		db.delete(table.subscription).where(eq(table.subscription.id, subscriptionId)),
 	);
-	return { ok: true, message: "Subscription deleted" };
+	return "Subscription deleted" as const;
 });
 
 export const togglePauseSubscriptionData = Effect.fn(
@@ -152,7 +153,7 @@ export const togglePauseSubscriptionData = Effect.fn(
 	);
 
 	if (!existing) {
-		return { ok: false, message: "Subscription not found" };
+		return yield* new SubscriptionNotFoundError({ id: subscriptionId });
 	}
 
 	yield* exec(
@@ -162,10 +163,9 @@ export const togglePauseSubscriptionData = Effect.fn(
 			.where(eq(table.subscription.id, subscriptionId)),
 	);
 
-	return {
-		ok: true,
-		message: existing.paused ? "Subscription resumed" : "Subscription paused",
-	};
+	return existing.paused
+		? ("Subscription resumed" as const)
+		: ("Subscription paused" as const);
 });
 
 /**
@@ -289,7 +289,7 @@ export const generatePendingTransactionsData = Effect.fn(
 		}
 	}
 
-	return { ok: true, generatedCount };
+	return generatedCount;
 });
 
 /**

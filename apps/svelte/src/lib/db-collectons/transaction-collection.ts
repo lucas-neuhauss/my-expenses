@@ -1,49 +1,47 @@
 /**
  * Transaction Collection
  *
- * To refresh transactions from the server (e.g., after subscription changes generate new transactions):
+ * To refresh transactions from the server (e.g., after subscription
+ * changes generate new transactions):
  *   transactionCollection.utils.refetch();
  */
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
 import { deleteTransactionAction } from "$lib/remote/transaction.remote";
+import { TransactionRowSchema } from "$lib/schemas/transaction";
 import { getApiUrl } from "$lib/utils/fetch";
+import { isHttpError } from "@sveltejs/kit";
 import { createCollection } from "@tanstack/db";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { toast } from "svelte-sonner";
-import * as z from "zod";
 
-const TransactionSchema = z.object({
-	id: z.number(),
-	cents: z.number(),
-	type: z.enum(["income", "expense"]),
-	description: z.string().nullable(),
-	categoryId: z.number(),
-	walletId: z.number(),
-	transferenceId: z.string().nullable(),
-	installmentGroupId: z.string().nullable(),
-	installmentIndex: z.number().nullable(),
-	installmentTotal: z.number().nullable(),
-	subscriptionId: z.number().nullable(),
-	paid: z.boolean(),
-	date: z.string(),
-	transferenceFrom: z
-		.object({
-			id: z.number(),
-			walletId: z.number(),
-		})
-		.nullable(),
-	transferenceTo: z
-		.object({
-			id: z.number(),
-			walletId: z.number(),
-		})
-		.nullable(),
-});
+/**
+ * Surface a transaction-error toast by dispatching on the tagged
+ * error's `_tag`. Any tag not in the table is treated as a generic
+ * failure; the collection caller re-throws to roll back the optimistic
+ * write.
+ */
+function transactionErrorToast(e: unknown): void {
+	if (!isHttpError(e)) {
+		toast.error("Something went wrong. Please try again later.");
+		return;
+	}
+	const body = e.body as { _tag?: string; message?: string } | undefined;
+	switch (body?._tag) {
+		case "InvalidInputError":
+			toast.error(body.message ?? "Invalid input");
+			return;
+		default:
+			toast.error("Something went wrong. Please try again later.");
+	}
+}
 
 export const transactionCollection = createCollection(
 	queryCollectionOptions({
 		queryClient: queryClient,
-		schema: TransactionSchema,
+		// The collection's row shape is a documented projection of the
+		// canonical `Transaction` schema; see
+		// `src/lib/schemas/transaction.ts`.
+		schema: TransactionRowSchema,
 		queryKey: ["transaction"],
 		queryFn: async () => {
 			const res = await fetch(getApiUrl("/api/transactions"));
@@ -63,30 +61,24 @@ export const transactionCollection = createCollection(
 			const { original } = transaction.mutations[0];
 
 			try {
-				const res = await deleteTransactionAction(original.id);
-				if (!res) throw Error();
-				if (res.ok) {
-					toast.success(res.toast);
+				const message = await deleteTransactionAction(original.id);
+				toast.success(message);
 
-					transactionCollection.utils.writeBatch(() => {
-						// Also delete the linked transaction for transferences
-						const linkedId =
-							original.type === "income"
-								? original.transferenceFrom?.id
-								: original.transferenceTo?.id;
-						transactionCollection.utils.writeDelete(original.id);
-						if (linkedId) {
-							transactionCollection.utils.writeDelete(linkedId);
-						}
-					});
+				transactionCollection.utils.writeBatch(() => {
+					// Also delete the linked transaction for transferences
+					const linkedId =
+						original.type === "income"
+							? original.transferenceFrom?.id
+							: original.transferenceTo?.id;
+					transactionCollection.utils.writeDelete(original.id);
+					if (linkedId) {
+						transactionCollection.utils.writeDelete(linkedId);
+					}
+				});
 
-					return { refetch: false };
-				} else {
-					toast.error(res.toast);
-					throw Error();
-				}
+				return { refetch: false };
 			} catch (e) {
-				toast.error("Something went wrong. Please try again later.");
+				transactionErrorToast(e);
 				throw e;
 			}
 		},

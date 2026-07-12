@@ -1,23 +1,31 @@
 import { command, getRequestEvent } from "$app/server";
-import { deleteTransactionData } from "$lib/server/data/transaction";
-import { withTelemetry } from "$lib/server/observability";
+import { deleteTransactionData, DeleteTransactionError } from "$lib/server/data/transaction";
+import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
-import * as z from "zod";
 
-export const deleteTransactionAction = command(z.int(), async (transactionId) => {
-	const program = Effect.fn("[remote] - delete-transaction")(function* () {
-		const {
-			locals: { user },
-		} = getRequestEvent();
-		if (!user) {
-			return error(401);
-		}
+export const deleteTransactionAction = command("unchecked", async (id: unknown) => {
+	const numId =
+		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
+	if (isNaN(numId) || numId <= 0) {
+		throw error(400, {
+			_tag: "InvalidInputError",
+			message: "Invalid transaction ID",
+		});
+	}
 
-		return yield* deleteTransactionData({ userId: user.id, transactionId });
-	});
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
 
-	return Effect.runPromise(
-		withTelemetry(program()).pipe(Effect.catchCause(Effect.logError)),
+	const program = deleteTransactionData({ userId: user.id, transactionId: numId }).pipe(
+		Effect.tapError((e) => Effect.logError(e)),
 	);
+
+	return runOrThrow(program, {
+		DeleteTransactionError: (e) => e,
+	});
 });
+
