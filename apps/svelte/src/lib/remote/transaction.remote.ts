@@ -1,5 +1,5 @@
 import { command, getRequestEvent } from "$app/server";
-import { deleteTransactionData, DeleteTransactionError } from "$lib/server/data/transaction";
+import { deleteTransactionData } from "$lib/server/data/transaction";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
@@ -28,4 +28,3 @@ export const deleteTransactionAction = command("unchecked", async (id: unknown) 
 		DeleteTransactionError: (e) => e,
 	});
 });
-

@@ -98,12 +98,12 @@
 </script>
 
 <form
-	{...keyedAction.enhance(async ({ submit, result }) => {
+	{...keyedAction.enhance(async ({ submit }) => {
 		try {
 			const success = await submit();
-			if (success && result) {
+			if (success && keyedAction.result) {
 				categoryCollection.utils.refetch();
-				toast.success(result);
+				toast.success(keyedAction.result);
 				onSuccess();
 			}
 		} catch (e) {

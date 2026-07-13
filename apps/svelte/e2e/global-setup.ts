@@ -27,6 +27,18 @@ setup("authenticate", async ({ page }) => {
 		);
 	}
 
+	// Ensure the app-managed transference categories exist (they are created at
+	// registration but may have been wiped by a previous cleanup run). Features
+	// like transference rely on them.
+	const seedResponse = await page.request.post("/api/test/seed", {
+		data: { ensureSpecialCategories: true },
+	});
+	if (!seedResponse.ok()) {
+		console.warn(
+			`Warning: ensuring special categories failed with status ${seedResponse.status()}.`,
+		);
+	}
+
 	// Save signed-in state to file
 	await page.context().storageState({ path: authFile });
 });

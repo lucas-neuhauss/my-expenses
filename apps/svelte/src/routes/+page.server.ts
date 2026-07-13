@@ -30,7 +30,16 @@ export const actions = {
 		});
 
 		return await Effect.runPromise(
-			withTelemetry(program()).pipe(Effect.tapCause(Effect.logError)),
+			withTelemetry(
+				program().pipe(
+					// Validation failures are user-facing — convert them to a 400
+					// form error instead of letting them bubble as a 500.
+					Effect.catchTag("UpsertTransactionValidationError", (e) =>
+						Effect.succeed(fail(400, { error: e.message })),
+					),
+					Effect.tapCause(Effect.logError),
+				),
+			),
 		);
 	},
 };

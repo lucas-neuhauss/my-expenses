@@ -65,12 +65,12 @@
 		</Dialog.Header>
 
 		<form
-			{...upsertWalletAction.enhance(async ({ submit, result, element }) => {
+			{...upsertWalletAction.enhance(async ({ submit, element }) => {
 				try {
 					const success = await submit();
-					if (success && result) {
+					if (success && upsertWalletAction.result) {
 						walletCollection.utils.refetch();
-						toast.success(result);
+						toast.success(upsertWalletAction.result);
 						element.reset();
 						open = false;
 					}

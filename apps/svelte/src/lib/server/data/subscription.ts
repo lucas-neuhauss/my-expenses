@@ -4,6 +4,7 @@ import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { Data, Effect } from "effect";
+import { formatDateString, getDateWithDay, parseDate } from "./subscription-helpers";
 
 /**
  * Tagged error for "subscription not found / not owned by user" conditions.
@@ -291,33 +292,3 @@ export const generatePendingTransactionsData = Effect.fn(
 
 	return generatedCount;
 });
-
-/**
- * Get date with specific day, handling month overflow
- * e.g., day 31 in February becomes Feb 28/29
- */
-function getDateWithDay(year: number, month: number, day: number): Date {
-	// Handle year overflow
-	while (month > 11) {
-		month -= 12;
-		year++;
-	}
-
-	// Get last day of the target month
-	const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-	const actualDay = Math.min(day, lastDayOfMonth);
-
-	return new Date(year, month, actualDay);
-}
-
-function parseDate(dateStr: string): Date {
-	const [year, month, day] = dateStr.split("-").map(Number);
-	return new Date(year, month - 1, day);
-}
-
-function formatDateString(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}

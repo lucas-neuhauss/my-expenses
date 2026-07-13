@@ -39,6 +39,7 @@
 
 	let walletTriggerRef = $state<HTMLButtonElement | null>(null);
 	let fromWalletTriggerRef = $state<HTMLButtonElement | null>(null);
+	let formError = $state<string | null>(null);
 	let id = $state((() => (transaction ? String(transaction.id) : "new"))());
 	let calendarOpen = $state(false);
 
@@ -73,6 +74,7 @@
 	use:enhance={() =>
 		({ result }) => {
 			if (result.type === "success") {
+				formError = null;
 				transactionCollection.utils.refetch();
 				const shouldContinue = result.data?.shouldContinue === true;
 				onSuccess(shouldContinue);
@@ -88,6 +90,11 @@
 					walletTriggerRef?.focus();
 					fromWalletTriggerRef?.focus();
 				}
+			} else if (result.type === "failure") {
+				// Surface the server-side validation error (e.g. "Cannot
+				// transfer to the same wallet") without closing the dialog.
+				formError =
+					(result.data as { error?: string } | null)?.error ?? "Validation failed";
 			}
 		}}
 >
@@ -181,6 +188,10 @@
 			<Switch id="save-and-create-another" bind:checked={saveAndCreateAnother} />
 			<Label for="save-and-create-another">Save and create another</Label>
 		</div>
+	{/if}
+
+	{#if formError}
+		<p class="text-destructive text-sm">{formError}</p>
 	{/if}
 
 	<Dialog.Footer>

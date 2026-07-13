@@ -1,9 +1,10 @@
 import { dev } from "$app/environment";
+import { CATEGORY_SPECIAL } from "$lib/categories.js";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { error, json } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import type { RequestHandler } from "./$types";
 
@@ -23,6 +24,9 @@ interface SeedData {
 		date?: string;
 		paid?: boolean;
 	};
+
+	/** When true, (re)create the app-managed transference categories if missing. */
+	ensureSpecialCategories?: boolean;
 }
 
 interface CleanupData {
@@ -74,6 +78,46 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					.returning(),
 			);
 			result.category = category;
+		}
+
+		if (data.ensureSpecialCategories) {
+			const existing = yield* exec(
+				db
+					.select({ unique: table.category.unique })
+					.from(table.category)
+					.where(
+						and(eq(table.category.userId, userId), isNotNull(table.category.unique)),
+					),
+			);
+			const have = new Set(existing.map((c) => c.unique));
+			const toCreate = [
+				{
+					name: "_TRANSACTION-IN",
+					type: "income" as const,
+					unique: CATEGORY_SPECIAL.TRANSFERENCE_IN,
+					icon: "bill.png",
+				},
+				{
+					name: "_TRANSACTION-OUT",
+					type: "expense" as const,
+					unique: CATEGORY_SPECIAL.TRANSFERENCE_OUT,
+					icon: "bill.png",
+				},
+			].filter((c) => !have.has(c.unique));
+			if (toCreate.length > 0) {
+				yield* exec(
+					db.insert(table.category).values(
+						toCreate.map((c) => ({
+							userId,
+							name: c.name,
+							type: c.type,
+							unique: c.unique,
+							icon: c.icon,
+						})),
+					),
+				);
+			}
+			result.specialCategories = { ensured: toCreate.length };
 		}
 
 		if (data.transaction) {
@@ -142,14 +186,22 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
 
 	const cleanup = Effect.fn("[DELETE] api/test/seed")(function* (data: CleanupData) {
 		if (data.all) {
-			// Delete all user data (order matters due to foreign keys)
+			// Delete all user data (order matters due to foreign keys).
+			// Preserve app-managed infrastructure categories (those with a
+			// `unique` marker, e.g. the transference in/out categories created
+			// at registration) — features like transference rely on them and
+			// they are not user-created test data.
 			yield* exec(
 				db.delete(table.transaction).where(eq(table.transaction.userId, userId)),
 			);
 			yield* exec(
 				db.delete(table.subscription).where(eq(table.subscription.userId, userId)),
 			);
-			yield* exec(db.delete(table.category).where(eq(table.category.userId, userId)));
+			yield* exec(
+				db
+					.delete(table.category)
+					.where(and(eq(table.category.userId, userId), isNull(table.category.unique))),
+			);
 			yield* exec(db.delete(table.wallet).where(eq(table.wallet.userId, userId)));
 			return { deleted: "all" };
 		}

@@ -76,11 +76,11 @@
 </script>
 
 <form
-	{...upsertSubscriptionAction.enhance(async ({ submit, result }) => {
+	{...upsertSubscriptionAction.enhance(async ({ submit }) => {
 		try {
 			const success = await submit();
-			if (success && result) {
-				toast.success(result);
+			if (success && upsertSubscriptionAction.result) {
+				toast.success(upsertSubscriptionAction.result);
 				subscriptionCollection.utils.refetch();
 				transactionCollection.utils.refetch();
 				onSuccess();
@@ -144,7 +144,10 @@
 				onValueChange={(v) => (form.walletId = Number(v))}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3 w-full">
+				<Select.Trigger
+					data-testid="subscription-wallet-select"
+					class="col-span-3 w-full"
+				>
 					{selectedWallet ? selectedWallet.name : "Select wallet..."}
 				</Select.Trigger>
 				<Select.Content>
@@ -164,7 +167,10 @@
 				onValueChange={(v) => (form.dayOfMonth = Number(v))}
 				allowDeselect={false}
 			>
-				<Select.Trigger class="col-span-3 w-full">
+				<Select.Trigger
+					data-testid="subscription-day-of-month-select"
+					class="col-span-3 w-full"
+				>
 					{form.dayOfMonth}
 				</Select.Trigger>
 				<Select.Content>

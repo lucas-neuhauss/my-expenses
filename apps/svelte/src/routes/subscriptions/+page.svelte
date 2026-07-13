@@ -11,7 +11,7 @@
 	import { walletCollection } from "$lib/db-collectons/wallet-collection";
 	import { isQueryCacheHydrated } from "$lib/integrations/tanstack-query/query-client";
 	import { nestCategories } from "$lib/utils/category";
-	import { eq, useLiveQuery } from "@tanstack/svelte-db";
+	import { isNull, useLiveQuery } from "@tanstack/svelte-db";
 	import Pause from "@lucide/svelte/icons/pause";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Play from "@lucide/svelte/icons/play";
@@ -30,7 +30,7 @@
 	const categoriesQuery = useLiveQuery((q) =>
 		q
 			.from({ c: categoryCollection })
-			.where(({ c }) => eq(c.unique, null))
+			.where(({ c }) => isNull(c.unique))
 			.orderBy(({ c }) => c.name, "asc"),
 	);
 

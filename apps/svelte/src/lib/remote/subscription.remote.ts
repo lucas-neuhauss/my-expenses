@@ -3,7 +3,6 @@ import { SubscriptionSchema } from "$lib/schemas/subscription";
 import {
 	deleteSubscriptionData,
 	generatePendingTransactionsData,
-	SubscriptionNotFoundError,
 	togglePauseSubscriptionData,
 	upsertSubscriptionData,
 } from "$lib/server/data/subscription";
@@ -101,5 +100,3 @@ export const generateSubscriptionTransactionsAction = command("unchecked", async
 
 	return runOrThrow(program, {});
 });
-
-

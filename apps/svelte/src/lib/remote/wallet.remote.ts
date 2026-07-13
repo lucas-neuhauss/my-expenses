@@ -1,10 +1,6 @@
 import { command, form, getRequestEvent } from "$app/server";
 import { WalletSchema } from "$lib/schemas/wallet";
-import {
-	deleteWalletData,
-	DeleteWalletError,
-	upsertWalletData,
-} from "$lib/server/data/wallet";
+import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
@@ -52,5 +48,3 @@ export const deleteWalletAction = command("unchecked", async (id: unknown) => {
 		},
 	);
 });
-
-

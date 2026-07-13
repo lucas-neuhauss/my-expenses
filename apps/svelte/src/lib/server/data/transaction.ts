@@ -8,6 +8,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { Data, Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
 import * as z from "zod";
+import { addMonths, splitEqually } from "./subscription-helpers";
 
 const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
 
@@ -19,37 +20,11 @@ export class DeleteTransactionError extends Data.TaggedError("DeleteTransactionE
 	message: string;
 }> {}
 
-/**
- * Split a total amount in cents as equally as possible into N parts.
- * Distributes remainder among first parts to ensure sum equals total.
- */
-function splitEqually(totalCents: number, count: number): number[] {
-	const base = Math.floor(totalCents / count);
-	const remainder = totalCents % count;
-	return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
-}
-
-/**
- * Add N months to a date string (YYYY-MM-DD).
- * Clamps to last day of month if original day doesn't exist (Jan 31 + 1mo → Feb 28/29).
- */
-function addMonths(dateStr: string, months: number): string {
-	const [year, month, day] = dateStr.split("-").map(Number);
-	let newYear = year;
-	let newMonth = month + months;
-
-	// Handle year overflow
-	while (newMonth > 12) {
-		newMonth -= 12;
-		newYear++;
-	}
-
-	// Get last day of target month
-	const lastDay = new Date(newYear, newMonth, 0).getDate();
-	const clampedDay = Math.min(day, lastDay);
-
-	return `${newYear}-${String(newMonth).padStart(2, "0")}-${String(clampedDay).padStart(2, "0")}`;
-}
+export class UpsertTransactionValidationError extends Data.TaggedError(
+	"UpsertTransactionValidationError",
+)<{
+	message: string;
+}> {}
 
 export const upsertTransactionData = Effect.fn("data/transaction/upsertTransactionData")(
 	function* ({
@@ -152,7 +127,16 @@ export const upsertTransactionData = Effect.fn("data/transaction/upsertTransacti
 				return { ...base, parsedInstallmentsCents: undefined };
 			});
 
-		const formValues = formSchema.parse(formObj);
+		const parseResult = formSchema.safeParse(formObj);
+		if (!parseResult.success) {
+			const firstIssue = parseResult.error.issues[0];
+			return yield* Effect.fail(
+				new UpsertTransactionValidationError({
+					message: firstIssue?.message ?? "Invalid transaction",
+				}),
+			);
+		}
+		const formValues = parseResult.data;
 		const { id, wallet: walletId, cents, date, description, paid } = formValues;
 
 		if (id === "new") {

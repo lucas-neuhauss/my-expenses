@@ -1,11 +1,6 @@
 import { command, form, getRequestEvent } from "$app/server";
-import { EntityNotFoundError } from "$lib/errors/db";
 import { Category, CategorySchema } from "$lib/schemas/category";
-import {
-	DeleteCategoryError,
-	deleteCategoryData,
-	upsertCategoryData,
-} from "$lib/server/data/category";
+import { deleteCategoryData, upsertCategoryData } from "$lib/server/data/category";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
@@ -87,5 +82,3 @@ export const deleteCategoryAction = command("unchecked", async (id: unknown) => 
 		},
 	);
 });
-
-
