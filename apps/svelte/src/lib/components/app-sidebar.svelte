@@ -7,6 +7,7 @@
 	import LogOut from "@lucide/svelte/icons/log-out";
 	import Database from "@lucide/svelte/icons/database";
 	import RefreshCw from "@lucide/svelte/icons/refresh-cw";
+	import Search from "@lucide/svelte/icons/search";
 
 	let { isAdmin, email }: { isAdmin: boolean; email: string } = $props();
 
@@ -31,6 +32,11 @@
 				title: "Subscriptions",
 				url: "/subscriptions",
 				icon: RefreshCw,
+			},
+			{
+				title: "Search",
+				url: "/transactions",
+				icon: Search,
 			},
 		];
 		if (isAdmin) {
