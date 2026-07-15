@@ -7,7 +7,7 @@ The codebase has converged on a server-client split:
 - **Server** (`src/lib/server/**`, `src/lib/remote/**`): Effect-TS for control flow, typed errors, and OpenTelemetry. SvelteKit `form()` and `command()` remote functions for transport.
 - **Client** (`src/lib/db-collectons/**`, components, routes): TanStack DB for local-first state and reactive queries. Zod schemas for runtime shape of collection rows. `fetch()` for initial hydration.
 
-The split is healthy in principle. The implementation has accumulated five mismatches at the boundary that this change addresses.
+The split is healthy in principle. The implementation has accumulated four mismatches at the boundary that this change addresses.
 
 ## Goals / Non-Goals
 
@@ -16,7 +16,7 @@ The split is healthy in principle. The implementation has accumulated five misma
 - Make optimistic UI the default for all writes (matches today's delete behavior)
 - Make the data layer's typed errors survive a network round-trip without losing structure
 - Make each entity shape a single source of truth that the database, the transport, and the collection all share
-- Make the choice to use (or not use) Effect on the client an explicit, documented decision
+
 
 **Non-Goals:**
 
@@ -152,21 +152,6 @@ onInsert: async ({ transaction }) => {
 
 **Note on TanStack DB's transaction model:** the existing `onDelete` calls `writeDelete` manually, which works, but TanStack DB's optimistic transactions already apply writes before the handler runs. The handler's job is to commit or roll back. We use the manual `writeDelete`/`writeUpdate` pattern to keep the rollback symmetric.
 
-### Decision 5 — Client-side Effect: a documented four-criterion rule
-
-**Choice:** Effect is allowed on the client only when one of four criteria applies. The criteria are:
-
-1. Pre-submission validation (catch errors locally)
-2. Optimistic rollback composition (multi-write transactions that need coordinated revert)
-3. Multi-step flow control (chain remote calls with success/failure gates)
-4. Parallel fan-out / fan-in (concurrent remote calls, combined result)
-
-A short document (`src/lib/client-effect.md`) records the rule and points to the entity where each criterion is (or is not) used.
-
-**Why not a library-wide rule like "never use Effect on the client":** the criteria are real. Pre-validation alone is valuable enough to justify client-side Effect at the form layer.
-
-**Why not the opposite rule, "always use Effect on the client":** the majority of client code is rendering and reactive state — TanStack DB is better at that. Effect is overhead with no payoff.
-
 ## Risks / Trade-offs
 
 ### Risk: Effect Schema → Zod interop has rough edges
@@ -179,7 +164,7 @@ The `S.toStandardSchemaV1` interop is relatively new. If the resulting Zod schem
 
 If a rollback is silent (the user doesn't see the toast), the UI lies: it shows a wallet that doesn't actually exist. The existing `onDelete` already has this risk.
 
-**Mitigation:** the `handleError` step in every handler is non-negotiable — it must always show a toast that names the failure. The `client-side-effect` spec's first scenario documents this.
+**Mitigation:** the `handleError` step in every handler is non-negotiable — it must always show a toast that names the failure.
 
 ### Risk: SvelteKit `query()` invalidation semantics differ from `queryFn`
 

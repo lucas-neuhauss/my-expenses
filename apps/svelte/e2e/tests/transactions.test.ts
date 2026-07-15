@@ -113,4 +113,58 @@ test.describe("Transactions", () => {
 		// The validation error from the server should be surfaced in the form.
 		await expect(page.getByText("Cannot transfer to the same wallet")).toBeVisible();
 	});
+
+	test("transaction appears immediately after creation", async ({ page }) => {
+		const { wallet1Name, expenseCategory } = await setupTestData(page);
+
+		const dashboard = new DashboardPage(page);
+		const transactionDialog = new TransactionDialog(page);
+
+		await dashboard.goto();
+		await dashboard.openCreateTransaction();
+
+		const description = `Optimistic Transaction ${Date.now()}`;
+		await transactionDialog.createExpense({
+			description,
+			value: 50.0,
+			wallet: wallet1Name,
+			category: expenseCategory,
+		});
+
+		await transactionDialog.expectClosed();
+
+		// The transaction should appear immediately after the dialog closes
+		await dashboard.expectTransactionVisible(description);
+	});
+
+	test("transaction edit appears immediately after update", async ({ page }) => {
+		const { wallet1Name, expenseCategory } = await setupTestData(page);
+
+		const dashboard = new DashboardPage(page);
+		const transactionDialog = new TransactionDialog(page);
+
+		await dashboard.goto();
+
+		// Create a transaction first
+		const originalDescription = `Original ${Date.now()}`;
+		await dashboard.openCreateTransaction();
+		await transactionDialog.createExpense({
+			description: originalDescription,
+			value: 75.0,
+			wallet: wallet1Name,
+			category: expenseCategory,
+		});
+		await transactionDialog.expectClosed();
+		await dashboard.expectTransactionVisible(originalDescription);
+
+		// Edit the transaction
+		const newDescription = `Edited ${Date.now()}`;
+		await dashboard.editTransaction(originalDescription, {
+			description: newDescription,
+		});
+		await transactionDialog.expectClosed();
+
+		// The edited transaction should appear immediately
+		await dashboard.expectTransactionVisible(newDescription);
+	});
 });

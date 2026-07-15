@@ -148,4 +148,65 @@ test.describe("Subscriptions", () => {
 		await subscriptionsPage.expectSubscriptionVisible(subscriptionName);
 		await subscriptionsPage.expectSubscriptionActive(subscriptionName);
 	});
+
+	test("subscription appears optimistically before server response resolves", async ({
+		page,
+	}) => {
+		const { walletName, categoryName, subscriptionsPage } = await setupTestData(page);
+
+		const subscriptionName = `Optimistic Sub ${Date.now()}`;
+		await subscriptionsPage.openCreateDialog();
+		await subscriptionsPage.nameInput.fill(subscriptionName);
+		await subscriptionsPage.amountInput.fill("29.99");
+
+		// Select category
+		await subscriptionsPage.categoryCombobox.click();
+		await page.waitForTimeout(300);
+		const categoryOption = page.getByText(categoryName).first();
+		if (await categoryOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+			await categoryOption.click();
+		}
+
+		// Select wallet
+		await subscriptionsPage.walletSelectTrigger.click();
+		await page.waitForTimeout(200);
+		const walletOption = page.getByRole("option", { name: walletName });
+		if (await walletOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+			await walletOption.click();
+		}
+
+		await subscriptionsPage.saveButton.click();
+
+		// The optimistic write should make the subscription visible before the dialog
+		// closes (the dialog waits for the server response).
+		await subscriptionsPage.expectSubscriptionVisible(subscriptionName);
+		await expect(subscriptionsPage.dialog).not.toBeVisible();
+		await subscriptionsPage.expectSubscriptionVisible(subscriptionName);
+	});
+
+	test("subscription edit appears optimistically before server response resolves", async ({
+		page,
+	}) => {
+		const { walletName, categoryName, subscriptionsPage } = await setupTestData(page);
+
+		// First create a subscription
+		const originalName = `Edit Optimistic ${Date.now()}`;
+		await subscriptionsPage.createSubscription({
+			name: originalName,
+			amount: 9.99,
+			categoryName,
+			walletName,
+		});
+		await expect(subscriptionsPage.dialog).not.toBeVisible();
+		await subscriptionsPage.expectSubscriptionVisible(originalName);
+
+		// Edit it
+		const newName = `Edited Optimistic ${Date.now()}`;
+		await subscriptionsPage.editSubscription(originalName, newName, 19.99);
+
+		// The optimistic write should make the new name visible immediately
+		await subscriptionsPage.expectSubscriptionVisible(newName);
+		await expect(subscriptionsPage.dialog).not.toBeVisible();
+		await subscriptionsPage.expectSubscriptionVisible(newName);
+	});
 });

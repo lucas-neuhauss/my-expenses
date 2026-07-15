@@ -1,7 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { CategoriesPage } from "../pages";
+import { seedData, cleanupData, getTodayDate } from "../utils";
 
 test.describe("Categories", () => {
+	test.beforeEach(async ({ page }) => {
+		page.on("console", (msg) => {
+			if (msg.type() === "error") {
+				console.log(`[BROWSER ERROR] ${msg.text()}`);
+			}
+		});
+		page.on("requestfailed", (request) => {
+			console.log(`[REQUEST FAILED] ${request.url()} - ${request.failure()?.errorText}`);
+		});
+	});
 	test("should load categories page", async ({ page }) => {
 		const categoriesPage = new CategoriesPage(page);
 		await categoriesPage.goto();
@@ -96,5 +107,65 @@ test.describe("Categories", () => {
 
 		// Category should no longer be visible
 		await categoriesPage.expectCategoryNotVisible(categoryName);
+	});
+
+	test("category appears optimistically before server response resolves", async ({
+		page,
+	}) => {
+		const categoriesPage = new CategoriesPage(page);
+		await categoriesPage.goto();
+
+		const categoryName = `Optimistic Cat ${Date.now()}`;
+		await categoriesPage.openCreateDialog();
+		await categoriesPage.categoryNameInput.fill(categoryName);
+		await categoriesPage.saveButton.click();
+
+		// The optimistic write should make the category visible before the dialog
+		// closes (the dialog waits for the server response).
+		await categoriesPage.expectCategoryVisible(categoryName);
+		await expect(categoriesPage.dialog).not.toBeVisible();
+		await categoriesPage.expectCategoryVisible(categoryName);
+	});
+
+	test("category delete rolls back if server rejects", async ({ page }) => {
+		const categoriesPage = new CategoriesPage(page);
+		await categoriesPage.goto();
+
+		// Seed a category and a transaction so the delete is rejected by the server.
+		const categoryName = `Rollback Cat ${Date.now()}`;
+		const seededCategory = await seedData(page, {
+			category: { name: categoryName, type: "expense" },
+		});
+		const categoryId = seededCategory.category!.id;
+
+		const seededWallet = await seedData(page, {
+			wallet: { name: `Rollback Wallet ${Date.now()}`, initialBalance: 100000 },
+		});
+		const walletId = seededWallet.wallet!.id;
+
+		await seedData(page, {
+			transaction: {
+				description: "Block delete",
+				cents: 1000,
+				type: "expense",
+				walletId,
+				categoryId,
+				date: getTodayDate(),
+				paid: true,
+			},
+		});
+
+		// Reload so the seeded category is visible.
+		await categoriesPage.goto();
+		await categoriesPage.expectCategoryVisible(categoryName);
+
+		// Try to delete the category.
+		await categoriesPage.deleteCategory(categoryName);
+
+		// The optimistic delete removes it, but the server rejection rolls it back.
+		await categoriesPage.expectCategoryVisible(categoryName);
+
+		// Cleanup seeded data.
+		await cleanupData(page, { categoryId, walletId, all: true });
 	});
 });

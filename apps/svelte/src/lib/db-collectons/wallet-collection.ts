@@ -1,7 +1,10 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
-import { deleteWalletAction } from "$lib/remote/wallet.remote";
-import { WalletSchema } from "$lib/schemas/wallet";
-import { getApiUrl } from "$lib/utils/fetch";
+import {
+	deleteWalletAction,
+	getWallets,
+	upsertWalletCommand,
+} from "$lib/remote/wallet.remote";
+import { WalletSchema, type Wallet } from "$lib/schemas/wallet";
 import { isHttpError } from "@sveltejs/kit";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
@@ -39,18 +42,35 @@ export const walletCollection = createCollection(
 		schema: WalletSchema,
 		queryKey: ["wallet"],
 		queryFn: async () => {
-			const res = await fetch(getApiUrl("/api/wallets"));
-			if (!res.ok) return [];
-			const json = await res.json();
-			return Array.isArray(json) ? json : [];
+			const query = getWallets();
+			await query.refresh();
+			return query;
 		},
 		getKey: (item) => item.id,
 		// Handle all CRUD operations
-		onInsert: async () => {
-			return { refetch: false };
+		onInsert: async ({ transaction }) => {
+			const { modified, key } = transaction.mutations[0];
+			try {
+				await upsertWalletCommand(modified as Wallet);
+				toast.success("Wallet created");
+				return { refetch: true };
+			} catch (e) {
+				walletCollection.utils.writeDelete(key);
+				walletErrorToast(e);
+				throw e;
+			}
 		},
-		onUpdate: async () => {
-			return { refetch: false };
+		onUpdate: async ({ transaction }) => {
+			const { modified, original } = transaction.mutations[0];
+			try {
+				await upsertWalletCommand(modified as Wallet);
+				toast.success("Wallet updated");
+				return { refetch: false };
+			} catch (e) {
+				walletCollection.utils.writeUpdate(original as Wallet);
+				walletErrorToast(e);
+				throw e;
+			}
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];

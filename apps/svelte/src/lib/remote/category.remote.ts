@@ -1,9 +1,23 @@
-import { command, form, getRequestEvent } from "$app/server";
-import { Category, CategorySchema } from "$lib/schemas/category";
-import { deleteCategoryData, upsertCategoryData } from "$lib/server/data/category";
+import { command, form, getRequestEvent, query } from "$app/server";
+import { Category, CategoryRow, CategorySchema } from "$lib/schemas/category";
+import {
+	deleteCategoryData,
+	getCategoriesData,
+	upsertCategoryData,
+} from "$lib/server/data/category";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
+
+export const getCategories = query<CategoryRow[]>(async () => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	return runOrThrow(getCategoriesData(user.id), {}) as Promise<CategoryRow[]>;
+});
 
 /**
  * The category form uses the "unchecked" form mode with manual
@@ -23,6 +37,24 @@ import { Effect } from "effect";
  * and re-throws a 400 `ValidationError` on failure, so the client
  * still sees structured, tag-dispatched errors.
  */
+export const upsertCategoryCommand = command(CategorySchema, async (data) => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	return runOrThrow(
+		upsertCategoryData({ userId: user.id, data }).pipe(
+			Effect.tapError((e) => Effect.logError(e)),
+		),
+		{
+			ForbiddenError: (e) => e,
+			DeleteCategoryError: (e) => e,
+		},
+	);
+});
+
 export const upsertCategoryAction = form("unchecked", async (raw: unknown) => {
 	const validation = CategorySchema["~standard"].validate(raw);
 	// The schema is synchronous (no async transforms or checks), so at

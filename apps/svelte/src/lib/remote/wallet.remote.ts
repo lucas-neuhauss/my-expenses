@@ -1,11 +1,25 @@
-import { command, form, getRequestEvent } from "$app/server";
-import { WalletSchema } from "$lib/schemas/wallet";
-import { deleteWalletData, upsertWalletData } from "$lib/server/data/wallet";
+import { command, form, getRequestEvent, query } from "$app/server";
+import { WalletSchema, type Wallet } from "$lib/schemas/wallet";
+import {
+	deleteWalletData,
+	getWalletsData,
+	upsertWalletData,
+} from "$lib/server/data/wallet";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
 
-export const upsertWalletAction = form(WalletSchema, async (data) => {
+export const getWallets = query<Wallet[]>(async () => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	return runOrThrow(getWalletsData(user.id), {}) as Promise<Wallet[]>;
+});
+
+export const upsertWalletCommand = command(WalletSchema, async (data) => {
 	const { locals } = getRequestEvent();
 	const user = locals.user;
 	if (!user) {
@@ -20,6 +34,24 @@ export const upsertWalletAction = form(WalletSchema, async (data) => {
 			EntityNotFoundError: (e) => e,
 		},
 	);
+});
+
+export const upsertWalletAction = form(WalletSchema, async (data) => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	await runOrThrow(
+		upsertWalletData({ userId: user.id, data }).pipe(
+			Effect.tapError((e) => Effect.logError(e)),
+		),
+		{
+			EntityNotFoundError: (e) => e,
+		},
+	);
+	return data.id === 0 ? "Wallet created" : "Wallet updated";
 });
 
 export const deleteWalletAction = command("unchecked", async (id: unknown) => {

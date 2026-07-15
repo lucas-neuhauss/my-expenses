@@ -26,6 +26,61 @@ export class UpsertTransactionValidationError extends Data.TaggedError(
 	message: string;
 }> {}
 
+export const getTransactionsData = Effect.fn("data/transaction/getTransactionsData")(
+	function* ({ userId }: { userId: UserId }) {
+		const tableTransactionFrom = alias(table.transaction, "from");
+		const tableTransactionTo = alias(table.transaction, "to");
+
+		return yield* exec(
+			db
+				.select({
+					id: table.transaction.id,
+					cents: table.transaction.cents,
+					type: table.transaction.type,
+					description: table.transaction.description,
+					categoryId: table.transaction.categoryId,
+					walletId: table.transaction.walletId,
+					transferenceId: table.transaction.transferenceId,
+					installmentGroupId: table.transaction.installmentGroupId,
+					installmentIndex: table.transaction.installmentIndex,
+					installmentTotal: table.transaction.installmentTotal,
+					subscriptionId: table.transaction.subscriptionId,
+					paid: table.transaction.paid,
+					date: table.transaction.date,
+					transferenceFrom: {
+						id: tableTransactionFrom.id,
+						walletId: tableTransactionFrom.walletId,
+					},
+					transferenceTo: {
+						id: tableTransactionTo.id,
+						walletId: tableTransactionTo.walletId,
+					},
+				})
+				.from(table.transaction)
+				.where(and(eq(table.transaction.userId, userId)))
+				.leftJoin(
+					tableTransactionFrom,
+					and(
+						isNotNull(tableTransactionFrom.transferenceId),
+						eq(tableTransactionFrom.transferenceId, table.transaction.transferenceId),
+						eq(tableTransactionFrom.type, "expense"),
+						eq(tableTransactionFrom.userId, userId),
+					),
+				)
+				.leftJoin(
+					tableTransactionTo,
+					and(
+						isNotNull(tableTransactionTo.transferenceId),
+						eq(tableTransactionTo.transferenceId, table.transaction.transferenceId),
+						eq(tableTransactionTo.type, "income"),
+						eq(tableTransactionTo.userId, userId),
+					),
+				)
+				.orderBy(desc(table.transaction.date), desc(table.transaction.id)),
+		);
+	},
+);
+
 export const upsertTransactionData = Effect.fn("data/transaction/upsertTransactionData")(
 	function* ({
 		userId,

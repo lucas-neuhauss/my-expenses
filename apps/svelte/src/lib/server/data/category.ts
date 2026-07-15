@@ -16,6 +16,25 @@ export class DeleteCategoryError extends Data.TaggedError("DeleteCategoryError")
 	message: string;
 }> {}
 
+export const getCategoriesData = Effect.fn("data/category/getCategoriesData")(function* (
+	userId: UserId,
+) {
+	return yield* exec(
+		db
+			.select({
+				id: table.category.id,
+				name: table.category.name,
+				type: table.category.type,
+				parentId: table.category.parentId,
+				icon: table.category.icon,
+				unique: table.category.unique,
+			})
+			.from(table.category)
+			.where(eq(table.category.userId, userId))
+			.orderBy(desc(table.category.parentId), table.category.name),
+	);
+});
+
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(
 	function* (userId: UserId, type: "income" | "expense" | null = null) {
 		const categories = yield* exec(

@@ -28,14 +28,21 @@ export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(functi
 
 	switch (action) {
 		case "create": {
-			yield* exec(
-				db.insert(table.wallet).values({
-					userId,
-					name,
-					initialBalance,
-				}),
+			const [created] = yield* exec(
+				db
+					.insert(table.wallet)
+					.values({
+						userId,
+						name,
+						initialBalance,
+					})
+					.returning({
+						id: table.wallet.id,
+						name: table.wallet.name,
+						initialBalance: table.wallet.initialBalance,
+					}),
 			);
-			return "Wallet created";
+			return created;
 		}
 		case "update": {
 			// Check if the wallet is owned by the user
@@ -59,7 +66,7 @@ export const upsertWalletData = Effect.fn("data/wallet/upsertWalletData")(functi
 					.set({ name, initialBalance })
 					.where(eq(table.wallet.id, id)),
 			);
-			return "Wallet updated";
+			return { id, name, initialBalance };
 		}
 	}
 });
@@ -101,6 +108,21 @@ export const deleteWalletData = Effect.fn("data/wallet/deleteWalletData")(functi
 
 	yield* exec(db.delete(table.wallet).where(eq(table.wallet.id, id)));
 	return "Wallet deleted";
+});
+
+export const getWalletsData = Effect.fn("data/wallet/getWalletsData")(function* (
+	userId: UserId,
+) {
+	return yield* exec(
+		db
+			.select({
+				id: table.wallet.id,
+				name: table.wallet.name,
+				initialBalance: table.wallet.initialBalance,
+			})
+			.from(table.wallet)
+			.where(eq(table.wallet.userId, userId)),
+	);
 });
 
 export function loadWallets(userId: UserId) {

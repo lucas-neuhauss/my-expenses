@@ -1,7 +1,10 @@
 import { queryClient } from "$lib/integrations/tanstack-query/query-client";
-import { deleteSubscriptionAction } from "$lib/remote/subscription.remote";
+import {
+	deleteSubscriptionAction,
+	getSubscriptions,
+	upsertSubscriptionCommand,
+} from "$lib/remote/subscription.remote";
 import { SubscriptionRowSchema, type SubscriptionRow } from "$lib/schemas/subscription";
-import { getApiUrl } from "$lib/utils/fetch";
 import { isHttpError } from "@sveltejs/kit";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { createCollection } from "@tanstack/svelte-db";
@@ -43,17 +46,58 @@ export const subscriptionCollection = createCollection(
 		schema: SubscriptionRowSchema,
 		queryKey: ["subscription"],
 		queryFn: async () => {
-			const res = await fetch(getApiUrl("/api/subscriptions"));
-			if (!res.ok) return [];
-			const json = await res.json();
-			return Array.isArray(json) ? json : [];
+			const query = getSubscriptions();
+			await query.refresh();
+			return query;
 		},
 		getKey: (item) => item.id,
-		onInsert: async () => {
-			return { refetch: true };
+		onInsert: async ({ transaction }) => {
+			const { modified, key } = transaction.mutations[0];
+			const row = modified as SubscriptionRow;
+			// Convert SubscriptionRow to command format
+			const commandData = {
+				id: row.id,
+				name: row.name,
+				cents: String(row.cents / 100), // Convert cents to dollar string
+				categoryId: row.categoryId,
+				walletId: row.walletId,
+				dayOfMonth: row.dayOfMonth,
+				startDate: row.startDate,
+				endDate: row.endDate ?? "",
+			};
+			try {
+				await upsertSubscriptionCommand(commandData);
+				toast.success("Subscription created");
+				return { refetch: true };
+			} catch (e) {
+				subscriptionCollection.utils.writeDelete(key);
+				subscriptionErrorToast(e);
+				throw e;
+			}
 		},
-		onUpdate: async () => {
-			return { refetch: true };
+		onUpdate: async ({ transaction }) => {
+			const { modified, original } = transaction.mutations[0];
+			const row = modified as SubscriptionRow;
+			// Convert SubscriptionRow to command format
+			const commandData = {
+				id: row.id,
+				name: row.name,
+				cents: String(row.cents / 100), // Convert cents to dollar string
+				categoryId: row.categoryId,
+				walletId: row.walletId,
+				dayOfMonth: row.dayOfMonth,
+				startDate: row.startDate,
+				endDate: row.endDate ?? "",
+			};
+			try {
+				await upsertSubscriptionCommand(commandData);
+				toast.success("Subscription updated");
+				return { refetch: false };
+			} catch (e) {
+				subscriptionCollection.utils.writeUpdate(original as SubscriptionRow);
+				subscriptionErrorToast(e);
+				throw e;
+			}
 		},
 		onDelete: async ({ transaction }) => {
 			const { original } = transaction.mutations[0];

@@ -65,15 +65,31 @@
 		</Dialog.Header>
 
 		<form
-			{...upsertWalletAction.enhance(async ({ submit, element }) => {
+			{...upsertWalletAction.enhance(async ({ element }) => {
+				const formData = new FormData(element);
+				const id = formData.get("id");
+				const name = String(formData.get("name") ?? "");
+				const initialBalance = Number(formData.get("initialBalance") ?? 0);
+
 				try {
-					const success = await submit();
-					if (success && upsertWalletAction.result) {
-						walletCollection.utils.refetch();
-						toast.success(upsertWalletAction.result);
-						element.reset();
-						open = false;
+					if (isUpdate && wallet) {
+						const tx = walletCollection.update(wallet.id, (draft) => {
+							draft.name = name;
+							draft.initialBalance = Math.round(initialBalance * 100);
+						});
+						await tx.isPersisted.promise;
+						toast.success("Wallet updated");
+					} else {
+						const tx = walletCollection.insert({
+							id: 0,
+							name,
+							initialBalance: Math.round(initialBalance * 100),
+						});
+						await tx.isPersisted.promise;
+						toast.success("Wallet created");
 					}
+					element.reset();
+					open = false;
 				} catch (e) {
 					toastForUpsertError(e);
 				}

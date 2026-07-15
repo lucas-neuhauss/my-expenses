@@ -1,14 +1,46 @@
-import { command, form, getRequestEvent } from "$app/server";
-import { SubscriptionSchema } from "$lib/schemas/subscription";
+import { command, form, getRequestEvent, query } from "$app/server";
+import { SubscriptionRow, SubscriptionSchema } from "$lib/schemas/subscription";
 import {
 	deleteSubscriptionData,
 	generatePendingTransactionsData,
+	getSubscriptionsData,
 	togglePauseSubscriptionData,
 	upsertSubscriptionData,
 } from "$lib/server/data/subscription";
 import { runOrThrow } from "$lib/server/remote-helpers";
 import { error } from "@sveltejs/kit";
 import { Effect } from "effect";
+
+export const getSubscriptions = query<SubscriptionRow[]>(async () => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	return runOrThrow(getSubscriptionsData({ userId: user.id }), {}) as Promise<
+		SubscriptionRow[]
+	>;
+});
+
+export const upsertSubscriptionCommand = command(SubscriptionSchema, async (data) => {
+	const { locals } = getRequestEvent();
+	const user = locals.user;
+	if (!user) {
+		throw error(401);
+	}
+
+	const program = Effect.gen(function* () {
+		const message = yield* upsertSubscriptionData({ userId: user.id, data });
+		// Re-generate pending transactions after any subscription change.
+		yield* generatePendingTransactionsData({ userId: user.id });
+		return message;
+	}).pipe(Effect.tapError(Effect.logError));
+
+	return runOrThrow(program, {
+		SubscriptionNotFoundError: (e) => e,
+	});
+});
 
 export const upsertSubscriptionAction = form(SubscriptionSchema, async (data) => {
 	const { locals } = getRequestEvent();
