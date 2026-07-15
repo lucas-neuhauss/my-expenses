@@ -94,9 +94,15 @@ export class DashboardPage {
 		}
 	}
 
-	async editTransaction(description: string) {
+	async editTransaction(description: string, data?: { description?: string }) {
 		const row = this.page.getByRole("row").filter({ hasText: description });
 		await row.getByRole("button", { name: "Edit transaction" }).click();
+
+		if (data?.description) {
+			const dialog = this.page.getByRole("dialog");
+			await dialog.getByRole("textbox").fill(data.description);
+			await dialog.getByRole("button", { name: "Save", exact: true }).click();
+		}
 	}
 
 	async deleteTransaction(description: string) {

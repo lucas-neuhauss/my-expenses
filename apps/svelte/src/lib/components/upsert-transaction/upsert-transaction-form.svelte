@@ -195,6 +195,8 @@
 	{/if}
 
 	<Dialog.Footer>
-		<Button type="submit">Save</Button>
+		<Button type="submit" disabled={tab !== "transference" && (wallets.length === 0 || categories.length === 0)}>
+			Save
+		</Button>
 	</Dialog.Footer>
 </form>

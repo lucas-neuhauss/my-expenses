@@ -31,7 +31,7 @@
 
 - [x] 5.1 `pnpm check` — TypeScript compilation passes
 - [x] 5.2 `pnpm test:unit -- --run` — unit tests pass
-- [ ] 5.3 `pnpm test:e2e` — Playwright tests pass (including the new optimistic-write test from 4.3)
+- [x] 5.3 `pnpm test:e2e` — Playwright tests pass (including the new optimistic-write test from 4.3)
 - [x] 5.4 `pnpm build` — production build succeeds
 - [x] 5.5 `pnpm lint` — no new warnings
 - [x] 5.6 `openspec validate refine-effect-tanstack-boundary` — proposal, specs, design, and tasks are consistent

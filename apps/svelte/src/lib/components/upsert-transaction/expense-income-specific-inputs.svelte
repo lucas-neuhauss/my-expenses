@@ -42,6 +42,17 @@
 		})(),
 	);
 
+	// Collections can hydrate after this form mounts. Select the first available
+	// wallet/category when that happens instead of submitting a null ID.
+	$effect(() => {
+		if (walletId === null && wallets.length > 0) {
+			walletId = wallets[0].id;
+		}
+		if (categoryId === null && categories.length > 0) {
+			categoryId = categories[0].id;
+		}
+	});
+
 	let wallet = $derived(wallets.find((w) => w.id === walletId));
 	let flatCategories = $derived(getFlatCategories(categories));
 	let category = $derived(
