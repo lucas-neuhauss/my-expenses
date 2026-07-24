@@ -3,6 +3,7 @@
 	import SavingsIllustration from "$lib/components/illustrations/savings-illustration.svelte";
 	import TransactionTableSkeleton from "$lib/components/skeletons/transaction-table-skeleton.svelte";
 	import MoneyCardSkeleton from "$lib/components/skeletons/money-card-skeleton.svelte";
+	import { Button } from "$lib/components/ui/button";
 	import * as Card from "$lib/components/ui/card";
 	import * as Select from "$lib/components/ui/select";
 	import * as Table from "$lib/components/ui/table";
@@ -15,9 +16,21 @@
 	import { getLocalDate } from "$lib/utils/date-time";
 	import { DateFormatter } from "@internationalized/date";
 	import ArrowRightLeft from "@lucide/svelte/icons/arrow-right-left";
+	import ArrowUp from "@lucide/svelte/icons/arrow-up";
+	import ArrowDown from "@lucide/svelte/icons/arrow-down";
 	import Check from "@lucide/svelte/icons/check";
+	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
+	import ChevronRight from "@lucide/svelte/icons/chevron-right";
 	import X from "@lucide/svelte/icons/x";
 	import { isNull, useLiveQuery } from "@tanstack/svelte-db";
+	import {
+		createPaginatedRowModel,
+		createSortedRowModel,
+		createTable,
+		FlexRender,
+		stockFeatures,
+		tableFeatures,
+	} from "@tanstack/svelte-table";
 	import {
 		parseAsArrayOf,
 		parseAsBoolean,
@@ -126,6 +139,41 @@
 			!filteredTransactionsQuery.isReady,
 	);
 
+	// --- TanStack Table v9 setup ---
+	const features = tableFeatures({
+		...stockFeatures,
+		sortedRowModel: createSortedRowModel(),
+		paginatedRowModel: createPaginatedRowModel(),
+	});
+
+	const columns = [
+		{ accessorKey: "date", header: "Date" },
+		{ accessorKey: "description", header: "Description" },
+		{
+			id: "category",
+			accessorFn: (row: { category: { name: string } }) => row.category.name,
+			header: "Category",
+		},
+		{
+			id: "wallet",
+			accessorFn: (row: { wallet: { name: string } }) => row.wallet.name,
+			header: "Wallet",
+		},
+		{ accessorKey: "cents", header: "Amount" },
+		{ accessorKey: "paid", header: "Paid" },
+	];
+
+	const table = createTable({
+		features,
+		columns,
+		get data() {
+			return filteredTransactionsQuery.data;
+		},
+		initialState: {
+			pagination: { pageIndex: 0, pageSize: 100 },
+			sorting: [{ id: "date", desc: true }],
+		},
+	});
 </script>
 
 <svelte:head>
@@ -266,17 +314,42 @@
 	{:else}
 		<Table.Root>
 			<Table.Header>
-				<Table.Row>
-					<Table.Head class="w-26.5">Date</Table.Head>
-					<Table.Head>Description</Table.Head>
-					<Table.Head>Category</Table.Head>
-					<Table.Head>Wallet</Table.Head>
-					<Table.Head>Amount</Table.Head>
-					<Table.Head class="w-18">Paid</Table.Head>
-				</Table.Row>
+				{#each table.getHeaderGroups() as headerGroup}
+					<Table.Row>
+						{#each headerGroup.headers as header (header.id)}
+							{@const sorted = header.column.getIsSorted()}
+							<Table.Head
+								class={header.column.id === "date"
+									? "w-26.5"
+									: header.column.id === "paid"
+										? "w-18"
+										: ""}
+							>
+								{#if header.column.getCanSort()}
+									<button
+										class="inline-flex items-center gap-1"
+										onclick={header.column.getToggleSortingHandler()}
+									>
+										<FlexRender header={header} />
+										{#if sorted === "asc"}
+											<ArrowUp class="size-3" />
+										{:else if sorted === "desc"}
+											<ArrowDown class="size-3" />
+										{:else}
+											<span class="size-3"></span>
+										{/if}
+									</button>
+								{:else}
+									<FlexRender header={header} />
+								{/if}
+							</Table.Head>
+						{/each}
+					</Table.Row>
+				{/each}
 			</Table.Header>
 			<Table.Body>
-				{#each filteredTransactionsQuery.data as t (t.id)}
+				{#each table.getRowModel().rows as row}
+					{@const t = row.original}
 					{@const isTransfer = t.transferenceId !== null}
 					<Table.Row class={isTransfer ? "bg-muted/40" : ""}>
 						<Table.Cell>
@@ -349,5 +422,43 @@
 				{/each}
 			</Table.Body>
 		</Table.Root>
+
+		<!-- Pagination -->
+		{#if table.getPageCount() > 1}
+			<div class="flex w-full items-center justify-between pt-4">
+				<span class="text-muted-foreground text-sm">
+					Showing {table.state.pagination.pageIndex * table.state.pagination.pageSize + 1}
+					&ndash;
+					{Math.min(
+						(table.state.pagination.pageIndex + 1) * table.state.pagination.pageSize,
+						table.getRowCount(),
+					)}
+					of {table.getRowCount()}
+				</span>
+				<div class="flex items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={() => table.previousPage()}
+						disabled={!table.getCanPreviousPage()}
+					>
+						<ChevronLeft class="size-4" />
+						Previous
+					</Button>
+					<span class="text-sm">
+						Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
+					</span>
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={() => table.nextPage()}
+						disabled={!table.getCanNextPage()}
+					>
+						Next
+						<ChevronRight class="size-4" />
+					</Button>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>

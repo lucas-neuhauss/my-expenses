@@ -68,11 +68,34 @@ The system SHALL allow users to filter by paid status with options for "All", "P
 - **THEN** only transactions with paid = false SHALL be shown
 
 ### Requirement: Sortable results table
-The system SHALL display transaction results in a table with the same columns as the dashboard: Date, Description, Category, Wallet, Amount, Paid. The table SHALL be sorted by date descending by default.
+The system SHALL display transaction results in a table with the same columns as the dashboard: Date, Description, Category, Wallet, Amount, Paid. All columns SHALL support click-to-sort with ascending/descending toggle. The column header SHALL show a sort-direction indicator when active. The table SHALL be sorted by date descending by default.
 
 #### Scenario: Default sort order
 - **WHEN** the user navigates to the search page
 - **THEN** transactions SHALL be sorted by date descending (most recent first)
+
+#### Scenario: Click column header to sort
+- **WHEN** the user clicks the "Amount" column header
+- **THEN** transactions SHALL be sorted by amount ascending, and the Amount header SHALL show an ascending indicator
+
+#### Scenario: Click same column header again
+- **WHEN** the user clicks the "Amount" column header again
+- **THEN** transactions SHALL be sorted by amount descending, and the Amount header SHALL show a descending indicator
+
+### Requirement: Paginated results
+The system SHALL paginate the filtered transaction results client-side, displaying 100 rows per page. The system SHALL show page navigation controls (previous page, next page, current page indicator, total page count) and a row count summary (e.g., "Showing 1–100 of 523").
+
+#### Scenario: More than 100 results
+- **WHEN** the filtered result set contains more than 100 transactions
+- **THEN** only the first 100 SHALL be displayed, and page navigation controls SHALL be visible
+
+#### Scenario: Navigate to next page
+- **WHEN** the user clicks "Next"
+- **THEN** rows 101–200 SHALL be displayed and the row count summary SHALL update accordingly
+
+#### Scenario: 100 or fewer results
+- **WHEN** the filtered result set contains 100 or fewer transactions
+- **THEN** all results SHALL be displayed and page navigation controls SHALL be hidden or disabled
 
 ### Requirement: Aggregate summary
 The system SHALL display aggregate summaries above the results table: total income, total expense, and net balance for the filtered transactions.

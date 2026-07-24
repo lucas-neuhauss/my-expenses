@@ -45,9 +45,15 @@ The existing dashboard uses TanStack DB (client-side collection queries) with Dr
 6. **URL search params** → **nuqs-svelte (matching existing pattern)**
    - Rationale: Already used in the dashboard for month, year, wallet, category, and paid params. Extending to new params (search, dateFrom, dateTo, categories[]) keeps the codebase consistent and allows shareable/bookmarkable URLs.
 
+7. **Table implementation** → **TanStack Table (`@tanstack/svelte-table`) as headless state layer**
+   - Rationale: TanStack Table is a headless library that manages sorting, pagination, and column state without dictating markup. We keep the existing shadcn-svelte `<Table.Root>` components for rendering and layer TanStack Table underneath for state management. Already in the TanStack ecosystem used by the project.
+
+8. **Pagination** → **Client-side, 100 rows per page**
+   - Rationale: All transaction data is already fully loaded on the client via TanStack DB. Client-side pagination is instant — no additional server round-trips. 100 rows balances scan-ability with performance. TanStack Table's `pagination` feature handles this cleanly.
+
 ## Risks / Trade-offs
 
-- **[Large datasets] → Client-side filtering could be slow with thousands of transactions.** Mitigation: TanStack DB queries are indexed and efficient; if needed, we can add server-side filtering after launch.
+- **[Large datasets] → Client-side filtering could be slow with thousands of transactions.** Mitigation: TanStack DB queries are indexed and efficient. Client-side pagination (100 rows/page) limits DOM rendering overhead. If needed, we can add server-side filtering after launch.
 - **[Multi-category URL params] → Storing an array of category IDs in URL params requires serialization.** Mitigation: nuqs supports array parsers via `parseAsArrayOf(parseAsInteger)`. The URL will contain `?categories=1&categories=2&categories=3`.
 - **[Free-text search performance] → `like` queries on description are O(n) scans.** Mitigation: For typical personal finance datasets (thousands, not millions), this is fine. If needed, we can debounce more aggressively or add a full-text search index on the server.
 - **[Two date inputs UX] → Date pickers are less polished than a calendar widget.** Mitigation: Acceptable trade-off for MVP simplicity. Future enhancement could use a date range picker component.

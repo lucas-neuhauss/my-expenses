@@ -30,3 +30,11 @@
 - [x] 5.2 Handle the case where the user has no transactions at all
 - [x] 5.3 Verify responsive layout for mobile view
 - [x] 5.4 Test with the test account credentials and existing data
+
+## 6. Table Pagination & Sorting
+
+- [x] 6.1 Install and configure `@tanstack/svelte-table`
+- [x] 6.2 Integrate TanStack Table as the state layer beneath the existing shadcn-svelte `<Table.Root>` components, wiring up the filtered transaction data
+- [x] 6.3 Implement column sorting: click-to-sort on all columns (Date, Description, Category, Wallet, Amount, Paid) with ascending/descending toggle and a sort-direction indicator in the header
+- [x] 6.4 Implement client-side pagination with 100 rows per page
+- [x] 6.5 Add page navigation controls (prev/next buttons, current page indicator, "Showing X–Y of Z" summary)

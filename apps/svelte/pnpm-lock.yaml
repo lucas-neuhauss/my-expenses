@@ -50,6 +50,9 @@ importers:
       '@tanstack/svelte-query-devtools':
         specifier: ^6.1.36
         version: 6.1.36(@tanstack/svelte-query@6.1.36(svelte@5.56.5(@typescript-eslint/types@8.64.0)))(svelte@5.56.5(@typescript-eslint/types@8.64.0))
+      '@tanstack/svelte-table':
+        specifier: 9.0.0-beta.49
+        version: 9.0.0-beta.49(svelte@5.56.5(@typescript-eslint/types@8.64.0))
       argon2:
         specifier: ^0.44.0
         version: 0.44.0
@@ -2124,6 +2127,9 @@ packages:
   '@tanstack/query-persist-client-core@5.101.2':
     resolution: {integrity: sha512-rgMsbvBVpSPDUsprC9FYxojdG0Q1LH6yq1i3DXz2aps4VEqv2l4Msj3YDqIifU3xkl/DrYe9YWntZAJLrM6xTg==}
 
+  '@tanstack/store@0.11.0':
+    resolution: {integrity: sha512-WlzzCt3xi0G6pCAJu1U+2jiECwabETDpQDi3hfkFZvJii9AuZqEKbOiVarX1/bWhTNjU486yQtJCCasi/0q+Cw==}
+
   '@tanstack/svelte-db@0.1.91':
     resolution: {integrity: sha512-DcpkOKC7R5XuqgWeFcyXZG/W0MGwNZq3pZrGxVY2k8VsdqyVOHGDUel2Zwb08dafIF1WEe2GXLHtwYbyU5GBHQ==}
     peerDependencies:
@@ -2139,6 +2145,21 @@ packages:
     resolution: {integrity: sha512-AVyvXPzBh5OQnWFB7rk9gskciPouayAhU9Vm24uMai+Imf+ZfBEbjOAEtdM41oexFK/cdXmpAIySDSVaAzy9zw==}
     peerDependencies:
       svelte: ^5.25.0
+
+  '@tanstack/svelte-store@0.12.0':
+    resolution: {integrity: sha512-XhXlU3jIO/WxikfeVczRdsAvRWzsLBh8Ic6sC7nzfzvMbPut7ZSdCbE7/usfm0bMjVGMmZmyzZy2xRu73QYWAA==}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@tanstack/svelte-table@9.0.0-beta.49':
+    resolution: {integrity: sha512-ZxH7ZIyL4KN1WXOInoqnuI8hsO/BqNouYFqpB7wi+QzF/HV+0PeHV1JPDEmN01KT/QSkvkY76s8fbnz++tdtBQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  '@tanstack/table-core@9.0.0-beta.49':
+    resolution: {integrity: sha512-crE5Z6OqIsH8LEPGKm4WIy7ZZTgZWe07kioz9+Q04dl+KLYAAzRWpLWLk5lDcDKuqNrVNSV8EsmHWcBd3knNtw==}
+    engines: {node: '>=20'}
 
   '@testing-library/dom@10.4.0':
     resolution: {integrity: sha512-pemlzrSESWbdAloYml3bAJMEfNh1Z7EduzqPKprCH5S341frlpYnUEW0H72dLxa6IsYr+mPno20GiSm+h9dEdQ==}
@@ -5598,6 +5619,8 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.2
 
+  '@tanstack/store@0.11.0': {}
+
   '@tanstack/svelte-db@0.1.91(svelte@5.56.5(@typescript-eslint/types@8.64.0))(typescript@6.0.3)':
     dependencies:
       '@tanstack/db': 0.6.14(typescript@6.0.3)
@@ -5616,6 +5639,21 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.2
       svelte: 5.56.5(@typescript-eslint/types@8.64.0)
+
+  '@tanstack/svelte-store@0.12.0(svelte@5.56.5(@typescript-eslint/types@8.64.0))':
+    dependencies:
+      '@tanstack/store': 0.11.0
+      svelte: 5.56.5(@typescript-eslint/types@8.64.0)
+
+  '@tanstack/svelte-table@9.0.0-beta.49(svelte@5.56.5(@typescript-eslint/types@8.64.0))':
+    dependencies:
+      '@tanstack/svelte-store': 0.12.0(svelte@5.56.5(@typescript-eslint/types@8.64.0))
+      '@tanstack/table-core': 9.0.0-beta.49
+      svelte: 5.56.5(@typescript-eslint/types@8.64.0)
+
+  '@tanstack/table-core@9.0.0-beta.49':
+    dependencies:
+      '@tanstack/store': 0.11.0
 
   '@testing-library/dom@10.4.0':
     dependencies:

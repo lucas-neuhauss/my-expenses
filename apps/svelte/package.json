@@ -93,6 +93,7 @@
 		"@tanstack/svelte-db": "^0.1.91",
 		"@tanstack/svelte-query": "^6.1.36",
 		"@tanstack/svelte-query-devtools": "^6.1.36",
+		"@tanstack/svelte-table": "9.0.0-beta.49",
 		"argon2": "^0.44.0",
 		"dayjs": "^1.11.21",
 		"drizzle-orm": "^0.45.2",
