@@ -38,22 +38,21 @@ A modern, full-featured personal finance manager to track your expenses, income,
 - Track financial trends over time
 
 ### 🔐 Secure & Private
-- User authentication with Supabase Auth
+- Secure user authentication with session-based auth
 - Data backup and restore functionality
 - Self-hosted option with Docker
 
 ## Tech Stack
 
 - **Frontend**: SvelteKit, Svelte 5, TypeScript, TailwindCSS 4
-- **Backend**: Supabase (Auth), PostgreSQL with Drizzle ORM
+- **Backend**: PostgreSQL with Drizzle ORM, custom session auth
 - **State Management**: TanStack Query, TanStack DB
 - **UI Components**: bits-ui, shadcn-svelte
 - **Validation**: Zod, Effect-TS
 
 ## Project Structure
 
-- **apps/svelte/**: Fullstack application built with SvelteKit
-- **apps/supabase/**: Backend powered by Supabase using Docker Compose
+- **apps/svelte/**: Fullstack application built with SvelteKit, including `docker-compose.yml` for the local PostgreSQL database
 
 ## Getting Started
 
@@ -63,13 +62,15 @@ A modern, full-featured personal finance manager to track your expenses, income,
 - [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
 - [pnpm](https://pnpm.io/) or [npm](https://www.npmjs.com/)
 
-### Backend (Supabase)
+### Backend (PostgreSQL)
 
-1. Navigate to `apps/supabase/`.
-2. Follow the [Supabase Docker guide](https://supabase.com/docs/guides/hosting/docker) to start the backend:
+1. Start the PostgreSQL database with Docker Compose:
    ```bash
-   cd apps/supabase
-   docker compose up
+   pnpm db:start
+   ```
+   Or directly:
+   ```bash
+   docker compose -f apps/svelte/docker-compose.yml up -d
    ```
 
 ### Frontend (SvelteKit)

@@ -6,14 +6,13 @@ Guidelines for AI coding agents operating in the `my-expenses` repository.
 
 This is a **pnpm monorepo** with the following structure:
 
-- `apps/svelte/`: SvelteKit fullstack application (TypeScript, Svelte 5, TailwindCSS)
-- `apps/supabase/`: Supabase backend using Docker Compose
+- `apps/svelte/`: SvelteKit fullstack application (TypeScript, Svelte 5, TailwindCSS), including `docker-compose.yml` for the local PostgreSQL database
 - Root workspace manages shared dependencies
 
 **Key Tech Stack:**
 
 - Frontend: SvelteKit, Svelte 5 (runes), TypeScript, TailwindCSS 4
-- Backend: Supabase (Auth), PostgreSQL with Drizzle ORM
+- Backend: PostgreSQL with Drizzle ORM, custom session auth (argon2 password hashing + JWT cookies)
 - State: TanStack Query, TanStack DB for client-side collections
 - Forms: Sveltekit-Superforms with Zod validation
 - UI: bits-ui, custom components in `src/lib/components/ui/`
@@ -220,7 +219,7 @@ This project uses **Svelte 5 with runes**. Use modern rune syntax:
 
 - **Server actions:** Return `{ ok: true, toast: "message" }` for success
 - **Client collections:** Use TanStack DB for local-first state management
-- **Auth:** Supabase SSR with `event.locals.user`
+- **Auth:** Custom session auth (argon2 password hashing + JWT cookies) with `event.locals.user`
 - **Loading states:** Use TanStack Query's loading states
 - **Forms:** Combine `use:enhance` + server actions + optimistic updates
 - **URL search params:** This project uses `nuqs-svelte` for type-safe search param state management. When updating search params from child components, **always pass setter functions as props** instead of using `goto()` with manually constructed URLs. This ensures all search params managed by nuqs stay in sync.
