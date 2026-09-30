@@ -50,6 +50,22 @@ const CentsFromDollarStringSchema = S.String.pipe(
 	),
 );
 
+// The form always submits `description` (possibly empty); an empty or
+// whitespace-only value is stored as `null`. This is the Option-free
+// equivalent of the old Zod `.catch(null)`.
+const DescriptionSchema = S.String.pipe(
+	S.decodeTo(
+		S.NullOr(S.String.check(S.isMinLength(1))),
+		SchemaTransformation.transform({
+			decode: (s: string) => {
+				const trimmed = s.trim();
+				return trimmed.length === 0 ? null : trimmed;
+			},
+			encode: (d: string | null) => d ?? "",
+		}),
+	),
+);
+
 const TransactionIdSchema = S.Union([
 	S.Literal("new"),
 	NonNegativeIntFromStringEffectSchema,
@@ -60,32 +76,103 @@ const TransactionBase = {
 	wallet: NonNegativeIntFromStringEffectSchema,
 	cents: CentsFromDollarStringSchema,
 	date: IsoDateStringSchema,
-	description: S.NullOr(S.String.check(S.isMinLength(1))),
+	description: DescriptionSchema,
 	paid: BooleanStringSchema,
 } as const;
 
 /**
- * Canonical schema for the transaction entity. The form input is a
- * single struct whose fields are conditional on the `type` value
- * (expense / income / transference); a refinement on the runtime
- * representation is the natural place to express the
- * "expense has category; transference has toWallet; neither has both"
- * rules, but the existing data-layer logic in
- * `src/lib/server/data/transaction.ts` already encodes those rules,
- * so this schema only validates the per-field shape. The data layer
- * is responsible for the cross-field rules.
+ * Per-field shape of the transaction entity. The form input is a single
+ * struct whose fields are conditional on the `type` value (expense /
+ * income / transference).
  */
-export const Transaction = S.Struct({
+const TransactionFields = S.Struct({
 	...TransactionBase,
 	type: S.Literals(["expense", "income", "transference"]),
-	// Conditional fields — all optional in the encoded form; the data
-	// layer enforces which apply based on `type`.
+	// Conditional fields — optional in the encoded form; the filter
+	// below enforces which apply based on `type`.
 	category: S.optionalKey(NonNegativeIntFromStringEffectSchema),
 	toWallet: S.optionalKey(NonNegativeIntFromStringEffectSchema),
-	installmentsEnabled: S.optionalKey(S.Boolean),
+	installmentsEnabled: S.optionalKey(BooleanStringSchema),
 	installmentsCount: S.optionalKey(NonNegativeIntFromStringEffectSchema),
 	installmentsCents: S.optionalKey(S.String),
 });
+
+type TransactionInput = S.Schema.Type<typeof TransactionFields>;
+
+/**
+ * Cross-field coherence rules on the decoded transaction.
+ *
+ * These are pure functions of the input, so they belong to the canonical
+ * schema rather than to the data layer: every transport (form action,
+ * collection command) gets them for free and a decode failure is the one
+ * validation surface. Rules that need the database (do the special
+ * transference categories exist? does the row belong to this user?) stay
+ * in `src/lib/server/data/transaction.ts`.
+ */
+const transactionRules = S.makeFilter((t: TransactionInput) => {
+	if (t.type === "transference") {
+		if (t.toWallet === undefined) {
+			return { path: ["toWallet"], message: "Destination wallet is required" };
+		}
+		if (t.wallet === t.toWallet) {
+			return { path: ["toWallet"], message: "Cannot transfer to the same wallet" };
+		}
+		return undefined;
+	}
+
+	if (!t.category) {
+		return { path: ["category"], message: "Category is required" };
+	}
+
+	if (t.type === "expense" && t.installmentsEnabled) {
+		const count = t.installmentsCount;
+		if (!count || count < 2 || count > 24) {
+			return {
+				path: ["installmentsCount"],
+				message: "Installments count must be between 2 and 24",
+			};
+		}
+		if (t.installmentsCents) {
+			let cents: unknown;
+			try {
+				cents = JSON.parse(t.installmentsCents);
+			} catch {
+				return { path: ["installmentsCents"], message: "Invalid installments JSON" };
+			}
+			if (
+				!Array.isArray(cents) ||
+				cents.some((c) => typeof c !== "number" || !Number.isInteger(c) || c < 0)
+			) {
+				return {
+					path: ["installmentsCents"],
+					message: "Installments must be a list of non-negative integer cents",
+				};
+			}
+			if (cents.length !== count) {
+				return {
+					path: ["installmentsCents"],
+					message: "Installment cents array length must match count",
+				};
+			}
+			const sum = (cents as number[]).reduce((a, b) => a + b, 0);
+			if (sum !== t.cents) {
+				return {
+					path: ["installmentsCents"],
+					message: `Installment sum (${sum}) must equal total (${t.cents})`,
+				};
+			}
+		}
+	}
+
+	return undefined;
+});
+
+/**
+ * Canonical schema for the transaction entity: the per-field codecs plus
+ * the cross-field coherence rules. Both the form action and the (future)
+ * collection command decode through this one definition.
+ */
+export const Transaction = TransactionFields.check(transactionRules);
 
 /** Standard Schema v1 derived from the canonical `Transaction` struct. */
 export const TransactionSchema = S.toStandardSchemaV1(Transaction);

@@ -1,28 +1,24 @@
 import { CATEGORY_SPECIAL } from "$lib/categories";
+import { EntityNotFoundError } from "$lib/errors/db";
+import type { Transaction } from "$lib/schemas/transaction";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
-import { DateStringSchema } from "$lib/utils/date-time";
 import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Data, Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
-import * as z from "zod";
-import { addMonths, splitEqually } from "./subscription-helpers";
-
-const BooleanStringSchema = z.enum(["true", "false"]).transform((v) => v === "true");
+import {
+	planCreateRows,
+	planSimpleUpdate,
+	planTransferenceUpdate,
+} from "./transaction-plan";
 
 /**
  * Tagged error for "cannot delete this transaction" conditions.
  * Yielded by `deleteTransactionData` and mapped to HTTP 409 by `statusFor`.
  */
 export class DeleteTransactionError extends Data.TaggedError("DeleteTransactionError")<{
-	message: string;
-}> {}
-
-export class UpsertTransactionValidationError extends Data.TaggedError(
-	"UpsertTransactionValidationError",
-)<{
 	message: string;
 }> {}
 
@@ -82,286 +78,135 @@ export const getTransactionsData = Effect.fn("data/transaction/getTransactionsDa
 );
 
 export const upsertTransactionData = Effect.fn("data/transaction/upsertTransactionData")(
-	function* ({
-		userId,
-		shouldContinue,
-		formData,
-	}: {
-		userId: UserId;
-		shouldContinue: boolean;
-		formData: FormData;
-	}) {
-		const formObj = Object.fromEntries(formData.entries());
-		const baseSchema = z.object({
-			id: z.coerce.number().int().or(z.literal("new")),
-			wallet: z.coerce.number().int(),
-			cents: z.coerce
-				.number()
-				.gte(0)
-				.transform((v) => Math.round(v * 100)),
-			date: DateStringSchema,
-			description: z.string().min(1).trim().nullable().catch(null),
-			paid: BooleanStringSchema,
-		});
-		const formSchema = z
-			.discriminatedUnion("type", [
-				baseSchema.extend({
-					type: z.literal("expense"),
-					category: z.coerce.number().int().positive(),
-					installmentsEnabled: BooleanStringSchema.optional().default(false),
-					installmentsCount: z.coerce.number().int().min(2).max(24).optional(),
-					installmentsCents: z.string().optional(),
-				}),
-				baseSchema.extend({
-					type: z.literal("income"),
-					category: z.coerce.number().int().positive(),
-				}),
-				baseSchema.extend({
-					type: z.literal("transference"),
-					toWallet: z.coerce.number().int(),
-				}),
-			])
-			.superRefine((obj, ctx) => {
-				if (obj.type === "transference" && obj.wallet === obj.toWallet) {
-					ctx.addIssue({
-						code: "custom",
-						message: "Cannot transfer to the same wallet",
-					});
-				}
-				// Validate installments for expenses
-				if (obj.type === "expense" && obj.installmentsEnabled) {
-					if (!obj.installmentsCount || obj.installmentsCount < 2) {
-						ctx.addIssue({
-							code: "custom",
-							message: "Installments count must be at least 2",
-							path: ["installmentsCount"],
-						});
-						return;
-					}
-					if (obj.installmentsCents) {
-						try {
-							const cents = JSON.parse(obj.installmentsCents) as number[];
-							if (cents.length !== obj.installmentsCount) {
-								ctx.addIssue({
-									code: "custom",
-									message: "Installment cents array length must match count",
-									path: ["installmentsCents"],
-								});
-								return;
-							}
-							const sum = cents.reduce((a, b) => a + b, 0);
-							if (sum !== obj.cents) {
-								ctx.addIssue({
-									code: "custom",
-									message: `Installment sum (${sum}) must equal total (${obj.cents})`,
-									path: ["installmentsCents"],
-								});
-							}
-						} catch {
-							ctx.addIssue({
-								code: "custom",
-								message: "Invalid installmentsCents JSON",
-								path: ["installmentsCents"],
-							});
-						}
-					}
-				}
-			})
-			.transform((obj) => {
-				const base = {
-					...obj,
-					cents: obj.type === "expense" ? -obj.cents : obj.cents,
-				};
-				// Parse installmentsCents if present
-				if (obj.type === "expense" && obj.installmentsEnabled && obj.installmentsCents) {
-					return {
-						...base,
-						parsedInstallmentsCents: JSON.parse(obj.installmentsCents) as number[],
-					};
-				}
-				return { ...base, parsedInstallmentsCents: undefined };
+	function* ({ userId, data }: { userId: UserId; data: Transaction }) {
+		if (data.id === "new") {
+			let transferenceCategories = { in: 0, out: 0 };
+			if (data.type === "transference") {
+				transferenceCategories = yield* getTransferenceCategories(userId);
+			}
+
+			const rows = planCreateRows({
+				transaction: data,
+				transferenceCategories,
+				transferenceId: uuidv4(),
+				installmentGroupId: uuidv4(),
+				today: new Date().toISOString().slice(0, 10),
 			});
 
-		const parseResult = formSchema.safeParse(formObj);
-		if (!parseResult.success) {
-			const firstIssue = parseResult.error.issues[0];
-			return yield* Effect.fail(
-				new UpsertTransactionValidationError({
-					message: firstIssue?.message ?? "Invalid transaction",
-				}),
+			yield* exec(
+				db.insert(table.transaction).values(rows.map((row) => ({ ...row, userId }))),
+			);
+			return "created" as const;
+		}
+
+		// Every write in this module filters by `userId`: the interface
+		// promises ownership, so it is enforced here rather than left to
+		// the transport.
+		const [existing] = yield* exec(
+			db
+				.select()
+				.from(table.transaction)
+				.where(
+					and(eq(table.transaction.id, data.id), eq(table.transaction.userId, userId)),
+				),
+		);
+		if (!existing) {
+			return yield* new EntityNotFoundError({
+				entity: "transaction",
+				id: data.id,
+				where: [`transaction.userId = ${userId}`],
+			});
+		}
+
+		if (data.type === "transference") {
+			const legs = yield* exec(
+				db
+					.select({
+						id: table.transaction.id,
+						type: table.transaction.type,
+					})
+					.from(table.transaction)
+					.where(
+						and(
+							eq(table.transaction.transferenceId, existing.transferenceId!),
+							eq(table.transaction.userId, userId),
+						),
+					),
+			);
+			const expense = legs.find((leg) => leg.type === "expense");
+			const income = legs.find((leg) => leg.type === "income");
+			if (!expense || !income) {
+				return yield* new EntityNotFoundError({
+					entity: "transference",
+					id: data.id,
+					where: [`transaction.userId = ${userId}`],
+				});
+			}
+
+			const plan = planTransferenceUpdate(data);
+			yield* exec(
+				db
+					.update(table.transaction)
+					.set(plan.expense)
+					.where(
+						and(
+							eq(table.transaction.id, expense.id),
+							eq(table.transaction.userId, userId),
+						),
+					),
+			);
+			yield* exec(
+				db
+					.update(table.transaction)
+					.set(plan.income)
+					.where(
+						and(
+							eq(table.transaction.id, income.id),
+							eq(table.transaction.userId, userId),
+						),
+					),
+			);
+		} else {
+			yield* exec(
+				db
+					.update(table.transaction)
+					.set(planSimpleUpdate(data))
+					.where(
+						and(eq(table.transaction.id, data.id), eq(table.transaction.userId, userId)),
+					),
 			);
 		}
-		const formValues = parseResult.data;
-		const { id, wallet: walletId, cents, date, description, paid } = formValues;
 
-		if (id === "new") {
-			if (formValues.type === "transference") {
-				const specialCategories = yield* exec(
-					db
-						.select({
-							id: table.category.id,
-							unique: table.category.unique,
-						})
-						.from(table.category)
-						.where(
-							and(eq(table.category.userId, userId), isNotNull(table.category.unique)),
-						),
-				);
-				const categoryTransactionIn = specialCategories.find(
-					(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_IN,
-				)!.id;
-				const categoryTransactionOut = specialCategories.find(
-					(c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_OUT,
-				)!.id;
+		return "updated" as const;
+	},
+);
 
-				// Create in and out transactions
-				const transferenceId = uuidv4();
-				yield* exec(
-					db.insert(table.transaction).values([
-						{
-							type: "expense",
-							date,
-							userId,
-							categoryId: categoryTransactionOut,
-							walletId: walletId,
-							transferenceId,
-							cents: -cents,
-							paid,
-							description,
-						},
-						{
-							type: "income",
-							date,
-							userId,
-							categoryId: categoryTransactionIn,
-							walletId: formValues.toWallet,
-							transferenceId,
-							cents,
-							paid,
-							description,
-						},
-					]),
-				);
-			} else if (
-				formValues.type === "expense" &&
-				formValues.installmentsEnabled &&
-				formValues.installmentsCount
-			) {
-				// Create installment transactions
-				const count = formValues.installmentsCount;
-				const installmentCents =
-					formValues.parsedInstallmentsCents ?? splitEqually(Math.abs(cents), count);
-				const installmentGroupId = uuidv4();
-
-				const today = new Date().toISOString().slice(0, 10);
-				const transactions = Array.from({ length: count }, (_, i) => {
-					const installmentDate = addMonths(date, i);
-					return {
-						type: "expense" as const,
-						date: installmentDate,
-						userId,
-						categoryId: formValues.category,
-						walletId,
-						cents: -installmentCents[i],
-						paid: paid && installmentDate <= today,
-						description,
-						installmentGroupId,
-						installmentIndex: i + 1,
-						installmentTotal: count,
-					};
-				});
-
-				yield* exec(db.insert(table.transaction).values(transactions));
-			} else {
-				// Create normal transaction
-				yield* exec(
-					db.insert(table.transaction).values({
-						type: formValues.type,
-						date,
-						userId,
-						categoryId: formValues.category,
-						walletId,
-						cents,
-						paid,
-						description,
-					}),
-				);
-			}
-		} else {
-			if (formValues.type === "transference") {
-				// Find one of the transactions
-				const foundTransaction = yield* exec(
-					db.query.transaction.findFirst({
-						where: eq(table.transaction.id, id),
-					}),
-				);
-
-				if (!foundTransaction || !foundTransaction.transferenceId) {
-					throw new Error("Transaction not found");
-				}
-
-				const transactions = yield* exec(
-					db.query.transaction.findMany({
-						where: eq(table.transaction.transferenceId, foundTransaction.transferenceId),
-					}),
-				);
-				const expense = transactions.find((t) => t.type === "expense");
-				const income = transactions.find((t) => t.type === "income");
-
-				if (!expense || !income) {
-					throw new Error("Transaction not found");
-				}
-
-				// Update expense transaction
-				yield* exec(
-					db
-						.update(table.transaction)
-						.set({
-							date,
-							walletId: walletId,
-							cents: -cents,
-							paid,
-							description,
-						})
-						.where(eq(table.transaction.id, expense.id)),
-				);
-
-				// Update income transaction
-				yield* exec(
-					db
-						.update(table.transaction)
-						.set({
-							date,
-							walletId: formValues.toWallet,
-							cents,
-							paid,
-							description,
-						})
-						.where(eq(table.transaction.id, income.id)),
-				);
-			} else {
-				// update normal transaction
-				yield* exec(
-					db
-						.update(table.transaction)
-						.set({
-							date,
-							categoryId: formValues.category,
-							walletId,
-							cents,
-							paid,
-							description,
-						})
-						.where(eq(table.transaction.id, id)),
-				);
-			}
+/**
+ * Look up the two special categories every transference leg references.
+ * Fails with `EntityNotFoundError` when the user's categories are missing
+ * (e.g. a malformed seed) instead of the previous non-null assertion.
+ */
+const getTransferenceCategories = Effect.fn("data/transaction/getTransferenceCategories")(
+	function* (userId: UserId) {
+		const categories = yield* exec(
+			db
+				.select({
+					id: table.category.id,
+					unique: table.category.unique,
+				})
+				.from(table.category)
+				.where(and(eq(table.category.userId, userId), isNotNull(table.category.unique))),
+		);
+		const out = categories.find((c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_OUT);
+		const income = categories.find((c) => c.unique === CATEGORY_SPECIAL.TRANSFERENCE_IN);
+		if (!out || !income) {
+			return yield* new EntityNotFoundError({
+				entity: "transference category",
+				id: 0,
+				where: [`category.userId = ${userId}`],
+			});
 		}
-
-		return {
-			ok: true,
-			shouldContinue,
-			toast: id === "new" ? "Transaction created" : "Transaction updated",
-		};
+		return { out: out.id, in: income.id };
 	},
 );
 
@@ -388,7 +233,8 @@ export const deleteTransactionData = Effect.fn("data/transaction/deleteTransacti
 		if (transaction.transferenceId !== null) {
 			const transactions = yield* exec(
 				db.query.transaction.findMany({
-					where: (table, { eq }) => eq(table.transferenceId, transaction.transferenceId!),
+					where: (t, { eq, and }) =>
+						and(eq(t.transferenceId, transaction.transferenceId!), eq(t.userId, userId)),
 				}),
 			);
 			if (transactions.length !== 2) {
