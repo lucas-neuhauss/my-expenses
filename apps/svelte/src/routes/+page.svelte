@@ -18,7 +18,8 @@
 	import { getLocalDate, MONTHS } from "$lib/utils/date-time";
 	import { calculateDashboardData } from "$lib/utils/transaction";
 	import { DateFormatter } from "@internationalized/date";
-	import ArrowRightLeft from "@lucide/svelte/icons/arrow-right-left";
+	import ArrowDownLeft from "@lucide/svelte/icons/arrow-down-left";
+	import ArrowUpRight from "@lucide/svelte/icons/arrow-up-right";
 	import Check from "@lucide/svelte/icons/check";
 	import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 	import ChevronRight from "@lucide/svelte/icons/chevron-right";
@@ -114,6 +115,19 @@
 		),
 	);
 	let nestedCategories = $derived(nestCategories(categoriesQuery.data));
+
+	/**
+	 * The wallet on the other side of a transfer leg. For an expense leg this is
+	 * the destination wallet, for an income leg the source wallet. Falls back to
+	 * the row's own wallet if the counterpart cannot be resolved.
+	 */
+	function counterWalletName(t: (typeof filteredTransactionsQuery.data)[number]): string {
+		const counterpartWalletId =
+			t.type === "expense" ? t.transferenceTo?.walletId : t.transferenceFrom?.walletId;
+		return (
+			walletsQuery.data.find((w) => w.id === counterpartWalletId)?.name ?? t.wallet.name
+		);
+	}
 
 	let isLoading = $derived(
 		!$isQueryCacheHydrated ||
@@ -418,9 +432,15 @@
 							{#if isTransfer}
 								<div class="flex h-full items-center gap-x-2">
 									<div class="text-muted-foreground [&_svg]:size-4">
-										<ArrowRightLeft />
+										{#if t.type === "expense"}
+											<ArrowUpRight />
+										{:else}
+											<ArrowDownLeft />
+										{/if}
 									</div>
-									<span class="text-muted-foreground truncate">Transfer</span>
+									<span class="text-muted-foreground truncate">
+										{t.type === "expense" ? "Transfer out" : "Transfer in"}
+									</span>
 								</div>
 							{:else}
 								<div class="flex h-full items-center gap-x-4">
@@ -439,23 +459,17 @@
 						</Table.Cell>
 						<Table.Cell>
 							{#if isTransfer}
-								<span class="text-muted-foreground">
+								<span class="flex h-full min-w-0 items-center gap-x-1">
 									{#if t.type === "expense"}
-										{t.wallet.name}
-										→
-										{t.transferenceTo
-											? (walletsQuery.data.find(
-													(w) => w.id === t.transferenceTo!.walletId,
-												)?.name ?? t.wallet.name)
-											: t.wallet.name}
+										<span class="truncate">{t.wallet.name}</span>
+										<span class="text-muted-foreground truncate">
+											→ {counterWalletName(t)}
+										</span>
 									{:else}
-										{t.transferenceFrom
-											? (walletsQuery.data.find(
-													(w) => w.id === t.transferenceFrom!.walletId,
-												)?.name ?? t.wallet.name)
-											: t.wallet.name}
-										→
-										{t.wallet.name}
+										<span class="text-muted-foreground truncate">
+											{counterWalletName(t)} →
+										</span>
+										<span class="truncate">{t.wallet.name}</span>
 									{/if}
 								</span>
 							{:else}
