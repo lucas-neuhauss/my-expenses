@@ -42,6 +42,7 @@
 
 	// --- Search params state ---
 	const search = useQueryState("search", parseAsString.withDefault(""));
+	const amount = useQueryState("amount", parseAsString.withDefault(""));
 	const dateFrom = useQueryState("dateFrom", parseAsString.withDefault(""));
 	const dateTo = useQueryState("dateTo", parseAsString.withDefault(""));
 	const categories = useQueryState(
@@ -64,6 +65,19 @@
 		}, 300);
 	}
 
+	// --- Debounced amount state (local input, debounced to URL) ---
+	let amountInput = $state(amount.current);
+	let amountDebounceTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+
+	function onAmountInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		amountInput = target.value;
+		if (amountDebounceTimer) clearTimeout(amountDebounceTimer);
+		amountDebounceTimer = setTimeout(() => {
+			amount.set(() => target.value || null);
+		}, 300);
+	}
+
 	// --- Base data queries ---
 	const categoriesQuery = useLiveQuery((q) =>
 		q
@@ -82,6 +96,7 @@
 	const { filteredTransactions } = $derived(
 		buildSearchQuery({
 			search: search.current,
+			amount: amount.current,
 			dateFrom: dateFrom.current,
 			dateTo: dateTo.current,
 			categories: categories.current,
@@ -111,10 +126,7 @@
 	let netBalance = $derived(totalIncome + totalExpense);
 
 	// --- Derived state for selects ---
-	let walletOptions = $derived([
-		{ id: -1, name: "All Wallets" },
-		...walletsQuery.data,
-	]);
+	let walletOptions = $derived([{ id: -1, name: "All Wallets" }, ...walletsQuery.data]);
 
 	const onWalletChange = (id: string) => {
 		if (id === "-1") {
@@ -194,14 +206,23 @@
 			class="w-56"
 		/>
 
+		<!-- Amount search (debounced) -->
+		<Input
+			type="text"
+			inputmode="decimal"
+			placeholder="Search by amount..."
+			value={amountInput}
+			oninput={onAmountInput}
+			class="w-40"
+			title="Matches on amount regardless of sign. Whole numbers match any amount starting with that value (e.g. 25 matches 25.00-25.99); decimals match exactly (e.g. 25.50)"
+		/>
+
 		<!-- Date range -->
 		<div class="flex items-center gap-2">
 			<Input
 				type="date"
 				value={dateFrom.current}
-				oninput={(e) =>
-					dateFrom.set(() => (e.target as HTMLInputElement).value || null)
-				}
+				oninput={(e) => dateFrom.set(() => (e.target as HTMLInputElement).value || null)}
 				class="w-40"
 				title="Start date"
 			/>
@@ -209,9 +230,7 @@
 			<Input
 				type="date"
 				value={dateTo.current}
-				oninput={(e) =>
-					dateTo.set(() => (e.target as HTMLInputElement).value || null)
-				}
+				oninput={(e) => dateTo.set(() => (e.target as HTMLInputElement).value || null)}
 				class="w-40"
 				title="End date"
 			/>
@@ -221,7 +240,7 @@
 		<MultiCategoryCombobox
 			value={categories.current}
 			categories={nestedCategories}
-			onChange={(ids) => categories.set(() => ids.length > 0 ? ids : null)}
+			onChange={(ids) => categories.set(() => (ids.length > 0 ? ids : null))}
 			style="width: 224px;"
 		/>
 
@@ -302,6 +321,7 @@
 			<p class="text-muted-foreground mt-6">No transactions found</p>
 			<p class="text-muted-foreground">
 				{search.current ||
+				amount.current ||
 				dateFrom.current ||
 				dateTo.current ||
 				categories.current.length > 0 ||
@@ -330,7 +350,7 @@
 										class="inline-flex items-center gap-1"
 										onclick={header.column.getToggleSortingHandler()}
 									>
-										<FlexRender header={header} />
+										<FlexRender {header} />
 										{#if sorted === "asc"}
 											<ArrowUp class="size-3" />
 										{:else if sorted === "desc"}
@@ -340,7 +360,7 @@
 										{/if}
 									</button>
 								{:else}
-									<FlexRender header={header} />
+									<FlexRender {header} />
 								{/if}
 							</Table.Head>
 						{/each}

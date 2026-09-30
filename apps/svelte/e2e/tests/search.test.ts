@@ -213,4 +213,133 @@ test.describe("Search Page", () => {
 		const searchPage = new SearchPage(page);
 		await searchPage.expectLoaded();
 	});
+
+	test.describe("amount filter", () => {
+		// The outer beforeEach seeds the base dataset; add dedicated amounts so
+		// magnitude matching can be asserted unambiguously.
+		test.beforeEach(async ({ page }) => {
+			const walletRes = await seedData(page, {
+				wallet: { name: "Amount Wallet", initialBalance: 0 },
+			});
+			const walletId = walletRes.wallet!.id;
+
+			const expenseCat = await seedData(page, {
+				category: { name: "Amount Expense", type: "expense" },
+			});
+			const incomeCat = await seedData(page, {
+				category: { name: "Amount Income", type: "income" },
+			});
+
+			const rows: Array<{
+				description: string;
+				cents: number;
+				type: "income" | "expense";
+				categoryId: number;
+			}> = [
+				{
+					description: "Amount -25.50",
+					cents: -2550,
+					type: "expense",
+					categoryId: expenseCat.category!.id,
+				},
+				{
+					description: "Amount +25.50",
+					cents: 2550,
+					type: "income",
+					categoryId: incomeCat.category!.id,
+				},
+				{
+					description: "Amount -25.59",
+					cents: -2559,
+					type: "expense",
+					categoryId: expenseCat.category!.id,
+				},
+				{
+					description: "Amount -26.00",
+					cents: -2600,
+					type: "expense",
+					categoryId: expenseCat.category!.id,
+				},
+				{
+					description: "Amount +255.50",
+					cents: 25550,
+					type: "income",
+					categoryId: incomeCat.category!.id,
+				},
+			];
+
+			for (const row of rows) {
+				await seedData(page, {
+					transaction: { ...row, walletId, paid: true },
+				});
+			}
+		});
+
+		test("whole-number prefix finds a negative expense of that magnitude", async ({
+			page,
+		}) => {
+			const searchPage = new SearchPage(page);
+			await searchPage.goto();
+			await searchPage.expectLoaded();
+			await searchPage.waitForData();
+
+			await searchPage.searchByAmount("25");
+
+			// Prefix 25 matches 25.00-25.99 on magnitude, regardless of sign.
+			await searchPage.expectTransactionVisible("Amount -25.50");
+			await searchPage.expectTransactionVisible("Amount +25.50");
+			await searchPage.expectTransactionVisible("Amount -25.59");
+			// 26.00 and 255.50 are outside the 25.xx range.
+			await searchPage.expectTransactionNotVisible("Amount -26.00");
+			await searchPage.expectTransactionNotVisible("Amount +255.50");
+		});
+
+		test("a decimal input matches that amount exactly", async ({ page }) => {
+			const searchPage = new SearchPage(page);
+			await searchPage.goto();
+			await searchPage.expectLoaded();
+			await searchPage.waitForData();
+
+			await searchPage.searchByAmount("25.50");
+
+			await searchPage.expectTransactionVisible("Amount -25.50");
+			await searchPage.expectTransactionVisible("Amount +25.50");
+			// 25.59 starts with 25 but is not exactly 25.50.
+			await searchPage.expectTransactionNotVisible("Amount -25.59");
+			await searchPage.expectTransactionNotVisible("Amount -26.00");
+			await searchPage.expectTransactionNotVisible("Amount +255.50");
+		});
+
+		test("a leading sign is ignored for whole-number input", async ({ page }) => {
+			const searchPage = new SearchPage(page);
+			await searchPage.goto();
+			await searchPage.expectLoaded();
+			await searchPage.waitForData();
+
+			// "-25" must behave the same as "25".
+			await searchPage.searchByAmount("-25");
+
+			await searchPage.expectTransactionVisible("Amount -25.50");
+			await searchPage.expectTransactionVisible("Amount +25.50");
+			await searchPage.expectTransactionVisible("Amount -25.59");
+			await searchPage.expectTransactionNotVisible("Amount -26.00");
+			await searchPage.expectTransactionNotVisible("Amount +255.50");
+		});
+
+		test("a leading sign is ignored for decimal input", async ({ page }) => {
+			const searchPage = new SearchPage(page);
+			await searchPage.goto();
+			await searchPage.expectLoaded();
+			await searchPage.waitForData();
+
+			// "-25.50" must behave the same as "25.50".
+			await searchPage.searchByAmount("-25.50");
+
+			await searchPage.expectTransactionVisible("Amount -25.50");
+			await searchPage.expectTransactionVisible("Amount +25.50");
+			await searchPage.expectTransactionNotVisible("Amount -25.59");
+			await searchPage.expectTransactionNotVisible("Amount -26.00");
+			await searchPage.expectTransactionNotVisible("Amount +255.50");
+		});
+	});
 });

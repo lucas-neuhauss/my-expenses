@@ -9,6 +9,10 @@ export class SearchPage {
 		return this.page.getByPlaceholder("Search by description...");
 	}
 
+	get amountInput() {
+		return this.page.getByPlaceholder("Search by amount...");
+	}
+
 	get startDateInput() {
 		return this.page.getByTitle("Start date");
 	}
@@ -38,21 +42,15 @@ export class SearchPage {
 	}
 
 	get incomeCard() {
-		return this.page
-			.locator('[data-slot="card"]')
-			.filter({ hasText: "Total Income" });
+		return this.page.locator('[data-slot="card"]').filter({ hasText: "Total Income" });
 	}
 
 	get expenseCard() {
-		return this.page
-			.locator('[data-slot="card"]')
-			.filter({ hasText: "Total Expense" });
+		return this.page.locator('[data-slot="card"]').filter({ hasText: "Total Expense" });
 	}
 
 	get netBalanceCard() {
-		return this.page
-			.locator('[data-slot="card"]')
-			.filter({ hasText: "Net Balance" });
+		return this.page.locator('[data-slot="card"]').filter({ hasText: "Net Balance" });
 	}
 
 	get prevPageButton() {
@@ -96,6 +94,17 @@ export class SearchPage {
 		await this.page.waitForTimeout(600);
 	}
 
+	async searchByAmount(value: string) {
+		await this.amountInput.fill(value);
+		// Wait for debounce (300ms) + render + network
+		await this.page.waitForTimeout(600);
+	}
+
+	async clearAmount() {
+		await this.amountInput.clear();
+		await this.page.waitForTimeout(600);
+	}
+
 	async setDateRange(from: string, to: string) {
 		await this.startDateInput.fill(from);
 		await this.endDateInput.fill(to);
@@ -134,10 +143,7 @@ export class SearchPage {
 	}
 
 	async sortByColumn(columnName: string) {
-		await this.page
-			.getByRole("columnheader")
-			.filter({ hasText: columnName })
-			.click();
+		await this.page.getByRole("columnheader").filter({ hasText: columnName }).click();
 		await this.page.waitForTimeout(200);
 	}
 
@@ -155,6 +161,7 @@ export class SearchPage {
 
 	async expectLoaded() {
 		await expect(this.searchInput).toBeVisible();
+		await expect(this.amountInput).toBeVisible();
 		await expect(this.page.getByText("Search Transactions")).toBeVisible();
 	}
 
@@ -200,9 +207,7 @@ export class SearchPage {
 	}
 
 	async expectPageNumber(pageNum: number) {
-		await expect(
-			this.page.getByText(`Page ${pageNum} of`),
-		).toBeVisible();
+		await expect(this.page.getByText(`Page ${pageNum} of`)).toBeVisible();
 	}
 
 	async expectPaginationVisible() {

@@ -1,10 +1,12 @@
 import { categoryCollection } from "$lib/db-collectons/category-collection";
 import { transactionCollection } from "$lib/db-collectons/transaction-collection";
 import { walletCollection } from "$lib/db-collectons/wallet-collection";
-import { and, eq, gte, ilike, lt, or, Query } from "@tanstack/db";
+import { and, eq, gt, gte, ilike, lt, lte, or, Query } from "@tanstack/db";
+import { hasDecimalPart, parseAmountToCents } from "./amount";
 
 export function buildSearchQuery(o: {
 	search: string;
+	amount: string;
 	dateFrom: string;
 	dateTo: string;
 	categories: number[];
@@ -19,9 +21,8 @@ export function buildSearchQuery(o: {
 		.innerJoin({ category: categoryCollection }, ({ transaction, category }) =>
 			eq(transaction.categoryId, category.id),
 		)
-		.leftJoin(
-			{ categoryParent: categoryCollection },
-			({ category, categoryParent }) => eq(category.parentId, categoryParent.id),
+		.leftJoin({ categoryParent: categoryCollection }, ({ category, categoryParent }) =>
+			eq(category.parentId, categoryParent.id),
 		)
 		.select(({ transaction, wallet, category, categoryParent }) => ({
 			id: transaction.id,
@@ -61,6 +62,25 @@ export function buildSearchQuery(o: {
 		);
 	}
 
+	// Amount search matches on the absolute value, so "50" finds both a
+	// +50.00 income and a -50.00 expense (expenses are stored as negative
+	// cents). "25" matches 25.00-25.99; "25.50" matches exactly.
+	if (o.amount) {
+		const cents = parseAmountToCents(o.amount);
+		if (cents !== null) {
+			const exact = hasDecimalPart(o.amount);
+			filteredTransactions = filteredTransactions.where(({ transaction }) => {
+				if (exact) {
+					return or(eq(transaction.cents, cents), eq(transaction.cents, -cents));
+				}
+				return or(
+					and(gte(transaction.cents, cents), lt(transaction.cents, cents + 100)),
+					and(gt(transaction.cents, -(cents + 100)), lte(transaction.cents, -cents)),
+				);
+			});
+		}
+	}
+
 	// Date range filter
 	if (o.dateFrom) {
 		filteredTransactions = filteredTransactions.where(({ transaction }) =>
@@ -77,10 +97,7 @@ export function buildSearchQuery(o: {
 	if (o.categories.length > 0) {
 		filteredTransactions = filteredTransactions.where(({ transaction }) => {
 			const conditions = o.categories.map((catId) =>
-				or(
-					eq(transaction.category.id, catId),
-					eq(transaction.categoryParent?.id, catId),
-				),
+				or(eq(transaction.category.id, catId), eq(transaction.categoryParent?.id, catId)),
 			);
 			return conditions.reduce((acc, cond) => or(acc, cond));
 		});
