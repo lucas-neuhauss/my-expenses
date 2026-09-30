@@ -1,23 +1,19 @@
 import { loadBackupData } from "$lib/server/data/backup.js";
 import { withTelemetry } from "$lib/server/observability.js";
-import { error, fail, redirect } from "@sveltejs/kit";
+import { requirePageUser, requireUser } from "$lib/server/remote";
+import { fail } from "@sveltejs/kit";
 import { Effect } from "effect";
 import { ungzip } from "pako";
 
 export const load = async (event) => {
-	if (!event.locals.user) {
-		return redirect(302, "/login");
-	}
+	requirePageUser(event.locals);
 
 	return {};
 };
 
 export const actions = {
 	"load-backup": async (event) => {
-		const user = event.locals.user;
-		if (!user) {
-			return error(401);
-		}
+		const user = requireUser(event.locals);
 
 		// Validate file before entering Effect context
 		const formData = await event.request.formData();

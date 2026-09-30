@@ -1,5 +1,5 @@
 import { EntityNotFoundError, ForbiddenError } from "$lib/errors/db";
-import type { Category } from "$lib/schemas/category";
+import type { Category, CategoryRow } from "$lib/schemas/category";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
@@ -19,7 +19,7 @@ export class DeleteCategoryError extends Data.TaggedError("DeleteCategoryError")
 export const getCategoriesData = Effect.fn("data/category/getCategoriesData")(function* (
 	userId: UserId,
 ) {
-	return yield* exec(
+	const rows = yield* exec(
 		db
 			.select({
 				id: table.category.id,
@@ -33,6 +33,11 @@ export const getCategoriesData = Effect.fn("data/category/getCategoriesData")(fu
 			.where(eq(table.category.userId, userId))
 			.orderBy(desc(table.category.parentId), table.category.name),
 	);
+
+	// Drizzle types `icon` as `string`; the canonical `CategoryRow` narrows
+	// it to the curated icon set. The data layer owns that narrowing, so the
+	// remote seam can hand the narrowed row straight to the collection.
+	return rows as CategoryRow[];
 });
 
 export const getNestedCategoriesData = Effect.fn("data/category/getNestedCategoriesData")(

@@ -1,13 +1,12 @@
 import { TransactionSchema, type Transaction } from "$lib/schemas/transaction";
 import { upsertTransactionData } from "$lib/server/data/transaction";
 import { withTelemetry } from "$lib/server/observability";
-import { fail, redirect } from "@sveltejs/kit";
+import { requirePageUser } from "$lib/server/remote";
+import { fail } from "@sveltejs/kit";
 import { Effect } from "effect";
 
 export const load = async ({ locals }) => {
-	if (!locals.user) {
-		return redirect(302, "/login");
-	}
+	requirePageUser(locals);
 };
 
 export const actions = {

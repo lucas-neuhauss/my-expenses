@@ -1,14 +1,12 @@
 import { createBackupData } from "$lib/server/data/backup.js";
 import { withTelemetry } from "$lib/server/observability.js";
-import { error, json } from "@sveltejs/kit";
+import { requireUser } from "$lib/server/remote";
+import { json } from "@sveltejs/kit";
 import dayjs from "dayjs";
 import { Effect } from "effect";
 
 export async function GET({ locals }) {
-	const user = locals.user;
-	if (!user) {
-		return error(401);
-	}
+	const user = requireUser(locals);
 
 	const program = Effect.fn("[api] - create-backup")(function* () {
 		yield* Effect.log("\n========");

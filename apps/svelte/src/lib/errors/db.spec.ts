@@ -6,6 +6,10 @@ describe("statusFor", () => {
 		expect(statusFor("EntityNotFoundError")).toBe(404);
 	});
 
+	it("returns 404 for SubscriptionNotFoundError", () => {
+		expect(statusFor("SubscriptionNotFoundError")).toBe(404);
+	});
+
 	it("returns 403 for ForbiddenError", () => {
 		expect(statusFor("ForbiddenError")).toBe(403);
 	});
@@ -18,21 +22,15 @@ describe("statusFor", () => {
 		expect(statusFor("DeleteCategoryError")).toBe(409);
 	});
 
-	it("returns 409 for DeleteSubscriptionError", () => {
-		expect(statusFor("DeleteSubscriptionError")).toBe(409);
-	});
-
 	it("returns 409 for DeleteTransactionError", () => {
 		expect(statusFor("DeleteTransactionError")).toBe(409);
 	});
 
-	it("throws an Error for unknown tags", () => {
-		expect(() => statusFor("UnknownError")).toThrow(
-			"No HTTP status mapping for tagged error: UnknownError",
-		);
+	it("returns undefined for an infrastructure tag", () => {
+		expect(statusFor("DbError")).toBeUndefined();
 	});
 
-	it("throws an Error for empty string tag", () => {
-		expect(() => statusFor("")).toThrow("No HTTP status mapping for tagged error: ");
+	it("returns undefined for an unknown tag", () => {
+		expect(statusFor("UnknownError")).toBeUndefined();
 	});
 });

@@ -1,5 +1,5 @@
 import { dev } from "$app/environment";
-import { redirect, type Handle } from "@sveltejs/kit";
+import { type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 import { Effect } from "effect";
 
@@ -21,18 +21,6 @@ const sessionHook: Handle = async ({ event, resolve }) => {
 	} else {
 		event.locals.session = null;
 		event.locals.user = null;
-	}
-
-	return resolve(event);
-};
-
-const authGuard: Handle = async ({ event, resolve }) => {
-	if (!event.locals.session && event.url.pathname.startsWith("/private")) {
-		redirect(303, "/auth");
-	}
-
-	if (event.locals.session && event.url.pathname === "/auth") {
-		redirect(303, "/private");
 	}
 
 	return resolve(event);
@@ -71,4 +59,4 @@ const subscriptionGeneration: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(sessionHook, authGuard, subscriptionGeneration);
+export const handle: Handle = sequence(sessionHook, subscriptionGeneration);

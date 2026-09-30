@@ -4,28 +4,25 @@ import { error } from "@sveltejs/kit";
 import { Cause, Effect, Exit, Option } from "effect";
 
 /**
- * Run an Effect program whose failure channel is a tagged error, and
- * convert the failure into a thrown SvelteKit `error(status, body)` so
- * the structured tagged error survives the network round-trip.
+ * Run an Effect program and convert a failed *domain* error into a
+ * thrown SvelteKit `error(status, body)` so the structured tagged error
+ * survives the network round-trip.
  *
- * The handler map is the set of tagged errors the remote function knows
- * how to convert. Any other error (defect, or tagged error not in the
- * map) is logged and surfaced as a 500 with an `UnhandledError` body.
+ * The status comes from the domain error registry (`statusFor`). A
+ * tagged error that is not in the registry (for example the data layer's
+ * `DbError`) is infrastructure: it is logged and surfaced as a 500 with
+ * an `UnhandledError` body.
  *
- * Example:
- *
- *   const message = await runOrThrow(
- *     upsertWalletData({ userId, data }),
- *     { EntityNotFoundError: (e) => e },
- *   );
+ * This is the internal implementation detail behind the authenticated
+ * remote seam (`src/lib/server/remote.ts`); remote functions do not call
+ * it directly.
  *
  * On success: returns the Effect's success value.
- * On mapped failure: throws `error(statusFor(_tag), handler(e))`.
- * On unhandled: throws `error(500, { _tag: "UnhandledError", ... })`.
+ * On domain failure: throws `error(statusFor(_tag), e)`.
+ * On infrastructure failure: throws `error(500, { _tag: "UnhandledError" })`.
  */
 export async function runOrThrow<A, E extends { _tag: string }>(
 	program: Effect.Effect<A, E>,
-	catchTags: { [K in E["_tag"]]?: (e: Extract<E, { _tag: K }>) => App.Error },
 ): Promise<A> {
 	const exit = await Effect.runPromiseExit(withTelemetry(program));
 
@@ -37,21 +34,17 @@ export async function runOrThrow<A, E extends { _tag: string }>(
 	const failure = Cause.findErrorOption(exit.cause);
 	if (Option.isSome(failure)) {
 		// `Cause.findErrorOption` returns the cause's typed error. The
-		// `as E` is a type-level narrowing (not a value cast): the
-		// helper generic param `E` is the Effect's error channel and
-		// the cause's error is known to be of that type.
+		// `as E` is a type-level narrowing (not a value cast): the helper
+		// generic param `E` is the Effect's error channel and the cause's
+		// error is known to be of that type.
 		const e = failure.value as E;
-		const tag = e._tag;
-		// The handler map is keyed by tag with per-tag value types; the
-		// lookup widens the index to a function accepting the union.
-		// The runtime check (`if (handler)`) gates the call.
-		const handler = catchTags[tag as E["_tag"]] as ((e: E) => App.Error) | undefined;
-		if (handler) {
-			throw error(statusFor(tag), handler(e));
+		const status = statusFor(e._tag);
+		if (status !== undefined) {
+			throw error(status, e as App.Error);
 		}
 	}
 
-	// Defect or unmapped tagged error: log and 500.
+	// Defect or non-domain tagged error: log and 500.
 	await Effect.runPromise(
 		Effect.logError("Unhandled remote-function error").pipe(
 			Effect.annotateLogs("cause", exit.cause),

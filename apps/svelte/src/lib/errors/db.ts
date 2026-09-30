@@ -18,29 +18,27 @@ export class EntityNotFoundError extends Data.TaggedError("EntityNotFoundError")
 export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{}> {}
 
 /**
- * Map a tagged error's `_tag` to an HTTP status code.
+ * The domain error registry: the single mapping from a tagged domain
+ * error to the HTTP status it becomes.
  *
- * Co-located with the data layer's error types so the mapping lives next
- * to the data layer's failure surface. Every new tagged error MUST have
- * an entry here, and a missing entry throws so the omission is loud.
- *
- * Used by the remote function to convert a `yield* new ...Error(...)` into
- * a SvelteKit `error(status, body)` so the structured error survives the
- * network round-trip.
+ * This is the only place that knows the status code for a domain error;
+ * `runOrThrow` consults it. A tag that is absent (infrastructure errors
+ * such as `DbError`) is not a domain error and becomes a 500.
  */
-export function statusFor(tag: string): number {
-	switch (tag) {
-		case "EntityNotFoundError":
-			return 404;
-		case "ForbiddenError":
-			return 403;
-		// Per-entity "cannot delete" errors are 409 (conflict with current state).
-		case "DeleteWalletError":
-		case "DeleteCategoryError":
-		case "DeleteSubscriptionError":
-		case "DeleteTransactionError":
-			return 409;
-		default:
-			throw new Error(`No HTTP status mapping for tagged error: ${tag}`);
-	}
+const DOMAIN_ERROR_STATUS: Record<string, number> = {
+	EntityNotFoundError: 404,
+	SubscriptionNotFoundError: 404,
+	ForbiddenError: 403,
+	// Per-entity "cannot delete" errors are 409 (conflict with current state).
+	DeleteWalletError: 409,
+	DeleteCategoryError: 409,
+	DeleteTransactionError: 409,
+};
+
+/**
+ * Look up the HTTP status for a tagged domain error, or `undefined` when
+ * the tag is not a domain error.
+ */
+export function statusFor(tag: string): number | undefined {
+	return DOMAIN_ERROR_STATUS[tag];
 }

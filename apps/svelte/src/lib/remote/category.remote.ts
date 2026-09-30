@@ -1,23 +1,14 @@
-import { command, form, getRequestEvent, query } from "$app/server";
-import { Category, CategoryRow, CategorySchema } from "$lib/schemas/category";
+import { command, form, query } from "$app/server";
+import { Category, CategorySchema } from "$lib/schemas/category";
 import {
 	deleteCategoryData,
 	getCategoriesData,
 	upsertCategoryData,
 } from "$lib/server/data/category";
-import { runOrThrow } from "$lib/server/remote-helpers";
+import { authenticated, requireId, type SessionUser } from "$lib/server/remote";
 import { error } from "@sveltejs/kit";
-import { Effect } from "effect";
 
-export const getCategories = query<CategoryRow[]>(async () => {
-	const { locals } = getRequestEvent();
-	const user = locals.user;
-	if (!user) {
-		throw error(401);
-	}
-
-	return runOrThrow(getCategoriesData(user.id), {}) as Promise<CategoryRow[]>;
-});
+export const getCategories = query(authenticated((user) => getCategoriesData(user.id)));
 
 /**
  * The category form uses the "unchecked" form mode with manual
@@ -37,80 +28,30 @@ export const getCategories = query<CategoryRow[]>(async () => {
  * and re-throws a 400 `ValidationError` on failure, so the client
  * still sees structured, tag-dispatched errors.
  */
-export const upsertCategoryCommand = command(CategorySchema, async (data) => {
-	const { locals } = getRequestEvent();
-	const user = locals.user;
-	if (!user) {
-		throw error(401);
-	}
+export const upsertCategoryAction = form(
+	"unchecked",
+	authenticated((user: SessionUser, raw: unknown) => {
+		const validation = CategorySchema["~standard"].validate(raw) as
+			| { value: unknown; issues?: undefined }
+			| {
+					issues: ReadonlyArray<{
+						message: string;
+						path?: ReadonlyArray<PropertyKey>;
+					}>;
+			  };
+		if (!("value" in validation)) {
+			throw error(400, {
+				_tag: "ValidationError",
+				issues: validation.issues,
+			});
+		}
+		return upsertCategoryData({ userId: user.id, data: validation.value as Category });
+	}),
+);
 
-	return runOrThrow(
-		upsertCategoryData({ userId: user.id, data }).pipe(
-			Effect.tapError((e) => Effect.logError(e)),
-		),
-		{
-			ForbiddenError: (e) => e,
-			DeleteCategoryError: (e) => e,
-		},
-	);
-});
-
-export const upsertCategoryAction = form("unchecked", async (raw: unknown) => {
-	const validation = CategorySchema["~standard"].validate(raw);
-	// The schema is synchronous (no async transforms or checks), so at
-	// runtime the result is never a Promise. Narrow with the success
-	// shape to access `issues` on the failure branch.
-	const sync = validation as
-		| { value: unknown; issues?: undefined }
-		| { issues: ReadonlyArray<{ message: string; path?: ReadonlyArray<PropertyKey> }> };
-	if (!("value" in sync)) {
-		throw error(400, {
-			_tag: "ValidationError",
-			issues: sync.issues,
-		});
-	}
-	const data: Category = sync.value as Category;
-
-	const { locals } = getRequestEvent();
-	const user = locals.user;
-	if (!user) {
-		throw error(401);
-	}
-
-	return runOrThrow(
-		upsertCategoryData({ userId: user.id, data }).pipe(
-			Effect.tapError((e) => Effect.logError(e)),
-		),
-		{
-			ForbiddenError: (e) => e,
-			DeleteCategoryError: (e) => e,
-		},
-	);
-});
-
-export const deleteCategoryAction = command("unchecked", async (id: unknown) => {
-	const numId =
-		typeof id === "number" ? id : typeof id === "string" ? parseInt(id, 10) : NaN;
-	if (isNaN(numId) || numId <= 0) {
-		throw error(400, {
-			_tag: "InvalidInputError",
-			message: "Invalid category ID",
-		});
-	}
-
-	const { locals } = getRequestEvent();
-	const user = locals.user;
-	if (!user) {
-		throw error(401);
-	}
-
-	return runOrThrow(
-		deleteCategoryData({ userId: user.id, categoryId: numId }).pipe(
-			Effect.tapError((e) => Effect.logError(e)),
-		),
-		{
-			EntityNotFoundError: (e) => e,
-			DeleteCategoryError: (e) => e,
-		},
-	);
-});
+export const deleteCategoryAction = command(
+	"unchecked",
+	authenticated((user: SessionUser, input: unknown) =>
+		deleteCategoryData({ userId: user.id, categoryId: requireId(input, "category") }),
+	),
+);

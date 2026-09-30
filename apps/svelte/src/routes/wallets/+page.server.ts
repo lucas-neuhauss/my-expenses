@@ -1,7 +1,5 @@
-import { redirect } from "@sveltejs/kit";
+import { requirePageUser } from "$lib/server/remote";
 
 export const load = async ({ locals }) => {
-	if (!locals.user) {
-		return redirect(302, "/login");
-	}
+	requirePageUser(locals);
 };
