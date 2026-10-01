@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
+	import { enhance } from "$app/forms";
+	import { initializeQueryPersistence } from "$lib/integrations/tanstack-query/query-client";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import Calendar from "@lucide/svelte/icons/calendar";
 	import House from "@lucide/svelte/icons/house";
@@ -76,7 +78,17 @@
 			<Sidebar.MenuItem>
 				<Sidebar.MenuButton>
 					{#snippet child({ props })}
-						<form method="post" action="/logout?/logout">
+						<form
+							method="post"
+							action="/logout?/logout"
+							use:enhance={() =>
+								async ({ result, update }) => {
+									if (result.type === "redirect" || result.type === "success") {
+										await initializeQueryPersistence(null);
+									}
+									await update();
+								}}
+						>
 							<button {...props}>
 								<LogOut />
 								<span>Logout</span>

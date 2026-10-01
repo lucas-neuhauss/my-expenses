@@ -1,4 +1,7 @@
-import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import {
+	queryClient,
+	registerQueryCacheReset,
+} from "$lib/integrations/tanstack-query/query-client";
 import { deleteCategoryAction, getCategories } from "$lib/remote/category.remote";
 import { CategoryRowSchema } from "$lib/schemas/category";
 import { isHttpError } from "@sveltejs/kit";
@@ -65,3 +68,5 @@ export const categoryCollection = createCollection(
 		},
 	}),
 );
+
+registerQueryCacheReset(() => categoryCollection.cleanup());

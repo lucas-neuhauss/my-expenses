@@ -1,4 +1,7 @@
-import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import {
+	queryClient,
+	registerQueryCacheReset,
+} from "$lib/integrations/tanstack-query/query-client";
 import {
 	deleteSubscriptionAction,
 	getSubscriptions,
@@ -112,3 +115,5 @@ export const subscriptionCollection = createCollection(
 		},
 	}),
 );
+
+registerQueryCacheReset(() => subscriptionCollection.cleanup());

@@ -13,6 +13,8 @@
 	import {
 		queryClient,
 		initializeQueryPersistence,
+		isQueryCacheHydrated,
+		queryCacheUserId,
 	} from "$lib/integrations/tanstack-query/query-client";
 	import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools";
 	dayjs.extend(localizedFormat);
@@ -24,9 +26,7 @@
 
 	// Initialize query persistence with user ID
 	$effect(() => {
-		if (userId) {
-			initializeQueryPersistence(userId);
-		}
+		void initializeQueryPersistence(userId);
 	});
 </script>
 
@@ -53,7 +53,13 @@
 							<Sidebar.Trigger />
 							<ThemeToggle />
 						</header>
-						{@render children()}
+						{#if $isQueryCacheHydrated && $queryCacheUserId === userId}
+							{#key userId}
+								{@render children()}
+							{/key}
+						{:else}
+							<p class="text-muted-foreground p-4" role="status">Loading your data…</p>
+						{/if}
 					</main>
 				</Sidebar.Provider>
 			{:else}

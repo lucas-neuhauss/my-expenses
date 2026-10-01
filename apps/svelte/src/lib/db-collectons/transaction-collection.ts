@@ -5,7 +5,10 @@
  * changes generate new transactions):
  *   transactionCollection.utils.refetch();
  */
-import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import {
+	queryClient,
+	registerQueryCacheReset,
+} from "$lib/integrations/tanstack-query/query-client";
 import { deleteTransactionAction, getTransactions } from "$lib/remote/transaction.remote";
 import { TransactionRowSchema } from "$lib/schemas/transaction";
 import { isHttpError } from "@sveltejs/kit";
@@ -85,3 +88,5 @@ export const transactionCollection = createCollection(
 		},
 	}),
 );
+
+registerQueryCacheReset(() => transactionCollection.cleanup());

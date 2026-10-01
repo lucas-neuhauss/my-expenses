@@ -1,4 +1,7 @@
-import { queryClient } from "$lib/integrations/tanstack-query/query-client";
+import {
+	queryClient,
+	registerQueryCacheReset,
+} from "$lib/integrations/tanstack-query/query-client";
 import {
 	deleteWalletAction,
 	getWallets,
@@ -85,3 +88,5 @@ export const walletCollection = createCollection(
 		},
 	}),
 );
+
+registerQueryCacheReset(() => walletCollection.cleanup());
