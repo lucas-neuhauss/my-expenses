@@ -25,6 +25,19 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Subscription occurrence constraint
+
+Existing databases need the additive migration in
+`migrations/001-subscription-occurrence.sql` before running this version. New
+schemas created with `pnpm db:push` include it automatically.
+
+```bash
+docker exec -i my-expenses-db psql -U postgres -d myexpenses -v ON_ERROR_STOP=1 \\\n  < migrations/001-subscription-occurrence.sql
+```
+
+If duplicate subscription/date pairs already exist, the migration fails rather
+than deleting financial records. Review those duplicates before retrying.
+
 ## Database integration tests
 
 Run these against a disposable PostgreSQL database named `myexpenses_test_*`,

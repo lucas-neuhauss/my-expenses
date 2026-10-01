@@ -103,7 +103,13 @@ export const BackupSchema = z
 			if (row.end_date !== null && row.end_date < row.start_date)
 				invalid("Invalid subscription date range");
 		}
+		const occurrences = new Set<string>();
 		for (const row of data.transaction) {
+			if (row.subscription_id !== null) {
+				const occurrence = `${row.subscription_id}:${row.date}`;
+				if (occurrences.has(occurrence)) invalid("Duplicate subscription occurrence");
+				occurrences.add(occurrence);
+			}
 			if (row.subscription_id !== null && !subscriptions.has(row.subscription_id)) {
 				invalid("Missing subscription reference");
 			}

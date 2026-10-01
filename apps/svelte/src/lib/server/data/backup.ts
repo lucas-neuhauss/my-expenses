@@ -1,5 +1,5 @@
 import { BackupSchema } from "$lib/schemas/backup";
-import { db, exec } from "$lib/server/db";
+import { db, exec, userDataLock } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { eq, sql } from "drizzle-orm";
@@ -22,6 +22,7 @@ export const loadBackupData = Effect.fn("data/backup/loadBackupData")(function* 
 
 	yield* exec(
 		db.transaction(async (tx) => {
+			await tx.execute(userDataLock(userId));
 			const wallets = new Map<number, number>();
 			const categories = new Map<number, number>();
 			const subscriptions = new Map<number, number>();

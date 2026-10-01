@@ -1,8 +1,8 @@
 import type { Subscription } from "$lib/schemas/subscription";
-import { db, exec } from "$lib/server/db";
+import { db, exec, userDataLock } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
-import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { Data, Effect } from "effect";
 import { requireOwnedReferences } from "./owned-references";
 import { formatDateString, getDateWithDay, parseDate } from "./subscription-helpers";
@@ -200,113 +200,103 @@ export const generatePendingTransactionsData = Effect.fn(
 	const today = new Date();
 	const todayStr = formatDateString(today);
 
-	// Get all active subscriptions that might need transaction generation
-	const subscriptions = yield* exec(
-		db
-			.select()
-			.from(table.subscription)
-			.where(
-				and(
-					eq(table.subscription.userId, userId),
-					eq(table.subscription.paused, false),
-					// Start date must be <= today
-					lte(table.subscription.startDate, todayStr),
-					// End date is null or >= today (gte(endDate, todayStr) equivalent to lte(todayStr, endDate))
-					or(
-						isNull(table.subscription.endDate),
-						gte(table.subscription.endDate, todayStr),
+	return yield* exec(
+		db.transaction(async (tx) => {
+			// A cookie is a throttle, not a lock. Serialize across requests, tabs and instances.
+			// Restore uses the same transaction-scoped lock to avoid generation against old IDs.
+			await tx.execute(userDataLock(userId));
+			const subscriptions = await tx
+				.select()
+				.from(table.subscription)
+				.where(
+					and(
+						eq(table.subscription.userId, userId),
+						eq(table.subscription.paused, false),
+						lte(table.subscription.startDate, todayStr),
 					),
-				),
-			),
-	);
+				)
+				.for("update");
 
-	let generatedCount = 0;
-
-	for (const sub of subscriptions) {
-		// Determine next generation date
-		let nextGenDate: Date;
-
-		if (sub.lastGenerated === null) {
-			// First generation: use start date but adjust day to dayOfMonth
-			const startDate = parseDate(sub.startDate);
-			nextGenDate = getDateWithDay(
-				startDate.getFullYear(),
-				startDate.getMonth(),
-				sub.dayOfMonth,
-			);
-
-			// If the adjusted date is before start date, move to next month
-			if (nextGenDate < startDate) {
-				nextGenDate = getDateWithDay(
-					startDate.getFullYear(),
-					startDate.getMonth() + 1,
-					sub.dayOfMonth,
-				);
-			}
-		} else {
-			// Calculate next month from last generated
-			const lastGen = parseDate(sub.lastGenerated);
-			nextGenDate = getDateWithDay(
-				lastGen.getFullYear(),
-				lastGen.getMonth() + 1,
-				sub.dayOfMonth,
-			);
-		}
-
-		// Generate transactions for all due dates
-		while (nextGenDate <= today) {
-			const genDateStr = formatDateString(nextGenDate);
-
-			// Check if end date is reached
-			if (sub.endDate && genDateStr > sub.endDate) {
-				break;
-			}
-
-			// Get category type to determine transaction type
-			const [categoryResult] = yield* exec(
-				db
+			let generatedCount = 0;
+			for (const sub of subscriptions) {
+				const [category] = await tx
 					.select({ type: table.category.type })
 					.from(table.category)
-					.where(eq(table.category.id, sub.categoryId)),
-			);
+					.where(
+						and(eq(table.category.id, sub.categoryId), eq(table.category.userId, userId)),
+					);
+				const [wallet] = await tx
+					.select({ id: table.wallet.id })
+					.from(table.wallet)
+					.where(and(eq(table.wallet.id, sub.walletId), eq(table.wallet.userId, userId)));
+				// Never generate against foreign references left by older versions of the app.
+				if (!category || !wallet) continue;
 
-			if (!categoryResult) {
-				break;
+				let nextGenDate: Date;
+				if (sub.lastGenerated === null) {
+					const start = parseDate(sub.startDate);
+					nextGenDate = getDateWithDay(
+						start.getFullYear(),
+						start.getMonth(),
+						sub.dayOfMonth,
+					);
+					if (nextGenDate < start) {
+						nextGenDate = getDateWithDay(
+							start.getFullYear(),
+							start.getMonth() + 1,
+							sub.dayOfMonth,
+						);
+					}
+				} else {
+					const last = parseDate(sub.lastGenerated);
+					nextGenDate = getDateWithDay(
+						last.getFullYear(),
+						last.getMonth() + 1,
+						sub.dayOfMonth,
+					);
+				}
+
+				// Include overdue occurrences even when the subscription has since ended.
+				while (nextGenDate <= today) {
+					const date = formatDateString(nextGenDate);
+					if (sub.endDate && date > sub.endDate) break;
+					const inserted = await tx
+						.insert(table.transaction)
+						.values({
+							cents: category.type === "expense" ? -sub.cents : sub.cents,
+							type: category.type,
+							description: sub.name,
+							userId,
+							categoryId: sub.categoryId,
+							walletId: sub.walletId,
+							subscriptionId: sub.id,
+							paid: true,
+							date,
+						})
+						.onConflictDoNothing({
+							target: [table.transaction.subscriptionId, table.transaction.date],
+						})
+						.returning({ id: table.transaction.id });
+
+					// Commit the transaction and cursor together; failures roll both back.
+					await tx
+						.update(table.subscription)
+						.set({ lastGenerated: date })
+						.where(
+							and(
+								eq(table.subscription.id, sub.id),
+								eq(table.subscription.userId, userId),
+							),
+						);
+					generatedCount += inserted.length;
+					nextGenDate = getDateWithDay(
+						nextGenDate.getFullYear(),
+						nextGenDate.getMonth() + 1,
+						sub.dayOfMonth,
+					);
+				}
 			}
-
-			// Create the transaction
-			yield* exec(
-				db.insert(table.transaction).values({
-					cents: categoryResult.type === "expense" ? -sub.cents : sub.cents,
-					type: categoryResult.type,
-					description: sub.name,
-					userId,
-					categoryId: sub.categoryId,
-					walletId: sub.walletId,
-					subscriptionId: sub.id,
-					paid: true,
-					date: genDateStr,
-				}),
-			);
-
-			// Update lastGenerated
-			yield* exec(
-				db
-					.update(table.subscription)
-					.set({ lastGenerated: genDateStr })
-					.where(eq(table.subscription.id, sub.id)),
-			);
-
-			generatedCount++;
-
-			// Calculate next date
-			nextGenDate = getDateWithDay(
-				nextGenDate.getFullYear(),
-				nextGenDate.getMonth() + 1,
-				sub.dayOfMonth,
-			);
-		}
-	}
-
-	return generatedCount;
+			return generatedCount;
+		}),
+	);
 });

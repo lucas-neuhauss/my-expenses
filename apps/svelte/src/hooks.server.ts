@@ -36,23 +36,28 @@ const subscriptionGeneration: Handle = async ({ event, resolve }) => {
 	if (user) {
 		const lastGenTs = event.cookies.get(SUBSCRIPTION_GEN_COOKIE);
 		const now = Date.now();
+		const previous = Number(lastGenTs);
 
-		// Check if we need to run generation (not run in the last hour)
-		if (!lastGenTs || now - parseInt(lastGenTs, 10) > SUBSCRIPTION_GEN_INTERVAL) {
-			// Set the cookie first to prevent concurrent runs
-			event.cookies.set(SUBSCRIPTION_GEN_COOKIE, String(now), {
-				path: "/",
-				httpOnly: true,
-				sameSite: dev ? "lax" : "strict",
-				secure: !dev,
-				maxAge: 60 * 60 * 24, // 24 hours
-			});
-
-			// Run generation in background (fire and forget)
-			const program = generatePendingTransactionsData({ userId: user.id });
-			Effect.runPromise(withTelemetry(program)).catch((err) => {
+		if (
+			!lastGenTs ||
+			!Number.isFinite(previous) ||
+			now - previous > SUBSCRIPTION_GEN_INTERVAL
+		) {
+			try {
+				// Await completion so failures can retry and work survives request lifetimes.
+				await Effect.runPromise(
+					withTelemetry(generatePendingTransactionsData({ userId: user.id })),
+				);
+				event.cookies.set(SUBSCRIPTION_GEN_COOKIE, String(now), {
+					path: "/",
+					httpOnly: true,
+					sameSite: dev ? "lax" : "strict",
+					secure: !dev,
+					maxAge: 60 * 60 * 24,
+				});
+			} catch (err) {
 				console.error("Failed to generate subscription transactions:", err);
-			});
+			}
 		}
 	}
 

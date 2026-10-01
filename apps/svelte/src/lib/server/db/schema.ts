@@ -9,6 +9,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
 
@@ -81,6 +82,10 @@ export const transaction = pgTable(
 		index("transaction_user_id_idx").on(table.userId),
 		index("transaction_installment_group_id_idx").on(table.installmentGroupId),
 		index("transaction_subscription_id_idx").on(table.subscriptionId),
+		uniqueIndex("transaction_subscription_date_unique").on(
+			table.subscriptionId,
+			table.date,
+		),
 	],
 );
 export const transactionsRelations = relations(transaction, ({ one }) => ({
