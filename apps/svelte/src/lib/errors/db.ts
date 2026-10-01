@@ -29,6 +29,7 @@ const DOMAIN_ERROR_STATUS: Record<string, number> = {
 	EntityNotFoundError: 404,
 	SubscriptionNotFoundError: 404,
 	ForbiddenError: 403,
+	InvalidBackupError: 400,
 	// Per-entity "cannot delete" errors are 409 (conflict with current state).
 	DeleteWalletError: 409,
 	DeleteCategoryError: 409,
