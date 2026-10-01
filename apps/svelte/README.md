@@ -25,6 +25,26 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Database integration tests
+
+Run these against a disposable PostgreSQL database named `myexpenses_test_*`,
+never your application database. The suite creates and deletes its own test users.
+
+```bash
+# Create the disposable database in the local PostgreSQL container
+docker exec my-expenses-db createdb -U postgres myexpenses_test_local
+
+# Set the connection URL using your local PostgreSQL credentials
+export TEST_DATABASE_URL="postgres://postgres:<password>@localhost:5432/myexpenses_test_local"
+DATABASE_URL="$TEST_DATABASE_URL" pnpm db:push
+pnpm test:integration
+
+# Remove the disposable database when finished
+docker exec my-expenses-db dropdb -U postgres myexpenses_test_local
+```
+
+`pnpm test:unit --run` excludes database integration tests.
+
 ## Building
 
 To create a production version of your app:

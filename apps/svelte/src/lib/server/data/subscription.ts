@@ -4,6 +4,7 @@ import * as table from "$lib/server/db/schema";
 import type { UserId } from "$lib/types";
 import { and, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { Data, Effect } from "effect";
+import { requireOwnedReferences } from "./owned-references";
 import { formatDateString, getDateWithDay, parseDate } from "./subscription-helpers";
 
 /**
@@ -49,8 +50,20 @@ export const getSubscriptionsData = Effect.fn("data/subscription/getSubscription
 					},
 				})
 				.from(table.subscription)
-				.innerJoin(table.category, eq(table.subscription.categoryId, table.category.id))
-				.innerJoin(table.wallet, eq(table.subscription.walletId, table.wallet.id))
+				.innerJoin(
+					table.category,
+					and(
+						eq(table.subscription.categoryId, table.category.id),
+						eq(table.category.userId, userId),
+					),
+				)
+				.innerJoin(
+					table.wallet,
+					and(
+						eq(table.subscription.walletId, table.wallet.id),
+						eq(table.wallet.userId, userId),
+					),
+				)
 				.where(eq(table.subscription.userId, userId))
 				.orderBy(table.subscription.name),
 		);
@@ -63,6 +76,11 @@ export const upsertSubscriptionData = Effect.fn(
 	"data/subscription/upsertSubscriptionData",
 )(function* ({ userId, data }: { userId: UserId; data: Subscription }) {
 	const { id, name, cents, categoryId, walletId, dayOfMonth, startDate, endDate } = data;
+	yield* requireOwnedReferences({
+		userId,
+		walletIds: [walletId],
+		categoryIds: [categoryId],
+	});
 
 	if (id === "new") {
 		yield* exec(

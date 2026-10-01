@@ -142,6 +142,7 @@ export function loadWallets(userId: UserId) {
 				table.wallet,
 				and(
 					eq(table.transaction.walletId, table.wallet.id),
+					eq(table.transaction.userId, userId),
 					eq(table.transaction.paid, true),
 				),
 			)

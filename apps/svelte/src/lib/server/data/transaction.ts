@@ -8,6 +8,7 @@ import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Data, Effect } from "effect";
 import { v4 as uuidv4 } from "uuid";
+import { requireOwnedReferences } from "./owned-references";
 import {
 	planCreateRows,
 	planSimpleUpdate,
@@ -79,6 +80,13 @@ export const getTransactionsData = Effect.fn("data/transaction/getTransactionsDa
 
 export const upsertTransactionData = Effect.fn("data/transaction/upsertTransactionData")(
 	function* ({ userId, data }: { userId: UserId; data: Transaction }) {
+		yield* requireOwnedReferences({
+			userId,
+			walletIds:
+				data.type === "transference" ? [data.wallet, data.toWallet!] : [data.wallet],
+			categoryIds: data.type === "transference" ? [] : [data.category!],
+		});
+
 		if (data.id === "new") {
 			let transferenceCategories = { in: 0, out: 0 };
 			if (data.type === "transference") {
@@ -310,9 +318,27 @@ export const getDashboardTransactionsData = Effect.fn(
 					lte(table.transaction.date, end),
 				),
 			)
-			.innerJoin(table.category, eq(table.transaction.categoryId, table.category.id))
-			.innerJoin(table.wallet, eq(table.transaction.walletId, table.wallet.id))
-			.leftJoin(tableCategoryParent, eq(table.category.parentId, tableCategoryParent.id))
+			.innerJoin(
+				table.category,
+				and(
+					eq(table.transaction.categoryId, table.category.id),
+					eq(table.category.userId, userId),
+				),
+			)
+			.innerJoin(
+				table.wallet,
+				and(
+					eq(table.transaction.walletId, table.wallet.id),
+					eq(table.wallet.userId, userId),
+				),
+			)
+			.leftJoin(
+				tableCategoryParent,
+				and(
+					eq(table.category.parentId, tableCategoryParent.id),
+					eq(tableCategoryParent.userId, userId),
+				),
+			)
 			.leftJoin(
 				tableTransactionFrom,
 				and(
