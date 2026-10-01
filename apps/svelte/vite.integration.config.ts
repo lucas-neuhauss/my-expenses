@@ -9,6 +9,7 @@ if (!process.env.TEST_DATABASE_URL) {
 
 export default defineConfig({
 	...config,
+	define: { ...config.define, __E2E_TEST_API_ENABLED__: "true" },
 	test: {
 		include: ["src/**/*.integration.test.ts"],
 		exclude: configDefaults.exclude,

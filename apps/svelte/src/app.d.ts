@@ -1,4 +1,7 @@
 declare global {
+	/** Replaced by Vite; only explicit E2E builds contain test API mutations. */
+	const __E2E_TEST_API_ENABLED__: boolean;
+
 	namespace App {
 		interface Locals {
 			session: {

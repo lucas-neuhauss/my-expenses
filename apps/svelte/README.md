@@ -38,6 +38,14 @@ docker exec -i my-expenses-db psql -U postgres -d myexpenses -v ON_ERROR_STOP=1 
 If duplicate subscription/date pairs already exist, the migration fails rather
 than deleting financial records. Review those duplicates before retrying.
 
+## Test seed API
+
+`/api/test/seed` is available in development and explicit E2E builds only. Normal
+production builds return 404, even if `E2E_TEST=true` or `NODE_ENV=test` is set at
+runtime. Playwright sets `E2E_TEST=true` during its build automatically; do not
+deploy those test builds. All enabled seed/cleanup operations are user-scoped and
+validate their input and referenced entities.
+
 ## Database integration tests
 
 Run these against a disposable PostgreSQL database named `myexpenses_test_*`,

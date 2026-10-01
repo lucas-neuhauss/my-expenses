@@ -23,7 +23,7 @@ export function createCategory(overrides: Partial<CategoryData> = {}): CategoryD
 	return {
 		name: faker.commerce.department(),
 		type: faker.helpers.arrayElement(["expense", "income"]) as "expense" | "income",
-		icon: "default.svg",
+		icon: "house.png",
 		...overrides,
 	};
 }

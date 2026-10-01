@@ -14,7 +14,7 @@ test.describe("Search Page", () => {
 		const walletId = walletRes.wallet!.id;
 
 		const expenseCat = await seedData(page, {
-			category: { name: "Food", type: "expense", icon: "restaurant.png" },
+			category: { name: "Food", type: "expense", icon: "fast-food.png" },
 		});
 		const expenseCatId = expenseCat.category!.id;
 

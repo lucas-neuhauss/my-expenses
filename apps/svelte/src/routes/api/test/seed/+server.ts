@@ -1,54 +1,82 @@
 import { dev } from "$app/environment";
-import { CATEGORY_SPECIAL } from "$lib/categories.js";
+import { CATEGORY_ICON_LIST, CATEGORY_SPECIAL } from "$lib/categories";
+import { EntityNotFoundError } from "$lib/errors/db";
+import { requireOwnedReferences } from "$lib/server/data/owned-references";
 import { db, exec } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
-import type { UserId } from "$lib/types";
+import { requireUser } from "$lib/server/remote";
+import { runOrThrow } from "$lib/server/remote-helpers";
 import { error, json } from "@sveltejs/kit";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { Effect } from "effect";
+import { z } from "zod";
 import type { RequestHandler } from "./$types";
 
-// Only allow in development/test environments
-const isTestEnvironment =
-	dev || process.env.NODE_ENV === "test" || process.env.E2E_TEST === "true";
+const id = z.number().int().positive().max(2147483647);
+const cents = z.number().int().min(-2147483648).max(2147483647);
+const SeedSchema = z
+	.strictObject({
+		wallet: z
+			.strictObject({
+				name: z.string().min(1).max(255),
+				initialBalance: cents.optional(),
+			})
+			.optional(),
+		category: z
+			.strictObject({
+				name: z.string().min(1).max(255),
+				type: z.enum(["income", "expense"]),
+				icon: z.enum(CATEGORY_ICON_LIST).optional(),
+			})
+			.optional(),
+		transaction: z
+			.strictObject({
+				description: z.string(),
+				cents,
+				type: z.enum(["income", "expense"]),
+				walletId: id.optional(),
+				categoryId: id.optional(),
+				date: z.iso.date().optional(),
+				paid: z.boolean().optional(),
+			})
+			.optional(),
+		ensureSpecialCategories: z.boolean().optional(),
+	})
+	.refine(
+		(data) =>
+			data.wallet || data.category || data.transaction || data.ensureSpecialCategories,
+	);
+const CleanupSchema = z
+	.strictObject({
+		walletId: id.optional(),
+		categoryId: id.optional(),
+		transactionId: id.optional(),
+		all: z.boolean().optional(),
+	})
+	.refine((data) => data.all || data.walletId || data.categoryId || data.transactionId);
+type SeedData = z.infer<typeof SeedSchema>;
+type CleanupData = z.infer<typeof CleanupSchema>;
 
-interface SeedData {
-	wallet?: { name: string; initialBalance?: number };
-	category?: { name: string; type: "income" | "expense"; icon?: string };
-	transaction?: {
-		description: string;
-		cents: number;
-		type: "income" | "expense";
-		walletId?: number;
-		categoryId?: number;
-		date?: string;
-		paid?: boolean;
-	};
-
-	/** When true, (re)create the app-managed transference categories if missing. */
-	ensureSpecialCategories?: boolean;
-}
-
-interface CleanupData {
-	walletId?: number;
-	categoryId?: number;
-	transactionId?: number;
-	all?: boolean;
+async function readInput<T>(request: Request, schema: z.ZodType<T>): Promise<T> {
+	try {
+		return schema.parse(await request.json());
+	} catch {
+		return error(400, { _tag: "InvalidInputError", message: "Invalid test API input" });
+	}
 }
 
 export const POST: RequestHandler = async ({ locals, request }) => {
-	if (!isTestEnvironment) {
-		return error(403, "Test endpoint only available in development");
-	}
-
-	if (!locals.user) {
-		return error(401);
-	}
-
-	const userId = locals.user.id as UserId;
-	const body = (await request.json()) as SeedData;
+	if (!dev && !__E2E_TEST_API_ENABLED__) return error(404);
+	const userId = requireUser(locals).id;
+	const body = await readInput(request, SeedSchema);
 
 	const seedData = Effect.fn("[POST] api/test/seed")(function* (data: SeedData) {
+		// Validate explicit references before creating any rows in the same request.
+		yield* requireOwnedReferences({
+			userId,
+			walletIds: data.transaction?.walletId ? [data.transaction.walletId] : [],
+			categoryIds: data.transaction?.categoryId ? [data.transaction.categoryId] : [],
+		});
 		const result: Record<string, unknown> = {};
 
 		if (data.wallet) {
@@ -73,7 +101,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 						userId,
 						name: data.category.name,
 						type: data.category.type,
-						icon: data.category.icon ?? "default.svg",
+						icon: data.category.icon ?? "house.png",
 					})
 					.returning(),
 			);
@@ -168,21 +196,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		return result;
 	});
 
-	const result = await Effect.runPromise(seedData(body));
+	const result = await runOrThrow(seedData(body));
 	return json(result);
 };
 
 export const DELETE: RequestHandler = async ({ locals, request }) => {
-	if (!isTestEnvironment) {
-		return error(403, "Test endpoint only available in development");
-	}
-
-	if (!locals.user) {
-		return error(401);
-	}
-
-	const userId = locals.user.id as UserId;
-	const body = (await request.json()) as CleanupData;
+	if (!dev && !__E2E_TEST_API_ENABLED__) return error(404);
+	const userId = requireUser(locals).id;
+	const body = await readInput(request, CleanupSchema);
 
 	const cleanup = Effect.fn("[DELETE] api/test/seed")(function* (data: CleanupData) {
 		if (data.all) {
@@ -206,25 +227,66 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
 			return { deleted: "all" };
 		}
 
+		yield* requireOwnedReferences({
+			userId,
+			walletIds: data.walletId ? [data.walletId] : [],
+			categoryIds: data.categoryId ? [data.categoryId] : [],
+		});
 		if (data.transactionId) {
+			const [transaction] = yield* exec(
+				db
+					.select({ id: table.transaction.id })
+					.from(table.transaction)
+					.where(
+						and(
+							eq(table.transaction.id, data.transactionId),
+							eq(table.transaction.userId, userId),
+						),
+					),
+			);
+			if (!transaction)
+				return yield* new EntityNotFoundError({
+					entity: "transaction",
+					id: data.transactionId,
+				});
 			yield* exec(
-				db.delete(table.transaction).where(eq(table.transaction.id, data.transactionId)),
+				db
+					.delete(table.transaction)
+					.where(
+						and(
+							eq(table.transaction.id, data.transactionId),
+							eq(table.transaction.userId, userId),
+						),
+					),
 			);
 		}
 
 		if (data.categoryId) {
 			yield* exec(
-				db.delete(table.category).where(eq(table.category.id, data.categoryId)),
+				db
+					.delete(table.category)
+					.where(
+						and(
+							eq(table.category.id, data.categoryId),
+							eq(table.category.userId, userId),
+						),
+					),
 			);
 		}
 
 		if (data.walletId) {
-			yield* exec(db.delete(table.wallet).where(eq(table.wallet.id, data.walletId)));
+			yield* exec(
+				db
+					.delete(table.wallet)
+					.where(
+						and(eq(table.wallet.id, data.walletId), eq(table.wallet.userId, userId)),
+					),
+			);
 		}
 
 		return { deleted: true };
 	});
 
-	const result = await Effect.runPromise(cleanup(body));
+	const result = await runOrThrow(cleanup(body));
 	return json(result);
 };
